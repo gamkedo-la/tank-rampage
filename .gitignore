@@ -1,5 +1,14 @@
 # Visual Studio 2015 user specific files
 .vs/
+.vsconfig
+
+# Visual Studio 2015 database file
+*.VC.db
+
+# VSCode Files
+.vscode/
+*.code-workspace
+
 # Rider files
 .idea/
 
@@ -9,7 +18,7 @@ Plugins/BlockoutToolsPlugin
 *.slo
 *.lo
 *.o
-Plugins/**/*.obj
+*.obj
 
 # Precompiled Headers
 *.gch
@@ -77,3 +86,16 @@ Plugins/*/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+
+# Blender backup files
+*.blend[0-9]
+
+# Audacity temp files
+*.aup3-*
+
+# drawio Backup files
+*.drawio.bkp
+*.drawio.dtmp
+
+# Modeling tools temporary files
+_GENERATED/
