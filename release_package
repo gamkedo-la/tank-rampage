@@ -1,0 +1,13 @@
+#!/bin/bash
+
+version=$1
+
+if [ -z "$version" ]; then
+   echo "Argument is version suffix"
+   exit 1
+fi
+
+# TODO: Can actually launch the Shipping build staging process from here instead of assuming it's there
+python Tools/Packaging/zip_staging.py "s" "Build/Shipping/Windows" "Build/TankRampage-$version.zip"
+printf "\n\n"
+python Tools/Packaging/zip_staging.py "d" "Build/Shipping/Windows" "Build/TankRampage-$version-symbols.zip"

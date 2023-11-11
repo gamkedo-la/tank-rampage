@@ -1,0 +1,3 @@
+#!/bin/bash
+
+python Tools/Source/fix_copyright.py

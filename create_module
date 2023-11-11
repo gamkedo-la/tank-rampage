@@ -1,0 +1,6 @@
+#!/bin/bash
+
+python Tools/ModuleGenerator/generate_unreal_module.py "$@"
+
+# Apply copyright notice to generated files
+./update_copyrights
