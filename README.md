@@ -34,7 +34,7 @@ Requires Python 3+ for command line tools to generate new game modules.
 
 See this great [video](https://www.youtube.com/watch?v=DqqQ_wiWYOw&t=1s) from Ari explaining how game modules work
 
-1. Run `./create_module [moduleName]`
+1. Run `./create_module [moduleName]` . Module names should be prefixed with `TR` to avoid any possible name clashes with stock Unreal module names
 2. Regenerate the VS solution files by right clicking on the `uproject` file 
 3. Add the module name in the `PrivateDependencyModuleNames` of the main game module to be sure it is built.
 4. Make sure the base generated module builds in VS
