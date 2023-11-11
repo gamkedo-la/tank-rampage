@@ -2,7 +2,7 @@ import os
 import sys
 import json
 
-PROJECT_NAME = "Flicker"
+PROJECT_NAME = "TankRampage"
 RESOURCES_DIR = "Tools/ModuleGenerator/Resources/"
 
 ########## Functions ########################
