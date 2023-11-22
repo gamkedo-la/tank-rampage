@@ -29,6 +29,9 @@ ABaseTankPawn::ABaseTankPawn()
 	PrimaryActorTick.bCanEverTick = false;
 
 	RootComponent = TankBody = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TankBody"));
+	TankBody->SetSimulatePhysics(true);
+	TankBody->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	TankBody->SetMassOverrideInKg(NAME_None, 40000);
 
 	TankTurret = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TankTurret"));
 	TankTurret->SetupAttachment(TankBody, Sockets::TankTurret);
