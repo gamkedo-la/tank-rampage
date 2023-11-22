@@ -11,6 +11,19 @@
 #include "Logging/LoggingUtils.h"
 #include "VisualLogger/VisualLogger.h"
 
+namespace
+{
+	namespace Sockets
+	{
+		const FName TankTurret = "Turret";
+		const FName TankGun = "Barrel";
+		const FName TankTreadRight = "Tread_RT";
+		const FName TankSideRight = "Side_RT";
+		const FName TankTreadLeft = "Tread_LT";
+		const FName TankSideLeft = "Side_LT";
+	}
+}
+
 ABaseTankPawn::ABaseTankPawn()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -18,22 +31,22 @@ ABaseTankPawn::ABaseTankPawn()
 	RootComponent = TankBody = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TankBody"));
 
 	TankTurret = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TankTurret"));
-	TankTurret->SetupAttachment(TankBody);
+	TankTurret->SetupAttachment(TankBody, Sockets::TankTurret);
 
 	TankBarrel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TankBarrel"));
-	TankBarrel->SetupAttachment(TankTurret);
+	TankBarrel->SetupAttachment(TankTurret, Sockets::TankGun);
 
 	TankTreadRight = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TankTreadRight"));
-	TankTreadRight->SetupAttachment(TankBody);
+	TankTreadRight->SetupAttachment(TankBody, Sockets::TankTreadRight);
 
 	TankTreadLeft = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TankTreadLeft"));
-	TankTreadLeft->SetupAttachment(TankBody);
+	TankTreadLeft->SetupAttachment(TankBody, Sockets::TankTreadLeft);
 
 	TankTreadSideRight = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TankTreadSideRight"));
-	TankTreadSideRight->SetupAttachment(TankBody);
+	TankTreadSideRight->SetupAttachment(TankBody, Sockets::TankSideRight);
 
 	TankTreadSideLeft = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TankTreadSideLeft"));
-	TankTreadSideLeft->SetupAttachment(TankBody);
+	TankTreadSideLeft->SetupAttachment(TankBody, Sockets::TankSideLeft);
 
 	CameraSpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraSpringArm"));
 	CameraSpringArm->SetupAttachment(TankBody);
