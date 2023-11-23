@@ -17,10 +17,21 @@ class TRAI_API ATankAIController : public ABaseAIController, public ITankOwner
 	GENERATED_BODY()
 	
 public:
+
+	ATankAIController();
+
 	// Inherited via ITankOwner
 	ABaseTankPawn* GetControlledTank() const override;
 
+	virtual void Tick(float DeltaTime) override;
+
 private:
 	ABaseTankPawn* GetPlayerTank() const;
+	void AimAtPlayerTank(ABaseTankPawn& MyTank, const ABaseTankPawn& PlayerTank);
+	void MoveTowardPlayer(ABaseTankPawn& MyTank, const ABaseTankPawn& PlayerTank);
+	bool IsPlayerInRange(const ABaseTankPawn& MyTank, const ABaseTankPawn& PlayerTank) const;
 
+private:
+	UPROPERTY(EditDefaultsOnly)
+	float MaxAggroDistanceMeters{ 100.0f };
 };

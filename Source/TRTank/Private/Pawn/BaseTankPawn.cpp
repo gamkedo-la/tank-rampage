@@ -90,3 +90,10 @@ void ABaseTankPawn::UpdateSpringArmTickEnabled()
 	}
 }
 
+void ABaseTankPawn::AimAt(const FVector& Location)
+{
+	UE_VLOG_UELOG(this, LogTRTank, VeryVerbose, TEXT("%s: AimAt - Location=%s"), *GetName(), *Location.ToCompactString());
+
+
+}
+

@@ -21,6 +21,8 @@ public:
 
 	USpringArmComponent* GetCameraSpringArm() const;
 
+	void AimAt(const FVector& Location);
+
 protected:
 	virtual void BeginPlay() override;
 

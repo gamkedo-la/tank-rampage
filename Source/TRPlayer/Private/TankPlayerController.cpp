@@ -94,9 +94,16 @@ void ATankPlayerController::AimTowardCrosshair()
 		return;
 	}
 
-	// TODO: Start the tank moving the barrel so that a shot would hit where the crosshair intersects the world
-	// Get world location with linetrace through crosshair
-	// If hit the landscape then tell the controlled tank to aim at the crosshair
+	const auto MaybeHitLocation = GetRaySightHitLocation();
+
+	if (!MaybeHitLocation)
+	{
+		return;
+	}
+
+	const auto& HitLocation = *MaybeHitLocation;
+
+	ControlledTank->AimAt(HitLocation);
 }
 
 void ATankPlayerController::OnLook(const FInputActionValue& Value)
@@ -113,4 +120,72 @@ void ATankPlayerController::OnLook(const FInputActionValue& Value)
 	{
 		AddPitchInput(LookAxisValue.Y);
 	}
+}
+
+std::optional<FVector> ATankPlayerController::GetRaySightHitLocation() const
+{
+	// Find the crosshair position
+	const auto ScreenspaceLocation = GetCrosshairScreenspaceLocation();
+
+	// De-project the screen position of the crosshair to a world direction
+	const auto LookDirection = GetCrosshairWorldDirection(ScreenspaceLocation);
+
+	// Line-trace along that direction (look direction) and see what we hit (up to max range)
+	return GetLookVectorHitLocation(LookDirection);
+}
+
+FVector2D ATankPlayerController::GetCrosshairScreenspaceLocation() const
+{
+	int32 ViewportSizeX, ViewportSizeY;
+	GetViewportSize(ViewportSizeX, ViewportSizeY);
+
+	// Origin is at top left of screen
+	return FVector2D(ViewportSizeX, ViewportSizeY) * CrosshairPositionFraction;
+}
+
+FVector ATankPlayerController::GetCrosshairWorldDirection(const FVector2D& ScreenLocation) const
+{
+	FVector CameraWorldLocation, WorldDirection;
+
+	// CameraWorldLocation here is just the camera world location and isn't useful in this situation
+	DeprojectScreenPositionToWorld(
+		ScreenLocation.X,
+		ScreenLocation.Y,
+		CameraWorldLocation,
+		WorldDirection
+	);
+
+	return WorldDirection;
+}
+
+std::optional<FVector> ATankPlayerController::GetLookVectorHitLocation(const FVector& LookDirection) const
+{
+	auto World = GetWorld();
+
+	if (!World)
+	{
+		return std::nullopt;
+	}
+
+	check(PlayerCameraManager);
+
+	const auto& TraceStartLocation = PlayerCameraManager->GetCameraLocation();
+	const auto TraceEndLocation = TraceStartLocation + MaxAimDistanceMeters * 100 * LookDirection;
+
+	FHitResult HitResult;
+
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(GetPawn());
+
+	if (!World->LineTraceSingleByChannel(
+		HitResult,
+		TraceStartLocation,
+		TraceEndLocation,
+		ECollisionChannel::ECC_Visibility,
+		Params))
+	{
+		return std::nullopt;
+	}
+
+	return HitResult.Location;
 }

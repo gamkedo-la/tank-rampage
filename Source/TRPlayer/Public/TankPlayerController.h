@@ -5,6 +5,9 @@
 #include "CoreMinimal.h"
 #include "BasePlayerController.h"
 #include "Interfaces/TankOwner.h"
+
+#include <optional>
+
 #include "TankPlayerController.generated.h"
 
 
@@ -38,6 +41,12 @@ private:
 
 	void OnLook(const FInputActionValue& Value);
 
+	std::optional<FVector> GetRaySightHitLocation() const;
+
+	FVector2D GetCrosshairScreenspaceLocation() const;
+	FVector GetCrosshairWorldDirection(const FVector2D& ScreenLocation) const;
+	std::optional<FVector> GetLookVectorHitLocation(const FVector& LookDirection) const;
+
 private:
 
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -51,4 +60,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = Input, meta = (ClampMin = "-90", ClampMax = "90"))
 	float MaxPitch{ 45.0f };
+
+	UPROPERTY(EditDefaultsOnly, Category = Aim)
+	FVector2D CrosshairPositionFraction{};
+
+	float MaxAimDistanceMeters{ 1000.0f };
 };
