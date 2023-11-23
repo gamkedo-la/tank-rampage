@@ -19,6 +19,8 @@ public:
 	// Sets default values for this pawn's properties
 	ABaseTankPawn();
 
+	USpringArmComponent* GetCameraSpringArm() const;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -55,3 +57,14 @@ private:
 	UPROPERTY(Category = "Camera", VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> Camera{};
 };
+
+
+#pragma region Inline Definitions
+
+inline USpringArmComponent* ABaseTankPawn::GetCameraSpringArm() const
+{
+	check(CameraSpringArm);
+	return CameraSpringArm;
+}
+
+#pragma endregion Inline Definitions
