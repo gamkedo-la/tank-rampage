@@ -16,6 +16,11 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/PlayerCameraManager.h"
 
+ATankPlayerController::ATankPlayerController()
+{
+	PrimaryActorTick.bCanEverTick = true;
+}
+
 void ATankPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
@@ -39,6 +44,18 @@ void ATankPlayerController::SetupInputComponent()
 	{
 		UE_LOG(LogTRPlayer, Error, TEXT("%s: SetupPlayerInputComponent - LookAction not bound"), *GetName());
 	}
+}
+
+void ATankPlayerController::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	AimTowardCrosshair();
+}
+
+ABaseTankPawn* ATankPlayerController::GetControlledTank() const
+{
+	return Cast<ABaseTankPawn>(GetPawn());
 }
 
 void ATankPlayerController::InitializeInputMappingContext()
@@ -67,6 +84,19 @@ void ATankPlayerController::InitializeCamera()
 	// Invert the values
 	PlayerCameraManager->ViewPitchMin = -MaxPitch;
 	PlayerCameraManager->ViewPitchMax = -MinPitch;
+}
+
+void ATankPlayerController::AimTowardCrosshair()
+{
+	auto ControlledTank = GetControlledTank();
+	if (!ControlledTank)
+	{
+		return;
+	}
+
+	// TODO: Start the tank moving the barrel so that a shot would hit where the crosshair intersects the world
+	// Get world location with linetrace through crosshair
+	// If hit the landscape then tell the controlled tank to aim at the crosshair
 }
 
 void ATankPlayerController::OnLook(const FInputActionValue& Value)

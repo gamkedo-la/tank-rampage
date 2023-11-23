@@ -4,28 +4,37 @@
 
 #include "CoreMinimal.h"
 #include "BasePlayerController.h"
+#include "Interfaces/TankOwner.h"
 #include "TankPlayerController.generated.h"
 
 
 class UInputMappingContext;
 struct FInputActionValue;
 class UInputAction;
+class ABaseTankPawn;
 
 /**
  * 
  */
 UCLASS()
-class TRPLAYER_API ATankPlayerController : public ABasePlayerController
+class TRPLAYER_API ATankPlayerController : public ABasePlayerController, public ITankOwner
 {
 	GENERATED_BODY()
+
+public:
+	ATankPlayerController();
 
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
+	virtual void Tick(float DeltaTime) override;
+
+	virtual ABaseTankPawn* GetControlledTank() const override;
 
 private:
 	void InitializeInputMappingContext();
 	void InitializeCamera();
+	void AimTowardCrosshair();
 
 	void OnLook(const FInputActionValue& Value);
 
