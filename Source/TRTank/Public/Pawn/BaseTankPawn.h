@@ -4,14 +4,17 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+#include "VisualLogger/VisualLoggerDebugSnapshotInterface.h"
+
 #include "BaseTankPawn.generated.h"
 
 class UStaticMeshComponent;
 class USpringArmComponent;
 class UCameraComponent;
+class UTankAimingComponent;
 
 UCLASS()
-class TRTANK_API ABaseTankPawn : public APawn
+class TRTANK_API ABaseTankPawn : public APawn, public IVisualLoggerDebugSnapshotInterface
 {
 	GENERATED_BODY()
 
@@ -21,15 +24,27 @@ public:
 
 	USpringArmComponent* GetCameraSpringArm() const;
 
+	UFUNCTION(BlueprintCallable)
 	void AimAt(const FVector& Location);
+
+#if ENABLE_VISUAL_LOG
+	virtual void GrabDebugSnapshot(FVisualLogEntry* Snapshot) const override;
+#endif
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void PostInitializeComponents() override;
 
 	virtual void NotifyControllerChanged() override;
 
 private:
 	void UpdateSpringArmTickEnabled();
+
+
+protected:
+
+	UPROPERTY(Category = "Components", VisibleDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UTankAimingComponent> TankAimingComponent{};
 
 private:
 	UPROPERTY(Category = "Tank Model", VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -58,6 +73,9 @@ private:
 
 	UPROPERTY(Category = "Camera", VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> Camera{};
+
+	UPROPERTY(Category = "Firing", EditDefaultsOnly)
+	float TankShellSpeed{ 100000 };
 };
 
 

@@ -25,8 +25,13 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 
+#if ENABLE_VISUAL_LOG
+	virtual void GrabDebugSnapshot(FVisualLogEntry* Snapshot) const override;
+#endif
+
 private:
 	ABaseTankPawn* GetPlayerTank() const;
+
 	void AimAtPlayerTank(ABaseTankPawn& MyTank, const ABaseTankPawn& PlayerTank);
 	void MoveTowardPlayer(ABaseTankPawn& MyTank, const ABaseTankPawn& PlayerTank);
 	bool IsPlayerInRange(const ABaseTankPawn& MyTank, const ABaseTankPawn& PlayerTank) const;
@@ -34,4 +39,7 @@ private:
 private:
 	UPROPERTY(EditDefaultsOnly)
 	float MaxAggroDistanceMeters{ 100.0f };
+
+	UPROPERTY(EditDefaultsOnly)
+	float MinMoveDistanceMeters{ 10.0f };
 };

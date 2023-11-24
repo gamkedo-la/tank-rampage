@@ -56,5 +56,15 @@ void ATankAIController::MoveTowardPlayer(ABaseTankPawn& MyTank, const ABaseTankP
 
 bool ATankAIController::IsPlayerInRange(const ABaseTankPawn& MyTank, const ABaseTankPawn& PlayerTank) const
 {
-	return MyTank.GetDistanceTo(&PlayerTank) <= MaxAggroDistanceMeters;
+	return MyTank.GetSquaredDistanceTo(&PlayerTank) <= FMath::Square(MaxAggroDistanceMeters * 100);
 }
+
+#if ENABLE_VISUAL_LOG
+void ATankAIController::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
+{
+	Super::GrabDebugSnapshot(Snapshot);
+
+	auto& Category = Snapshot->Status[0];
+}
+
+#endif
