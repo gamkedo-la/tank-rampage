@@ -4,6 +4,8 @@
 #include "Components/TankAimingComponent.h"
 
 #include "TankSockets.h"
+#include "Components/TankTurretComponent.h"
+#include "Components/TankBarrelComponent.h"
 
 #include "TRTankLogging.h"
 #include "Logging/LoggingUtils.h"

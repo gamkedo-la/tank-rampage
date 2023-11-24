@@ -6,6 +6,8 @@
 #include "Components/ActorComponent.h"
 #include "TankAimingComponent.generated.h"
 
+class UTankBarrelComponent;
+class UTankTurretComponent;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UTankAimingComponent : public UActorComponent
@@ -16,8 +18,8 @@ public:
 
 	struct FTankComponents
 	{
-		UPrimitiveComponent* Barrel{};
-		UPrimitiveComponent* Turret{};
+		UTankBarrelComponent* Barrel{};
+		UTankTurretComponent* Turret{};
 	};
 
 	UTankAimingComponent();
@@ -43,8 +45,8 @@ private:
 
 private:
 	UPROPERTY(Transient)
-	TObjectPtr<UPrimitiveComponent> Barrel{};
+	TObjectPtr<UTankBarrelComponent> Barrel{};
 
 	UPROPERTY(Transient)
-	TObjectPtr<UPrimitiveComponent> Turret{};
+	TObjectPtr<UTankTurretComponent> Turret{};
 };

@@ -4,6 +4,8 @@
 #include "Pawn/BaseTankPawn.h"
 
 #include "Components/TankAimingComponent.h"
+#include "Components/TankTurretComponent.h"
+#include "Components/TankBarrelComponent.h"
 
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
@@ -29,10 +31,10 @@ ABaseTankPawn::ABaseTankPawn()
 	TankBody->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	TankBody->SetMassOverrideInKg(NAME_None, 40000);
 
-	TankTurret = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TankTurret"));
+	TankTurret = CreateDefaultSubobject<UTankTurretComponent>(TEXT("TankTurret"));
 	TankTurret->SetupAttachment(TankBody, TankSockets::TurretAttach);
 
-	TankBarrel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TankBarrel"));
+	TankBarrel = CreateDefaultSubobject<UTankBarrelComponent>(TEXT("TankBarrel"));
 	TankBarrel->SetupAttachment(TankTurret, TankSockets::GunAttach);
 
 	TankTreadRight = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TankTreadRight"));

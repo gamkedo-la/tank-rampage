@@ -12,6 +12,8 @@ class UStaticMeshComponent;
 class USpringArmComponent;
 class UCameraComponent;
 class UTankAimingComponent;
+class UTankTurretComponent;
+class UTankBarrelComponent;
 
 UCLASS()
 class TRTANK_API ABaseTankPawn : public APawn, public IVisualLoggerDebugSnapshotInterface
@@ -51,10 +53,10 @@ private:
 	TObjectPtr<UStaticMeshComponent> TankBody{};
 
 	UPROPERTY(Category = "Tank Model", VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UStaticMeshComponent> TankTurret{};
+	TObjectPtr<UTankTurretComponent> TankTurret{};
 
 	UPROPERTY(Category = "Tank Model", VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UStaticMeshComponent> TankBarrel{};
+	TObjectPtr<UTankBarrelComponent> TankBarrel{};
 
 	UPROPERTY(Category = "Tank Model", VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> TankTreadRight{};
