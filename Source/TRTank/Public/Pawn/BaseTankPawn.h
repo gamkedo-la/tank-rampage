@@ -14,6 +14,7 @@ class UCameraComponent;
 class UTankAimingComponent;
 class UTankTurretComponent;
 class UTankBarrelComponent;
+class AProjectile;
 
 UCLASS()
 class TRTANK_API ABaseTankPawn : public APawn, public IVisualLoggerDebugSnapshotInterface
@@ -81,6 +82,9 @@ private:
 
 	UPROPERTY(Category = "Firing", EditDefaultsOnly)
 	float TankShellSpeed{ 100000 };
+
+	UPROPERTY(Category = "Weapon", EditDefaultsOnly)
+	TSubclassOf<AProjectile> MainGunProjectile{};
 };
 
 

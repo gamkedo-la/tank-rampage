@@ -12,6 +12,7 @@
 #include "Components/StaticMeshComponent.h"
 
 #include "TankSockets.h"
+#include "Projectile.h"
 
 #include "TRTankLogging.h"
 #include "Logging/LoggingUtils.h"
@@ -108,7 +109,35 @@ void ABaseTankPawn::AimAt(const FVector& Location)
 
 void ABaseTankPawn::Fire()
 {
-	UE_VLOG_UELOG(this, LogTRTank, Log, TEXT("%s: Fire"), *GetName());
+	check(TankBarrel);
+
+	auto World = GetWorld();
+	if (!World)
+	{
+		UE_VLOG_UELOG(this, LogTRTank, Error, TEXT("%s: Fire: World is NULL"), *GetName());
+		return;
+	}
+
+	if (!MainGunProjectile)
+	{
+		UE_VLOG_UELOG(this, LogTRTank, Error, TEXT("%s: Fire: MainGunProjectile is NULL"), *GetName());
+		return;
+	}
+
+	const FVector SpawnLocation = TankBarrel->GetSocketLocation(TankSockets::GunFire);
+	FActorSpawnParameters SpawnParameters;
+	SpawnParameters.Instigator = this;
+	SpawnParameters.Owner = this;
+
+	auto SpawnedProjectile = World->SpawnActor<AProjectile>(MainGunProjectile, SpawnLocation, FRotator::ZeroRotator, SpawnParameters);
+
+	if (!SpawnedProjectile)
+	{
+		UE_VLOG_UELOG(this, LogTRTank, Warning, TEXT("%s: Fire: Unable to spawn projectile %s at %s"), *GetName(), *LoggingUtils::GetName(MainGunProjectile), *SpawnLocation.ToCompactString());
+		return;
+	}
+
+	UE_VLOG_UELOG(this, LogTRTank, Log, TEXT("%s: Fire: %s at %s"), *GetName(), *LoggingUtils::GetName(MainGunProjectile), *SpawnLocation.ToCompactString());
 }
 
 #if ENABLE_VISUAL_LOG
