@@ -9,9 +9,21 @@
 /**
  * 
  */
-UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent), HideCategories = ("Collision"))
 class UTankTurretComponent : public UStaticMeshComponent
 {
 	GENERATED_BODY()
-	
+
+public:
+
+	/*
+	* Rotate the barrel at given relative speed.
+	*
+	* @param RelativeSpeed -1 is max downward movement and 1 is max upward movement
+	*/
+	void Rotate(float RelativeSpeed);
+
+private:
+	UPROPERTY(EditAnywhere, Category = Setup)
+	float MaxDegreesPerSecond{ 45.0f };
 };

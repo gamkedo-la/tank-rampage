@@ -13,6 +13,11 @@
 
 #include "Kismet/GameplayStatics.h"
 
+namespace
+{
+	float ClampDeltaYaw(float Yaw);
+}
+
 UTankAimingComponent::UTankAimingComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
@@ -84,21 +89,23 @@ void UTankAimingComponent::AimAt(const FVector& Location, float LaunchSpeed)
 
 void UTankAimingComponent::MoveBarrelTowards(const FVector& AimDirection) const
 {
-	// TODO: Move at given rotate and pitch speed
-
 	check(Barrel && Turret);
 
 	const auto TargetRotation = AimDirection.Rotation();
+	const auto BarrelRotator = Barrel->GetForwardVector().Rotation();
 
-	const auto& CurrentBarrelRotation = Barrel->GetComponentRotation();
+	const auto DesiredRotator = TargetRotation - Barrel->GetForwardVector().Rotation();
 
-	const FRotator FinalBarrelRotation{ TargetRotation.Pitch, CurrentBarrelRotation.Yaw, CurrentBarrelRotation.Roll };
-	Barrel->SetWorldRotation(FinalBarrelRotation);
+	// TODO: AimDeadZoneDegrees prevents violent shaking - possibly this is a rotation centering issue in model or the socket
+	if (FMath::Abs(DesiredRotator.Pitch) > AimDeadZoneDegrees)
+	{
+		Barrel->Elevate(DesiredRotator.Pitch);
+	}
 
-	const auto& CurrentTurretRotation = Turret->GetComponentRotation();
-
-	const FRotator FinalTurretRotation = FRotator{ CurrentTurretRotation.Pitch, TargetRotation.Yaw, CurrentTurretRotation.Roll };
-	Turret->SetWorldRotation(FinalTurretRotation);
+	if (FMath::Abs(DesiredRotator.Yaw) > AimDeadZoneDegrees)
+	{
+		Turret->Rotate(ClampDeltaYaw(DesiredRotator.Yaw));
+	}
 }
 
 #if ENABLE_VISUAL_LOG
@@ -112,3 +119,19 @@ void UTankAimingComponent::DescribeSelfToVisLog(FVisualLogEntry* Snapshot) const
 }
 
 #endif
+
+namespace
+{
+	float ClampDeltaYaw(float Yaw)
+	{
+		auto ClampedAngle = FMath::Fmod(Yaw + 180.0f, 360.0f);
+		if (ClampedAngle < 0.0f)
+		{
+			ClampedAngle += 360.0f;
+		}
+
+		ClampedAngle -= 180.0f;
+
+		return ClampedAngle;
+	}
+}

@@ -49,4 +49,7 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UTankTurretComponent> Turret{};
+
+	UPROPERTY(Category = Setup, EditDefaultsOnly)
+	float AimDeadZoneDegrees{ 1.25f };
 };
