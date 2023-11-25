@@ -40,6 +40,7 @@ private:
 	void AimTowardCrosshair();
 
 	void OnLook(const FInputActionValue& Value);
+	void OnFire();
 
 	std::optional<FVector> GetRaySightHitLocation() const;
 
@@ -54,6 +55,9 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> LookAction{};
+
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> FireAction{};
 
 	UPROPERTY(EditDefaultsOnly, Category = Input, meta=(ClampMin = "-90", ClampMax = "90"))
 	float MinPitch{ -20.0f };

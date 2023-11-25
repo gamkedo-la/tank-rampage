@@ -106,6 +106,11 @@ void ABaseTankPawn::AimAt(const FVector& Location)
 	TankAimingComponent->AimAt(Location, TankShellSpeed);
 }
 
+void ABaseTankPawn::Fire()
+{
+	UE_VLOG_UELOG(this, LogTRTank, Log, TEXT("%s: Fire"), *GetName());
+}
+
 #if ENABLE_VISUAL_LOG
 
 void ABaseTankPawn::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const

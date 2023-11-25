@@ -44,6 +44,15 @@ void ATankPlayerController::SetupInputComponent()
 	{
 		UE_LOG(LogTRPlayer, Error, TEXT("%s: SetupPlayerInputComponent - LookAction not bound"), *GetName());
 	}
+
+	if (FireAction)
+	{
+		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this, &ThisClass::OnFire);
+	}
+	else
+	{
+		UE_LOG(LogTRPlayer, Error, TEXT("%s: SetupPlayerInputComponent - FireAction not bound"), *GetName());
+	}
 }
 
 void ATankPlayerController::Tick(float DeltaTime)
@@ -104,6 +113,17 @@ void ATankPlayerController::AimTowardCrosshair()
 	const auto& HitLocation = *MaybeHitLocation;
 
 	ControlledTank->AimAt(HitLocation);
+}
+
+void ATankPlayerController::OnFire()
+{
+	auto ControlledTank = GetControlledTank();
+	if (!ControlledTank)
+	{
+		return;
+	}
+
+	ControlledTank->Fire();
 }
 
 void ATankPlayerController::OnLook(const FInputActionValue& Value)

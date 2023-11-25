@@ -29,6 +29,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void AimAt(const FVector& Location);
 
+	UFUNCTION(BlueprintCallable)
+	void Fire();
+
 #if ENABLE_VISUAL_LOG
 	virtual void GrabDebugSnapshot(FVisualLogEntry* Snapshot) const override;
 #endif

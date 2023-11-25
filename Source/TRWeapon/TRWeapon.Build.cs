@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class TRTank : ModuleRules
+public class TRWeapon : ModuleRules
 {
-	public TRTank(ReadOnlyTargetRules Target) : base(Target)
+	public TRWeapon(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
@@ -32,7 +32,6 @@ public class TRTank : ModuleRules
 		var modulePrivateDependencyModuleNames = new string[]
 		{
 			"TRCore",
-			"TRWeapon",
 		};
 
 		var enginePrivateDependencyModuleNames = new string[] 
