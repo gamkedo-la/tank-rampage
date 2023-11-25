@@ -88,15 +88,17 @@ void UTankAimingComponent::MoveBarrelTowards(const FVector& AimDirection) const
 
 	check(Barrel && Turret);
 
-	const auto BarrelRotationDelta = AimDirection.Rotation() - Barrel->GetForwardVector().Rotation();
+	const auto TargetRotation = AimDirection.Rotation();
 
-	const FRotator BarrelRotation = FRotator{ BarrelRotationDelta.Pitch, 0, 0 };
-	Barrel->AddWorldRotation(BarrelRotation);
+	const auto& CurrentBarrelRotation = Barrel->GetComponentRotation();
 
-	const auto TurretRotationDelta = AimDirection.Rotation() - Turret->GetForwardVector().Rotation();
+	const FRotator FinalBarrelRotation{ TargetRotation.Pitch, CurrentBarrelRotation.Yaw, CurrentBarrelRotation.Roll };
+	Barrel->SetWorldRotation(FinalBarrelRotation);
 
-	const FRotator TurretRotation = FRotator{ 0, TurretRotationDelta.Yaw, 0 };
-	Turret->AddWorldRotation(TurretRotation);
+	const auto& CurrentTurretRotation = Turret->GetComponentRotation();
+
+	const FRotator FinalTurretRotation = FRotator{ CurrentTurretRotation.Pitch, TargetRotation.Yaw, CurrentTurretRotation.Roll };
+	Turret->SetWorldRotation(FinalTurretRotation);
 }
 
 #if ENABLE_VISUAL_LOG
