@@ -53,6 +53,24 @@ void ATankPlayerController::SetupInputComponent()
 	{
 		UE_LOG(LogTRPlayer, Error, TEXT("%s: SetupPlayerInputComponent - FireAction not bound"), *GetName());
 	}
+
+	if (LeftTrackThrottleAction)
+	{
+		EnhancedInputComponent->BindAction(LeftTrackThrottleAction, ETriggerEvent::Triggered, this, &ThisClass::OnThrottleLeft);
+	}
+	else
+	{
+		UE_LOG(LogTRPlayer, Error, TEXT("%s: SetupPlayerInputComponent - LeftTrackThrottleAction not bound"), *GetName());
+	}
+
+	if (RightTrackThrottleAction)
+	{
+		EnhancedInputComponent->BindAction(RightTrackThrottleAction, ETriggerEvent::Triggered, this, &ThisClass::OnThrottleRight);
+	}
+	else
+	{
+		UE_LOG(LogTRPlayer, Error, TEXT("%s: SetupPlayerInputComponent - RightTrackThrottleAction not bound"), *GetName());
+	}
 }
 
 void ATankPlayerController::Tick(float DeltaTime)
@@ -124,6 +142,32 @@ void ATankPlayerController::OnFire()
 	}
 
 	ControlledTank->Fire();
+}
+
+void ATankPlayerController::OnThrottleLeft(const FInputActionValue& Value)
+{
+	const auto ThrottleValue = Value.Get<float>();
+
+	auto ControlledTank = GetControlledTank();
+	if (!ControlledTank)
+	{
+		return;
+	}
+
+	ControlledTank->SetLeftThrottle(ThrottleValue);
+}
+
+void ATankPlayerController::OnThrottleRight(const FInputActionValue& Value)
+{
+	const auto ThrottleValue = Value.Get<float>();
+
+	auto ControlledTank = GetControlledTank();
+	if (!ControlledTank)
+	{
+		return;
+	}
+
+	ControlledTank->SetRightThrottle(ThrottleValue);
 }
 
 void ATankPlayerController::OnLook(const FInputActionValue& Value)

@@ -14,6 +14,8 @@ class UCameraComponent;
 class UTankAimingComponent;
 class UTankTurretComponent;
 class UTankBarrelComponent;
+class UTankTrackComponent;
+
 class AProjectile;
 
 UCLASS()
@@ -32,6 +34,12 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void Fire();
+
+	UFUNCTION(BlueprintCallable)
+	void SetLeftThrottle(float Value);
+
+	UFUNCTION(BlueprintCallable)
+	void SetRightThrottle(float Value);
 
 #if ENABLE_VISUAL_LOG
 	virtual void GrabDebugSnapshot(FVisualLogEntry* Snapshot) const override;
@@ -65,10 +73,10 @@ private:
 	TObjectPtr<UTankBarrelComponent> TankBarrel{};
 
 	UPROPERTY(Category = "Tank Model", VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UStaticMeshComponent> TankTreadRight{};
+	TObjectPtr<UTankTrackComponent> TankTreadRight{};
 
 	UPROPERTY(Category = "Tank Model", VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UStaticMeshComponent> TankTreadLeft{};
+	TObjectPtr<UTankTrackComponent> TankTreadLeft{};
 
 	UPROPERTY(Category = "Tank Model", VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> TankTreadSideLeft{};

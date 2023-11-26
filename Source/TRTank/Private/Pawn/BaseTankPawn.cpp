@@ -6,6 +6,7 @@
 #include "Components/TankAimingComponent.h"
 #include "Components/TankTurretComponent.h"
 #include "Components/TankBarrelComponent.h"
+#include "Components/TankTrackComponent.h"
 
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
@@ -38,10 +39,10 @@ ABaseTankPawn::ABaseTankPawn()
 	TankBarrel = CreateDefaultSubobject<UTankBarrelComponent>(TEXT("TankBarrel"));
 	TankBarrel->SetupAttachment(TankTurret, TankSockets::GunAttach);
 
-	TankTreadRight = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TankTreadRight"));
+	TankTreadRight = CreateDefaultSubobject<UTankTrackComponent>(TEXT("TankTreadRight"));
 	TankTreadRight->SetupAttachment(TankBody, TankSockets::TreadRightAttach);
 
-	TankTreadLeft = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TankTreadLeft"));
+	TankTreadLeft = CreateDefaultSubobject<UTankTrackComponent>(TEXT("TankTreadLeft"));
 	TankTreadLeft->SetupAttachment(TankBody, TankSockets::TreadLeftAttach);
 
 	TankTreadSideRight = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TankTreadSideRight"));
@@ -163,6 +164,18 @@ void ABaseTankPawn::Fire()
 	SpawnedProjectile->Launch(TankShellSpeed);
 
 	LastFireTimeSeconds = World->GetTimeSeconds();
+}
+
+void ABaseTankPawn::SetLeftThrottle(float Value)
+{
+	check(TankTreadLeft);
+	TankTreadLeft->SetThrottle(Value);
+}
+
+void ABaseTankPawn::SetRightThrottle(float Value)
+{
+	check(TankTreadRight);
+	TankTreadRight->SetThrottle(Value);
 }
 
 #if ENABLE_VISUAL_LOG
