@@ -102,6 +102,19 @@ void ABaseTankPawn::UpdateSpringArmTickEnabled()
 	}
 }
 
+bool ABaseTankPawn::CanFire() const
+{
+	auto World = GetWorld();
+	check(World);
+
+	if (LastFireTimeSeconds < 0)
+	{
+		return true;
+	}
+
+	return World->GetTimeSeconds() - LastFireTimeSeconds > FireCooldownTimeSeconds;
+}
+
 void ABaseTankPawn::AimAt(const FVector& Location)
 {
 	TankAimingComponent->AimAt(Location, TankShellSpeed);
@@ -124,20 +137,32 @@ void ABaseTankPawn::Fire()
 		return;
 	}
 
+	if (!CanFire())
+	{
+		return;
+	}
+
+
 	const FVector SpawnLocation = TankBarrel->GetSocketLocation(TankSockets::GunFire);
+	const FRotator SpawnRotation = TankBarrel->GetSocketRotation(TankSockets::GunFire);
+
 	FActorSpawnParameters SpawnParameters;
 	SpawnParameters.Instigator = this;
 	SpawnParameters.Owner = this;
 
-	auto SpawnedProjectile = World->SpawnActor<AProjectile>(MainGunProjectile, SpawnLocation, FRotator::ZeroRotator, SpawnParameters);
+	auto SpawnedProjectile = World->SpawnActor<AProjectile>(MainGunProjectile, SpawnLocation, SpawnRotation, SpawnParameters);
 
 	if (!SpawnedProjectile)
 	{
-		UE_VLOG_UELOG(this, LogTRTank, Warning, TEXT("%s: Fire: Unable to spawn projectile %s at %s"), *GetName(), *LoggingUtils::GetName(MainGunProjectile), *SpawnLocation.ToCompactString());
+		UE_VLOG_UELOG(this, LogTRTank, Warning, TEXT("%s: Fire: Unable to spawn projectile %s at %s with rotation=%s"), *GetName(), *LoggingUtils::GetName(MainGunProjectile), *SpawnLocation.ToCompactString());
 		return;
 	}
 
-	UE_VLOG_UELOG(this, LogTRTank, Log, TEXT("%s: Fire: %s at %s"), *GetName(), *LoggingUtils::GetName(MainGunProjectile), *SpawnLocation.ToCompactString());
+	UE_VLOG_UELOG(this, LogTRTank, Log, TEXT("%s: Fire: %s at %s"), *GetName(), *LoggingUtils::GetName(MainGunProjectile), *SpawnLocation.ToCompactString(), *SpawnRotation.ToCompactString());
+
+	SpawnedProjectile->Launch(TankShellSpeed);
+
+	LastFireTimeSeconds = World->GetTimeSeconds();
 }
 
 #if ENABLE_VISUAL_LOG

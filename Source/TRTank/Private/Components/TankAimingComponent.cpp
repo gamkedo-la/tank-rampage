@@ -72,7 +72,7 @@ void UTankAimingComponent::AimAt(const FVector& Location, float LaunchSpeed)
 		ESuggestProjVelocityTraceOption::DoNotTrace,
 		{},
 		{},
-		true);
+		false);
 
 	const auto AimDirection = ProjectileVelocity.GetSafeNormal();
 

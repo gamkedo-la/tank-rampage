@@ -7,6 +7,7 @@
 #include "Projectile.generated.h"
 
 class UStaticMeshComponent;
+class UProjectileMovementComponent;
 
 UCLASS()
 class TRWEAPON_API AProjectile : public AActor
@@ -16,6 +17,9 @@ class TRWEAPON_API AProjectile : public AActor
 public:	
 	AProjectile();
 
+	UFUNCTION(BlueprintCallable)
+	void Launch(float Speed);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
@@ -23,4 +27,7 @@ protected:
 private:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> ProjectileMesh{};
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UProjectileMovementComponent> ProjectileMovementComponent{};
 };

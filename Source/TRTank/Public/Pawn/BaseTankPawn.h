@@ -46,6 +46,8 @@ protected:
 private:
 	void UpdateSpringArmTickEnabled();
 
+	bool CanFire() const;
+
 
 protected:
 
@@ -80,8 +82,14 @@ private:
 	UPROPERTY(Category = "Camera", VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> Camera{};
 
+	// TODO: Move to a weapon subclass of item
 	UPROPERTY(Category = "Firing", EditDefaultsOnly)
 	float TankShellSpeed{ 100000 };
+
+	UPROPERTY(Category = "Firing", EditDefaultsOnly)
+	float FireCooldownTimeSeconds{ 3.0f };
+
+	float LastFireTimeSeconds{ -1.0f };
 
 	UPROPERTY(Category = "Weapon", EditDefaultsOnly)
 	TSubclassOf<AProjectile> MainGunProjectile{};

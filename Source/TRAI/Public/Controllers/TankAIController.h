@@ -30,11 +30,20 @@ public:
 #endif
 
 private:
+
+	struct FTankAIContext
+	{
+		ABaseTankPawn& MyTank;
+		const ABaseTankPawn& PlayerTank;
+	};
+
 	ABaseTankPawn* GetPlayerTank() const;
 
-	void AimAtPlayerTank(ABaseTankPawn& MyTank, const ABaseTankPawn& PlayerTank);
-	void MoveTowardPlayer(ABaseTankPawn& MyTank, const ABaseTankPawn& PlayerTank);
-	bool IsPlayerInRange(const ABaseTankPawn& MyTank, const ABaseTankPawn& PlayerTank) const;
+	void AimAtPlayerTank(const FTankAIContext& AIContext);
+	void Fire(const FTankAIContext& AIContext);
+
+	void MoveTowardPlayer(const FTankAIContext& AIContext);
+	bool IsPlayerInRange(const FTankAIContext& AIContext) const;
 
 private:
 	UPROPERTY(EditDefaultsOnly)

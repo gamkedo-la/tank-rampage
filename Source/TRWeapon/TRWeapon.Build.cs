@@ -2,6 +2,7 @@
 
 using UnrealBuildTool;
 
+// TODO: Refactor to TRItem - use redirectors to fix existing UCLASS,USTRUCT, or UENUM references
 public class TRWeapon : ModuleRules
 {
 	public TRWeapon(ReadOnlyTargetRules Target) : base(Target)

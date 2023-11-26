@@ -29,14 +29,21 @@ void ATankAIController::Tick(float DeltaTime)
 		return;
 	}
 
-	if (!IsPlayerInRange(*ControlledTank, *PlayerTank))
+	FTankAIContext AIContext
+	{
+		.MyTank = *ControlledTank,
+		.PlayerTank = *PlayerTank
+	};
+
+	if (!IsPlayerInRange(AIContext))
 	{
 		return;
 	}
 
-	AimAtPlayerTank(*ControlledTank, *PlayerTank);
-	MoveTowardPlayer(*ControlledTank, *PlayerTank);
+	AimAtPlayerTank(AIContext);
+	Fire(AIContext);
 
+	MoveTowardPlayer(AIContext);
 }
 
 ABaseTankPawn* ATankAIController::GetPlayerTank() const
@@ -44,19 +51,24 @@ ABaseTankPawn* ATankAIController::GetPlayerTank() const
 	return Cast<ABaseTankPawn>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
 }
 
-void ATankAIController::AimAtPlayerTank(ABaseTankPawn& MyTank, const ABaseTankPawn& PlayerTank)
+void ATankAIController::Fire(const FTankAIContext& AIContext)
 {
-	MyTank.AimAt(PlayerTank.GetActorLocation());
+	AIContext.MyTank.Fire();
 }
 
-void ATankAIController::MoveTowardPlayer(ABaseTankPawn& MyTank, const ABaseTankPawn& PlayerTank)
+void ATankAIController::AimAtPlayerTank(const FTankAIContext& AIContext)
+{
+	AIContext.MyTank.AimAt(AIContext.PlayerTank.GetActorLocation());
+}
+
+void ATankAIController::MoveTowardPlayer(const FTankAIContext& AIContext)
 {
 	// TODO:
 }
 
-bool ATankAIController::IsPlayerInRange(const ABaseTankPawn& MyTank, const ABaseTankPawn& PlayerTank) const
+bool ATankAIController::IsPlayerInRange(const FTankAIContext& AIContext) const
 {
-	return MyTank.GetSquaredDistanceTo(&PlayerTank) <= FMath::Square(MaxAggroDistanceMeters * 100);
+	return AIContext.MyTank.GetSquaredDistanceTo(&AIContext.PlayerTank) <= FMath::Square(MaxAggroDistanceMeters * 100);
 }
 
 #if ENABLE_VISUAL_LOG
