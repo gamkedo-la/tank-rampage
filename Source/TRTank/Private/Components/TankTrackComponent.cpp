@@ -9,11 +9,9 @@
 
 void UTankTrackComponent::SetThrottle(float InThrottle)
 {
-	// TODO: Clamp actual throttle
-	UE_LOG(LogTemp, Warning, TEXT("%s-%s: SetThrottle: %f"),
-		*LoggingUtils::GetName(GetOwner()), *GetName(), InThrottle);
+	const auto Throttle = FMath::Clamp(InThrottle, -1.0f, 1.0f);
 
-	auto ForceApplied = GetForwardVector() * InThrottle * TrackMaxDrivingForce;
+	auto ForceApplied = GetForwardVector() * Throttle * TrackMaxDrivingForce;
 	const auto& ForceLocation = GetComponentLocation();
 
 	auto RootComponent = Cast<UPrimitiveComponent>(GetOwner()->GetRootComponent());

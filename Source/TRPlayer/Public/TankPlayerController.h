@@ -41,8 +41,7 @@ private:
 
 	void OnLook(const FInputActionValue& Value);
 	void OnFire();
-	void OnThrottleLeft(const FInputActionValue& Value);
-	void OnThrottleRight(const FInputActionValue& Value);
+	void OnMove(const FInputActionValue& Value);
 
 	std::optional<FVector> GetRaySightHitLocation() const;
 
@@ -62,10 +61,7 @@ private:
 	TObjectPtr<UInputAction> FireAction{};
 
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UInputAction> LeftTrackThrottleAction{};
-
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UInputAction> RightTrackThrottleAction{};
+	TObjectPtr<UInputAction> MoveAction{};
 
 	UPROPERTY(EditDefaultsOnly, Category = Input, meta=(ClampMin = "-90", ClampMax = "90"))
 	float MinPitch{ -20.0f };

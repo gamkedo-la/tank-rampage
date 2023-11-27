@@ -15,6 +15,7 @@ class UTankAimingComponent;
 class UTankTurretComponent;
 class UTankBarrelComponent;
 class UTankTrackComponent;
+class UTankMovementComponent;
 
 class AProjectile;
 
@@ -41,6 +42,12 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetRightThrottle(float Value);
 
+	UFUNCTION(BlueprintCallable)
+	void MoveForward(float Throw);
+
+	UFUNCTION(BlueprintCallable)
+	void TurnRight(float Throw);
+
 #if ENABLE_VISUAL_LOG
 	virtual void GrabDebugSnapshot(FVisualLogEntry* Snapshot) const override;
 #endif
@@ -61,6 +68,9 @@ protected:
 
 	UPROPERTY(Category = "Components", VisibleDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UTankAimingComponent> TankAimingComponent{};
+
+	UPROPERTY(Category = "Components", VisibleDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UTankMovementComponent> TankMovementComponent{};
 
 private:
 	UPROPERTY(Category = "Tank Model", VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))

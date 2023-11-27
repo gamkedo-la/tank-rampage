@@ -54,22 +54,13 @@ void ATankPlayerController::SetupInputComponent()
 		UE_LOG(LogTRPlayer, Error, TEXT("%s: SetupPlayerInputComponent - FireAction not bound"), *GetName());
 	}
 
-	if (LeftTrackThrottleAction)
+	if (MoveAction)
 	{
-		EnhancedInputComponent->BindAction(LeftTrackThrottleAction, ETriggerEvent::Triggered, this, &ThisClass::OnThrottleLeft);
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ThisClass::OnMove);
 	}
 	else
 	{
-		UE_LOG(LogTRPlayer, Error, TEXT("%s: SetupPlayerInputComponent - LeftTrackThrottleAction not bound"), *GetName());
-	}
-
-	if (RightTrackThrottleAction)
-	{
-		EnhancedInputComponent->BindAction(RightTrackThrottleAction, ETriggerEvent::Triggered, this, &ThisClass::OnThrottleRight);
-	}
-	else
-	{
-		UE_LOG(LogTRPlayer, Error, TEXT("%s: SetupPlayerInputComponent - RightTrackThrottleAction not bound"), *GetName());
+		UE_LOG(LogTRPlayer, Error, TEXT("%s: SetupPlayerInputComponent - MoveAction not bound"), *GetName());
 	}
 }
 
@@ -144,30 +135,18 @@ void ATankPlayerController::OnFire()
 	ControlledTank->Fire();
 }
 
-void ATankPlayerController::OnThrottleLeft(const FInputActionValue& Value)
+void ATankPlayerController::OnMove(const FInputActionValue& Value)
 {
-	const auto ThrottleValue = Value.Get<float>();
-
 	auto ControlledTank = GetControlledTank();
 	if (!ControlledTank)
 	{
 		return;
 	}
 
-	ControlledTank->SetLeftThrottle(ThrottleValue);
-}
+	const auto MoveAxisValue = Value.Get<FVector2D>();
 
-void ATankPlayerController::OnThrottleRight(const FInputActionValue& Value)
-{
-	const auto ThrottleValue = Value.Get<float>();
-
-	auto ControlledTank = GetControlledTank();
-	if (!ControlledTank)
-	{
-		return;
-	}
-
-	ControlledTank->SetRightThrottle(ThrottleValue);
+	ControlledTank->MoveForward(MoveAxisValue.Y);
+	ControlledTank->TurnRight(MoveAxisValue.X);
 }
 
 void ATankPlayerController::OnLook(const FInputActionValue& Value)

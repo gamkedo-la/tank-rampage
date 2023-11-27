@@ -7,6 +7,7 @@
 #include "Components/TankTurretComponent.h"
 #include "Components/TankBarrelComponent.h"
 #include "Components/TankTrackComponent.h"
+#include "Components/TankMovementComponent.h"
 
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
@@ -61,6 +62,7 @@ ABaseTankPawn::ABaseTankPawn()
 	Camera->SetupAttachment(CameraSpringArm);
 
 	TankAimingComponent = CreateDefaultSubobject<UTankAimingComponent>(TEXT("TankAimingComponent"));
+	TankMovementComponent = CreateDefaultSubobject<UTankMovementComponent>(TEXT("TankMovement"));
 }
 
 // Called when the game starts or when spawned
@@ -77,6 +79,12 @@ void ABaseTankPawn::PostInitializeComponents()
 		{
 				.Barrel = TankBarrel,
 				.Turret = TankTurret
+		});
+
+	TankMovementComponent->Initialize(
+		{
+			.LeftTrack = TankTreadLeft,
+			.RightTrack = TankTreadRight
 		});
 }
 
@@ -176,6 +184,18 @@ void ABaseTankPawn::SetRightThrottle(float Value)
 {
 	check(TankTreadRight);
 	TankTreadRight->SetThrottle(Value);
+}
+
+void ABaseTankPawn::MoveForward(float Throw)
+{
+	check(TankMovementComponent);
+	TankMovementComponent->MoveForward(Throw);
+}
+
+void ABaseTankPawn::TurnRight(float Throw)
+{
+	check(TankMovementComponent);
+	TankMovementComponent->TurnRight(Throw);
 }
 
 #if ENABLE_VISUAL_LOG
