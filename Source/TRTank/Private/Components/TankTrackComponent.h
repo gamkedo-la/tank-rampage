@@ -16,8 +16,13 @@ class UTankTrackComponent : public UStaticMeshComponent
 
 public:
 
+	UTankTrackComponent();
+
 	UFUNCTION(BlueprintCallable, Category = Input)
 	void SetThrottle(float InThrottle);
+
+protected:
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 private:
 
