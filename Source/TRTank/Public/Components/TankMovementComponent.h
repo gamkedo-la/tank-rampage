@@ -34,6 +34,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void TurnRight(float Throw);
 
+	virtual void RequestDirectMove(const FVector& MoveVelocity, bool bForceMaxSpeed) override;
+
 private:
 	UPROPERTY(Transient)
 	TObjectPtr<UTankTrackComponent> LeftTrack{};

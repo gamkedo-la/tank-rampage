@@ -34,7 +34,7 @@ private:
 	struct FTankAIContext
 	{
 		ABaseTankPawn& MyTank;
-		const ABaseTankPawn& PlayerTank;
+		ABaseTankPawn& PlayerTank;
 	};
 
 	ABaseTankPawn* GetPlayerTank() const;
@@ -51,4 +51,7 @@ private:
 
 	UPROPERTY(EditDefaultsOnly)
 	float MinMoveDistanceMeters{ 10.0f };
+
+	UPROPERTY(EditDefaultsOnly)
+	float MovementAcceptanceRadius{ 1000.0f };
 };

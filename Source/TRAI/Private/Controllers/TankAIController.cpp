@@ -63,7 +63,7 @@ void ATankAIController::AimAtPlayerTank(const FTankAIContext& AIContext)
 
 void ATankAIController::MoveTowardPlayer(const FTankAIContext& AIContext)
 {
-	// TODO:
+	MoveToActor(&AIContext.PlayerTank, MovementAcceptanceRadius);
 }
 
 bool ATankAIController::IsPlayerInRange(const FTankAIContext& AIContext) const

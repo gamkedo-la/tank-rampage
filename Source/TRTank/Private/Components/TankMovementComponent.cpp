@@ -49,6 +49,16 @@ void UTankMovementComponent::TurnRight(float Throw)
 	RightTrack->SetThrottle(-Throw);
 }
 
+void UTankMovementComponent::RequestDirectMove(const FVector& MoveVelocity, bool bForceMaxSpeed)
+{
+	const auto MoveDirection = MoveVelocity.GetSafeNormal();
+	const auto& ForwardVector = GetOwner()->GetActorForwardVector();
+
+	const auto ForwardThrow = MoveDirection | ForwardVector;
+
+	MoveForward(ForwardThrow);
+}
+
 FString UTankMovementComponent::FInitParams::ToString() const
 {
 	return FString::Printf(TEXT("LeftTrack=%s; RightTrack=%s"),

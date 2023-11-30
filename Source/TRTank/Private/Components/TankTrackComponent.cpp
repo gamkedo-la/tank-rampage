@@ -28,6 +28,9 @@ void UTankTrackComponent::SetThrottle(float InThrottle)
 		return;
 	}
 
+	UE_LOG(LogTRTank, Verbose, TEXT("%s-%s: SetThrottle: %f"),
+		*LoggingUtils::GetName(GetOwner()), *GetName(), Throttle);
+
 	RootComponent->AddForceAtLocation(ForceApplied, ForceLocation);
 }
 
