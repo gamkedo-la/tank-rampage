@@ -34,6 +34,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void TurnRight(float Throw);
 
+protected:
 	virtual void RequestDirectMove(const FVector& MoveVelocity, bool bForceMaxSpeed) override;
 
 private:

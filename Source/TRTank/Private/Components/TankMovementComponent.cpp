@@ -57,6 +57,9 @@ void UTankMovementComponent::RequestDirectMove(const FVector& MoveVelocity, bool
 	const auto ForwardThrow = MoveDirection | ForwardVector;
 
 	MoveForward(ForwardThrow);
+
+	const auto RightThrow = (ForwardVector ^ MoveDirection).Z;
+	TurnRight(RightThrow);
 }
 
 FString UTankMovementComponent::FInitParams::ToString() const
