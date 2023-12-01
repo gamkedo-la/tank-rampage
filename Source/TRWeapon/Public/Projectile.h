@@ -30,4 +30,7 @@ private:
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovementComponent{};
+
+	UPROPERTY(EditDefaultsOnly)
+	float MaxLifetime{ 10.0f };
 };

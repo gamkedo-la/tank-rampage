@@ -21,6 +21,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Input)
 	void SetThrottle(float InThrottle);
 
+	UFUNCTION(BlueprintPure)
+	bool IsGrounded() const;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -28,11 +31,6 @@ protected:
 	void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction);
 
 private:
-
-	UFUNCTION()
-	void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
-		UPrimitiveComponent* OtherComp, FVector NormalImpulse,
-		const FHitResult& Hit);
 
 	void DriveTrack(float Throttle);
 
@@ -42,8 +40,4 @@ private:
 	float TrackMaxDrivingForce{ 4.0e5f };
 
 	float CurrentThrottle{};
-	float LastHitTimeSeconds{};
-
-	UPROPERTY(EditDefaultsOnly, Category = Throttle)
-	float LastHitMinDeltaTime{ 1.0f };
 };

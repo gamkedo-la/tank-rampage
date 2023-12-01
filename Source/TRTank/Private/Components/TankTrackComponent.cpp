@@ -13,8 +13,8 @@ UTankTrackComponent::UTankTrackComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 
-	BodyInstance.bNotifyRigidBodyCollision = true;
-	BodyInstance.bUseCCD = true;
+	BodyInstance.bNotifyRigidBodyCollision = false;
+	BodyInstance.bUseCCD = false;
 }
 
 void UTankTrackComponent::SetThrottle(float InThrottle)
@@ -22,17 +22,29 @@ void UTankTrackComponent::SetThrottle(float InThrottle)
 	CurrentThrottle = FMath::Clamp(InThrottle + CurrentThrottle, -1.0f, 1.0f);
 }
 
-void UTankTrackComponent::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, FVector NormalImpulse,
-	const FHitResult& Hit)
+bool UTankTrackComponent::IsGrounded() const
 {
-	// ApplySidewaysForce(GetWorld()->GetDeltaSeconds());
+	auto World = GetWorld();
+	if (!World)
+	{
+		return false;
+	}
 
-	//DriveTrack(CurrentThrottle);
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(GetOwner());
 
-	//CurrentThrottle = 0;
+	FHitResult HitResult;
 
-	LastHitTimeSeconds = GetWorld()->GetTimeSeconds();
+	const auto& UpVector = GetUpVector();
+
+	const auto StartLocation = GetComponentLocation() + UpVector * 10;
+	const auto EndLocation = StartLocation - UpVector * 20;
+
+	return World->LineTraceTestByChannel(
+		StartLocation,
+		EndLocation,
+		ECollisionChannel::ECC_Visibility,
+		Params);
 }
 
 void UTankTrackComponent::DriveTrack(float Throttle)
@@ -58,8 +70,6 @@ void UTankTrackComponent::DriveTrack(float Throttle)
 void UTankTrackComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	OnComponentHit.AddDynamic(this, &ThisClass::OnHit);
 }
 
 void UTankTrackComponent::ApplySidewaysForce(float DeltaTime)
@@ -92,18 +102,11 @@ void UTankTrackComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	const auto LastHitDeltaTime = GetWorld()->GetTimeSeconds() - LastHitTimeSeconds;
-	if(LastHitDeltaTime <= LastHitMinDeltaTime)
+	if(IsGrounded())
 	{
 		ApplySidewaysForce(GetWorld()->GetDeltaSeconds());
-
 		DriveTrack(CurrentThrottle);
+	}
 
-		CurrentThrottle = 0;
-	}
-	else
-	{
-		UE_LOG(LogTRTank, Warning, TEXT("%s-%s: TickComponent: NotApplyingThrottle: Dt=%fs"),
-			*LoggingUtils::GetName(GetOwner()), *GetName(), LastHitDeltaTime);
-	}
+	CurrentThrottle = 0;
 }

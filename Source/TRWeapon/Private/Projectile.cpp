@@ -28,6 +28,8 @@ void AProjectile::Launch(float Speed)
 
 	ProjectileMovementComponent->SetVelocityInLocalSpace(FVector::ForwardVector * Speed);
 	ProjectileMovementComponent->Activate();
+
+	SetLifeSpan(MaxLifetime);
 }
 
 void AProjectile::BeginPlay()
