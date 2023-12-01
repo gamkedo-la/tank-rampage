@@ -94,38 +94,33 @@ void UTankAimingComponent::MoveBarrelTowards(const FVector& AimDirection)
 {
 	check(Barrel && Turret);
 
+	if (IsBarrelAlreadyAtTarget(AimDirection))
+	{
+		FiringStatus = ETankFiringStatus::Locked;
+		return;
+	}
+
 	const auto TargetRotation = AimDirection.Rotation();
 	const auto BarrelRotator = Barrel->GetForwardVector().Rotation();
 
 	const auto DesiredRotator = TargetRotation - Barrel->GetForwardVector().Rotation();
 
-	bool bUpdated = false;
+	Barrel->Elevate(DesiredRotator.Pitch);
+	Turret->Rotate(ClampDeltaYaw(DesiredRotator.Yaw));
 
-	// TODO: AimDeadZoneDegrees prevents violent shaking - possibly this is a rotation centering issue in model or the socket
-	if (FMath::Abs(DesiredRotator.Pitch) > AimDeadZoneDegrees)
-	{
-		bUpdated = true;
-		Barrel->Elevate(DesiredRotator.Pitch);
-	}
-
-	if (FMath::Abs(DesiredRotator.Yaw) > AimDeadZoneDegrees)
-	{
-		bUpdated = true;
-		Turret->Rotate(ClampDeltaYaw(DesiredRotator.Yaw));
-	}
-
-	if (bUpdated)
+	if(auto ArmedOwner = Cast<IArmedActor>(GetOwner()); ArmedOwner && ArmedOwner->CanFire())
 	{
 		FiringStatus = ETankFiringStatus::Aiming;
-	}
-	else if(auto ArmedOwner = Cast<IArmedActor>(GetOwner()); ArmedOwner && ArmedOwner->CanFire())
-	{
-		FiringStatus = ETankFiringStatus::Locked;
 	}
 	else
 	{
 		FiringStatus = ETankFiringStatus::Reloading;
 	}
+}
+
+bool UTankAimingComponent::IsBarrelAlreadyAtTarget(const FVector& AimDirection) const
+{
+	return AimDirection.Equals(Barrel->GetForwardVector(), AimTolerance);
 }
 
 #if ENABLE_VISUAL_LOG

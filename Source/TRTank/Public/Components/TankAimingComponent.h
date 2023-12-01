@@ -56,6 +56,8 @@ protected:
 private:
 	void MoveBarrelTowards(const FVector& AimDirection);
 
+	bool IsBarrelAlreadyAtTarget(const FVector& AimDirection) const;
+
 private:
 	UPROPERTY(Transient)
 	TObjectPtr<UTankBarrelComponent> Barrel{};
@@ -64,7 +66,7 @@ private:
 	TObjectPtr<UTankTurretComponent> Turret{};
 
 	UPROPERTY(Category = Setup, EditDefaultsOnly)
-	float AimDeadZoneDegrees{ 1.25f };
+	float AimTolerance{ 0.01f };
 
 	ETankFiringStatus FiringStatus{ ETankFiringStatus::NoTarget };
 	

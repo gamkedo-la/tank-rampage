@@ -51,7 +51,4 @@ private:
 
 	UPROPERTY(EditDefaultsOnly)
 	float MinMoveDistanceMeters{ 10.0f };
-
-	UPROPERTY(EditDefaultsOnly)
-	float MovementAcceptanceRadius{ 1000.0f };
 };

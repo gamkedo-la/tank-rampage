@@ -52,6 +52,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void TurnRight(float Throw);
 
+	UTankAimingComponent* GetTankAimingComponent() const;
+
 #if ENABLE_VISUAL_LOG
 	virtual void GrabDebugSnapshot(FVisualLogEntry* Snapshot) const override;
 #endif
@@ -124,4 +126,9 @@ inline USpringArmComponent* ABaseTankPawn::GetCameraSpringArm() const
 	return CameraSpringArm;
 }
 
+inline UTankAimingComponent* ABaseTankPawn::GetTankAimingComponent() const
+{
+	check(TankAimingComponent);
+	return TankAimingComponent;
+}
 #pragma endregion Inline Definitions

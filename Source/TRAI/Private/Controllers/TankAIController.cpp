@@ -4,6 +4,7 @@
 #include "Controllers/TankAIController.h"
 
 #include "Pawn/BaseTankPawn.h"
+#include "Components/TankAimingComponent.h"
 
 #include "Kismet/GameplayStatics.h" 
 
@@ -53,7 +54,14 @@ ABaseTankPawn* ATankAIController::GetPlayerTank() const
 
 void ATankAIController::Fire(const FTankAIContext& AIContext)
 {
-	AIContext.MyTank.Fire();
+	auto& MyTank = AIContext.MyTank;
+
+	auto TankAimingComponent = MyTank.GetTankAimingComponent();
+
+	if (TankAimingComponent->GetTankFiringStatus() == ETankFiringStatus::Locked)
+	{
+		AIContext.MyTank.Fire();
+	}
 }
 
 void ATankAIController::AimAtPlayerTank(const FTankAIContext& AIContext)
@@ -63,7 +71,7 @@ void ATankAIController::AimAtPlayerTank(const FTankAIContext& AIContext)
 
 void ATankAIController::MoveTowardPlayer(const FTankAIContext& AIContext)
 {
-	MoveToActor(&AIContext.PlayerTank, MovementAcceptanceRadius);
+	MoveToActor(&AIContext.PlayerTank, MinMoveDistanceMeters * 100);
 }
 
 bool ATankAIController::IsPlayerInRange(const FTankAIContext& AIContext) const
