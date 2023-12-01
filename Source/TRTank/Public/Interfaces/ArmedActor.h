@@ -4,13 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include "TankOwner.generated.h"
-
-class ABaseTankPawn;
+#include "ArmedActor.generated.h"
 
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI, NotBlueprintable)
-class UTankOwner : public UInterface
+class UArmedActor : public UInterface
 {
 	GENERATED_BODY()
 };
@@ -18,12 +16,13 @@ class UTankOwner : public UInterface
 /**
  * 
  */
-class TRTANK_API ITankOwner
+class TRTANK_API IArmedActor
 {
 	GENERATED_BODY()
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
+
 	UFUNCTION(BlueprintCallable)
-	virtual ABaseTankPawn* GetControlledTank() const = 0;
+	virtual bool CanFire() const = 0;
 };

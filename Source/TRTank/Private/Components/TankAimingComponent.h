@@ -6,6 +6,16 @@
 #include "Components/ActorComponent.h"
 #include "TankAimingComponent.generated.h"
 
+UENUM(BlueprintType)
+enum class ETankFiringStatus : uint8
+{
+	Locked UMETA(DisplayName = "Locked"),
+	Aiming UMETA(DisplayName = "Aiming"),
+	Reloading UMETA(DisplayName = "Reloading"),
+	NoTarget UMETA(DisplayName = "No Target"),
+	Max UMETA(DisplayName = "MAX"),
+};
+
 class UTankBarrelComponent;
 class UTankTurretComponent;
 
@@ -28,6 +38,9 @@ public:
 
 	void AimAt(const FVector& Location, float LaunchSpeed);
 
+	UFUNCTION(BlueprintPure)
+	ETankFiringStatus GetTankFiringStatus() const { return FiringStatus; }
+
 
 #if ENABLE_VISUAL_LOG
 
@@ -41,7 +54,7 @@ protected:
 	virtual void InitializeComponent();
 
 private:
-	void MoveBarrelTowards(const FVector& AimDirection) const;
+	void MoveBarrelTowards(const FVector& AimDirection);
 
 private:
 	UPROPERTY(Transient)
@@ -52,4 +65,7 @@ private:
 
 	UPROPERTY(Category = Setup, EditDefaultsOnly)
 	float AimDeadZoneDegrees{ 1.25f };
+
+	ETankFiringStatus FiringStatus{ ETankFiringStatus::NoTarget };
+	
 };

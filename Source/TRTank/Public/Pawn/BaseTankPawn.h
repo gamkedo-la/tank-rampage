@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+#include "Interfaces/ArmedActor.h"
 #include "VisualLogger/VisualLoggerDebugSnapshotInterface.h"
 
 #include "BaseTankPawn.generated.h"
@@ -20,7 +21,7 @@ class UTankMovementComponent;
 class AProjectile;
 
 UCLASS()
-class TRTANK_API ABaseTankPawn : public APawn, public IVisualLoggerDebugSnapshotInterface
+class TRTANK_API ABaseTankPawn : public APawn, public IVisualLoggerDebugSnapshotInterface, public IArmedActor
 {
 	GENERATED_BODY()
 
@@ -35,6 +36,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void Fire();
+
+	UFUNCTION(BlueprintCallable)
+	bool CanFire() const;
 
 	UFUNCTION(BlueprintCallable)
 	void SetLeftThrottle(float Value);
@@ -60,8 +64,6 @@ protected:
 
 private:
 	void UpdateSpringArmTickEnabled();
-
-	bool CanFire() const;
 
 
 protected:

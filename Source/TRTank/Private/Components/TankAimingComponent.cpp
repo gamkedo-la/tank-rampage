@@ -6,6 +6,7 @@
 #include "TankSockets.h"
 #include "Components/TankTurretComponent.h"
 #include "Components/TankBarrelComponent.h"
+#include "Interfaces/ArmedActor.h"
 
 #include "TRTankLogging.h"
 #include "Logging/LoggingUtils.h"
@@ -31,14 +32,12 @@ void UTankAimingComponent::SetTankComponents(const FTankComponents& TankComponen
 
 	check(Barrel);
 	check(Turret);
-
 }
 
 void UTankAimingComponent::BeginPlay()
 {
 	Super::BeginPlay();
 }
-
 
 void UTankAimingComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
@@ -85,9 +84,13 @@ void UTankAimingComponent::AimAt(const FVector& Location, float LaunchSpeed)
 	{
 		MoveBarrelTowards(AimDirection);
 	}
+	else
+	{
+		FiringStatus = ETankFiringStatus::NoTarget;
+	}
 }
 
-void UTankAimingComponent::MoveBarrelTowards(const FVector& AimDirection) const
+void UTankAimingComponent::MoveBarrelTowards(const FVector& AimDirection)
 {
 	check(Barrel && Turret);
 
@@ -96,15 +99,32 @@ void UTankAimingComponent::MoveBarrelTowards(const FVector& AimDirection) const
 
 	const auto DesiredRotator = TargetRotation - Barrel->GetForwardVector().Rotation();
 
+	bool bUpdated = false;
+
 	// TODO: AimDeadZoneDegrees prevents violent shaking - possibly this is a rotation centering issue in model or the socket
 	if (FMath::Abs(DesiredRotator.Pitch) > AimDeadZoneDegrees)
 	{
+		bUpdated = true;
 		Barrel->Elevate(DesiredRotator.Pitch);
 	}
 
 	if (FMath::Abs(DesiredRotator.Yaw) > AimDeadZoneDegrees)
 	{
+		bUpdated = true;
 		Turret->Rotate(ClampDeltaYaw(DesiredRotator.Yaw));
+	}
+
+	if (bUpdated)
+	{
+		FiringStatus = ETankFiringStatus::Aiming;
+	}
+	else if(auto ArmedOwner = Cast<IArmedActor>(GetOwner()); ArmedOwner && ArmedOwner->CanFire())
+	{
+		FiringStatus = ETankFiringStatus::Locked;
+	}
+	else
+	{
+		FiringStatus = ETankFiringStatus::Reloading;
 	}
 }
 
