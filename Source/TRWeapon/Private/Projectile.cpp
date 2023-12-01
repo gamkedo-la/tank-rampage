@@ -5,6 +5,7 @@
 
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "PhysicsEngine/RadialForceComponent.h"
 
 #include "Logging/LoggingUtils.h"
 #include "TRWeaponLogging.h"
@@ -20,6 +21,11 @@ AProjectile::AProjectile()
 	ProjectileMovementComponent->bAutoActivate = false;
 	// This is needed for the projectile to actually move
 	ProjectileMovementComponent->bShouldBounce = true;
+
+	ExplosionForce = CreateDefaultSubobject<URadialForceComponent>(TEXT("ExplosionForce"));
+	ExplosionForce->bAutoActivate = false;
+	ExplosionForce->PrimaryComponentTick.bStartWithTickEnabled = false;
+	ExplosionForce->SetupAttachment(RootComponent);
 }
 
 void AProjectile::Launch(float Speed)
@@ -35,10 +41,18 @@ void AProjectile::Launch(float Speed)
 void AProjectile::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	ProjectileMesh->OnComponentHit.AddDynamic(this, &AProjectile::OnHit);
 }
 
 void AProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+}
+
+void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
+{
+	ExplosionForce->FireImpulse();
+
+	Destroy();
 }

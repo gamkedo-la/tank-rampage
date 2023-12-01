@@ -8,6 +8,7 @@
 
 class UStaticMeshComponent;
 class UProjectileMovementComponent;
+class URadialForceComponent;
 
 UCLASS()
 class TRWEAPON_API AProjectile : public AActor
@@ -25,11 +26,18 @@ protected:
 	virtual void Tick(float DeltaTime) override;
 
 private:
+	UFUNCTION()
+	void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit);
+
+private:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> ProjectileMesh{};
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovementComponent{};
+
+	UPROPERTY(VisibleDefaultsOnly)
+	TObjectPtr<URadialForceComponent> ExplosionForce{};
 
 	UPROPERTY(EditDefaultsOnly)
 	float MaxLifetime{ 10.0f };
