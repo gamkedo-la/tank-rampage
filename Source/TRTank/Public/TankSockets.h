@@ -14,4 +14,6 @@ namespace TankSockets
 	inline const FName SideLeftAttach = "Side_LT";
 
 	inline const FName GunFire = "Barrel_Fire";
+
+	inline const FName TreadThrottle = "Tread_Throttle";
 }

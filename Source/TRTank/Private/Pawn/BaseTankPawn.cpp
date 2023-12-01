@@ -32,7 +32,6 @@ ABaseTankPawn::ABaseTankPawn()
 	RootComponent = TankBody = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TankBody"));
 	TankBody->SetSimulatePhysics(true);
 	TankBody->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	TankBody->SetMassOverrideInKg(NAME_None, 40000);
 
 	TankTurret = CreateDefaultSubobject<UTankTurretComponent>(TEXT("TankTurret"));
 	TankTurret->SetupAttachment(TankBody, TankSockets::TurretAttach);
@@ -69,6 +68,9 @@ ABaseTankPawn::ABaseTankPawn()
 void ABaseTankPawn::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Cannot call this in the constructor
+	TankBody->SetMassOverrideInKg(NAME_None, 40000);
 }
 
 void ABaseTankPawn::PostInitializeComponents()

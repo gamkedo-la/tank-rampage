@@ -3,6 +3,8 @@
 
 #include "Components/TankTrackComponent.h"
 
+#include "TankSockets.h"
+
 #include "Logging/LoggingUtils.h"
 #include "TRTankLogging.h"
 #include "VisualLogger/VisualLogger.h"
@@ -10,14 +12,33 @@
 UTankTrackComponent::UTankTrackComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+
+	BodyInstance.bNotifyRigidBodyCollision = true;
+	BodyInstance.bUseCCD = true;
 }
 
 void UTankTrackComponent::SetThrottle(float InThrottle)
 {
-	const auto Throttle = FMath::Clamp(InThrottle, -1.0f, 1.0f);
+	CurrentThrottle = FMath::Clamp(InThrottle + CurrentThrottle, -1.0f, 1.0f);
+}
 
+void UTankTrackComponent::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, FVector NormalImpulse,
+	const FHitResult& Hit)
+{
+	// ApplySidewaysForce(GetWorld()->GetDeltaSeconds());
+
+	//DriveTrack(CurrentThrottle);
+
+	//CurrentThrottle = 0;
+
+	LastHitTimeSeconds = GetWorld()->GetTimeSeconds();
+}
+
+void UTankTrackComponent::DriveTrack(float Throttle)
+{
 	auto ForceApplied = GetForwardVector() * Throttle * TrackMaxDrivingForce;
-	const auto& ForceLocation = GetComponentLocation();
+	const auto& ForceLocation = GetSocketLocation(TankSockets::TreadThrottle);
 
 	auto RootComponent = Cast<UPrimitiveComponent>(GetOwner()->GetRootComponent());
 
@@ -34,10 +55,15 @@ void UTankTrackComponent::SetThrottle(float InThrottle)
 	RootComponent->AddForceAtLocation(ForceApplied, ForceLocation);
 }
 
-void UTankTrackComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UTankTrackComponent::BeginPlay()
 {
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	Super::BeginPlay();
 
+	OnComponentHit.AddDynamic(this, &ThisClass::OnHit);
+}
+
+void UTankTrackComponent::ApplySidewaysForce(float DeltaTime)
+{
 	const auto RootComponent = Cast<UPrimitiveComponent>(GetOwner()->GetRootComponent());
 	if (!RootComponent)
 	{
@@ -57,7 +83,27 @@ void UTankTrackComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 
 	// Calculate and apply sideways force (F = ma)
 	// Divide by 2 because there are two tracks
-	const auto CorrectionForce = RootComponent->GetMass() * CorrectionAcceleration * 0.5f; 
+	const auto CorrectionForce = RootComponent->GetMass() * CorrectionAcceleration * 0.5f;
 
 	RootComponent->AddForce(CorrectionForce);
+}
+
+void UTankTrackComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	const auto LastHitDeltaTime = GetWorld()->GetTimeSeconds() - LastHitTimeSeconds;
+	if(LastHitDeltaTime <= LastHitMinDeltaTime)
+	{
+		ApplySidewaysForce(GetWorld()->GetDeltaSeconds());
+
+		DriveTrack(CurrentThrottle);
+
+		CurrentThrottle = 0;
+	}
+	else
+	{
+		UE_LOG(LogTRTank, Warning, TEXT("%s-%s: TickComponent: NotApplyingThrottle: Dt=%fs"),
+			*LoggingUtils::GetName(GetOwner()), *GetName(), LastHitDeltaTime);
+	}
 }
