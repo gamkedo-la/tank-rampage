@@ -51,9 +51,17 @@ bool UTankTrackComponent::IsGrounded() const
 void UTankTrackComponent::DriveTrack(float Throttle)
 {
 	const auto& ForceLocation = GetSocketLocation(TankSockets::TreadThrottle);
-	const auto& ForceRotation = GetSocketTransform(TankSockets::TreadThrottle, ERelativeTransformSpace::RTS_Component).GetRotation();
+	auto ForceRotation = GetSocketTransform(TankSockets::TreadThrottle, ERelativeTransformSpace::RTS_Component).GetRotation();
+	if (Throttle < 0)
+	{
+		ForceRotation = ForceRotation.Inverse();
+	}
 
-	const auto ForceApplied = ForceRotation.RotateVector(GetForwardVector() * Throttle * TrackMaxDrivingForce);
+	const auto& AdjustedLocalForward = ForceRotation.GetForwardVector();
+
+	const auto& ForceDirection = GetComponentToWorld().TransformVector(AdjustedLocalForward);
+
+	const auto ForceApplied = ForceDirection * Throttle * TrackMaxDrivingForce;
 
 	auto RootComponent = Cast<UPrimitiveComponent>(GetOwner()->GetRootComponent());
 
