@@ -64,6 +64,8 @@ protected:
 
 	virtual void NotifyControllerChanged() override;
 
+	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
+
 private:
 	void UpdateSpringArmTickEnabled();
 
@@ -115,6 +117,13 @@ private:
 
 	UPROPERTY(Category = "Weapon", EditDefaultsOnly)
 	TSubclassOf<AProjectile> MainGunProjectile{};
+
+	// TODO: Placeholder - move to health component
+	UPROPERTY(Category = "Health", EditDefaultsOnly)
+	float MaxHealth{ 100.0f };
+
+	UPROPERTY(Category = "Health", VisibleInstanceOnly)
+	float Health{};
 };
 
 

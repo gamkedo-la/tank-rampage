@@ -70,6 +70,8 @@ void ABaseTankPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
+	Health = MaxHealth;
+
 	// Cannot call this in the constructor
 	TankBody->SetMassOverrideInKg(NAME_None, 40000);
 }
@@ -96,6 +98,33 @@ void ABaseTankPawn::NotifyControllerChanged()
 	Super::NotifyControllerChanged();
 
 	UpdateSpringArmTickEnabled();
+}
+
+float ABaseTankPawn::TakeDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	UE_LOG(LogTRTank, Log, TEXT("%s: TakeDamage - Amount=%f from %s by %s"),
+		*GetName(), Damage, *LoggingUtils::GetName(DamageCauser), *LoggingUtils::GetName(EventInstigator));
+
+	// TODO: Placeholder
+
+	Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
+
+	Health = FMath::Clamp(Health - Damage, 0, MaxHealth);
+
+	if (FMath::IsNearlyZero(Health))
+	{
+		// TODO: Only destroy AI tanks
+		if (auto MyController = GetController(); MyController && !MyController->IsPlayerController())
+		{
+			DetachFromControllerPendingDestroy();
+			Destroy();
+		}
+
+		UE_LOG(LogTRTank, Display, TEXT("%s: TakeDamage - Killed from %s by %s"),
+			*GetName(), *LoggingUtils::GetName(DamageCauser), *LoggingUtils::GetName(EventInstigator));
+	}
+
+	return Damage;
 }
 
 void ABaseTankPawn::UpdateSpringArmTickEnabled()
@@ -227,6 +256,7 @@ void ABaseTankPawn::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
 	Category.Category = FString::Printf(TEXT("Tank (%s)"), *GetName());
 
 	Category.Add(TEXT("Fire Cooldown Remaining"), FString::Printf(TEXT("%.1f"), FMath::Max(0, LastFireTimeSeconds + FireCooldownTimeSeconds - CurrentTimeSeconds)));
+	Category.Add(TEXT("Health"), FString::Printf(TEXT("%.1f"), Health));
 
 	// TODO: Change color based on speed and stopping
 	// 

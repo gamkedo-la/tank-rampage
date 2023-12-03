@@ -6,6 +6,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "PhysicsEngine/RadialForceComponent.h"
+#include "Engine/DamageEvents.h"
 
 #include "Logging/LoggingUtils.h"
 #include "TRWeaponLogging.h"
@@ -65,6 +66,18 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, U
 	ExplosionForce->FireImpulse();
 
 	UE_VLOG_LOCATION(this, LogTRWeapon, Display, GetActorLocation(), ExplosionForce->Radius, FColor::Red, TEXT("Explosion"));
+
+	// TODO: Placeholder
+
+	if (OtherActor)
+	{
+		FRadialDamageEvent DamageEvent;
+		DamageEvent.Origin = GetActorLocation();
+
+		auto Pawn = GetInstigator();
+
+		OtherActor->TakeDamage(100, DamageEvent, Pawn ? Pawn->GetController() : nullptr, this);
+	}
 
 	Destroy();
 }
