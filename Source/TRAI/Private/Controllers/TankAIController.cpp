@@ -7,6 +7,10 @@
 #include "Components/TankAimingComponent.h"
 
 #include "Kismet/GameplayStatics.h" 
+#include "TRAILogging.h"
+#include "Logging/LoggingUtils.h"
+#include "VisualLogger/VisualLogger.h"
+
 
 ATankAIController::ATankAIController()
 {
@@ -71,12 +75,33 @@ void ATankAIController::AimAtPlayerTank(const FTankAIContext& AIContext)
 
 void ATankAIController::MoveTowardPlayer(const FTankAIContext& AIContext)
 {
-	MoveToActor(&AIContext.PlayerTank, MinMoveDistanceMeters * 100);
+	const auto MinMoveDistance = MinMoveDistanceMeters * 100;
+
+	const auto& PlayerTank = AIContext.PlayerTank;
+	const auto& AITank = AIContext.MyTank;
+
+	const auto& TargetLocation = PlayerTank.GetActorLocation();
+
+	const bool bShouldMove = FVector::DistSquared(AITank.GetActorLocation(), TargetLocation) > FMath::Square(MinMoveDistance);
+
+	if (!bShouldMove)
+	{
+		return;
+	}
+
+	MoveToLocation(TargetLocation, MinMoveDistance);
 }
 
 bool ATankAIController::IsPlayerInRange(const FTankAIContext& AIContext) const
 {
-	return AIContext.MyTank.GetSquaredDistanceTo(&AIContext.PlayerTank) <= FMath::Square(MaxAggroDistanceMeters * 100);
+	const bool bInRangeByDistance = AIContext.MyTank.GetSquaredDistanceTo(&AIContext.PlayerTank) <= FMath::Square(MaxAggroDistanceMeters * 100);
+	if (!bInRangeByDistance)
+	{
+		return false;
+	}
+
+	// Do alternate checks so multiple line trace points are used for reference
+	return LineOfSightTo(&AIContext.PlayerTank, FVector::ZeroVector, true);
 }
 
 #if ENABLE_VISUAL_LOG

@@ -130,7 +130,10 @@ void UTankAimingComponent::DescribeSelfToVisLog(FVisualLogEntry* Snapshot) const
 	FVisualLogStatusCategory Category;
 	Category.Category = TEXT("Tank Aiming Component");
 
+	Category.Add(TEXT("Firing Status"), *LoggingUtils::GetName(FiringStatus));
 	Snapshot->Status.Add(Category);
+
+
 }
 
 #endif

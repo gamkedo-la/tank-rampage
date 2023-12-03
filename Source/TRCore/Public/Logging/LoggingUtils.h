@@ -4,8 +4,24 @@
 
 #include "CoreMinimal.h"
 
+#include <concepts>
+#include <type_traits>
+
 namespace LoggingUtils
 {
+
+	template<typename T>
+	concept UEnumConcept = std::is_enum_v<T> &&
+	requires(T Value)
+	{
+		{
+			UEnum::GetDisplayValueAsText(Value).ToString()
+		} -> std::convertible_to<FString>;
+	};
+
+	template<UEnumConcept T>
+	FString GetName(T Value);
+
 	/*
 	 * Returns Object->GetName if not NULL and the literal "NULL" otherwise.
 	*/
@@ -18,6 +34,12 @@ namespace LoggingUtils
 
 namespace LoggingUtils
 {
+	template<UEnumConcept T>
+	inline FString GetName(T Value)
+	{
+		return UEnum::GetDisplayValueAsText(Value).ToString();
+	}
+
 	inline FString GetName(const UObject* Object)
 	{
 		return Object ? Object->GetName() : FString{ "NULL" };

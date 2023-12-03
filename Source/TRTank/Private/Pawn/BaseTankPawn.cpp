@@ -207,15 +207,25 @@ void ABaseTankPawn::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
 	// helpful article about the Visual Logger
 	// https://benui.ca/unreal/visual-logger/
 
-	if (!TankBody || !TankTurret || !TankTreadLeft || !TankTreadRight)
+	if (!TankBody || !TankTurret || !TankTreadLeft || !TankTreadRight || !TankAimingComponent)
 	{
 		return;
 	}
+
+	auto World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	const auto CurrentTimeSeconds = World->GetTimeSeconds();
 
 	// Get reference to the current category
 	const int32 CatIndex = Snapshot->Status.AddZeroed();
 	FVisualLogStatusCategory& Category = Snapshot->Status[CatIndex];
 	Category.Category = FString::Printf(TEXT("Tank (%s)"), *GetName());
+
+	Category.Add(TEXT("Fire Cooldown Remaining"), FString::Printf(TEXT("%.1f"), FMath::Max(0, LastFireTimeSeconds + FireCooldownTimeSeconds - CurrentTimeSeconds)));
 
 	// TODO: Change color based on speed and stopping
 	// 
@@ -226,9 +236,26 @@ void ABaseTankPawn::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
 	const FVector& BoundsExtent = OBB.GetExtent();
 	const FVector ZOffset = OBB.GetCenter();
 
-	const auto TransformMatrix = GetActorTransform().ToMatrixNoScale();
+	const auto& ActorTransform = GetActorTransform();
+	const auto TransformMatrix = ActorTransform.ToMatrixNoScale();
 
 	Snapshot->AddElement(OBB, TransformMatrix, LogTRTank.GetCategoryName(), ELogVerbosity::Log, BoxColor);
+
+	// Draw barrel
+	const auto BarrelOBB = GetBounds(*TankBarrel);
+	const auto BarrelTransform = TankBarrel->GetComponentTransform();
+
+	FColor BarrelColor;
+	switch (TankAimingComponent->GetTankFiringStatus())
+	{
+		case ETankFiringStatus::Locked: BarrelColor = FColor::Red; break;
+		case ETankFiringStatus::Aiming: BarrelColor = FColor::Orange; break;
+		case ETankFiringStatus::Reloading: BarrelColor = FColor::Yellow; break;
+		default: BarrelColor = FColor::Blue; break;
+	}
+
+	Snapshot->AddElement(BarrelOBB, BarrelTransform.ToMatrixNoScale(), LogTRTank.GetCategoryName(), ELogVerbosity::Log, BarrelColor);
+
 
 	const auto MyController = GetController();
 	Snapshot->AddElement(GetActorLocation() + ZOffset, LogTRTank.GetCategoryName(), ELogVerbosity::Log, BoxColor,
