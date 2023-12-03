@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "VisualLogger/VisualLoggerDebugSnapshotInterface.h"
+
 #include "Projectile.generated.h"
 
 class UStaticMeshComponent;
@@ -11,7 +13,7 @@ class UProjectileMovementComponent;
 class URadialForceComponent;
 
 UCLASS()
-class TRWEAPON_API AProjectile : public AActor
+class TRWEAPON_API AProjectile : public AActor, public IVisualLoggerDebugSnapshotInterface
 {
 	GENERATED_BODY()
 	
@@ -21,9 +23,19 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void Launch(float Speed);
 
+#if ENABLE_VISUAL_LOG
+	virtual void GrabDebugSnapshot(FVisualLogEntry* Snapshot) const override;
+#endif
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
+	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
+
+private:
+	void InitDebugDraw();
+	void DestroyDebugDraw();
+
 
 private:
 	UFUNCTION()
@@ -41,4 +53,8 @@ private:
 
 	UPROPERTY(EditDefaultsOnly)
 	float MaxLifetime{ 10.0f };
+
+#if ENABLE_VISUAL_LOG
+	FTimerHandle VisualLoggerTimer{};
+#endif
 };

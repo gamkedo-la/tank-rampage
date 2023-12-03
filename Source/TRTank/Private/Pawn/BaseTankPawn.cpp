@@ -23,6 +23,7 @@
 namespace
 {
 	FBox GetBounds(const UStaticMeshComponent& Comp, const FName* SocketName = nullptr);
+	FVector GetSocketRelativeLocation(const UStaticMeshComponent& Comp, const FName& SocketName);
 }
 
 ABaseTankPawn::ABaseTankPawn()
@@ -242,8 +243,11 @@ void ABaseTankPawn::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
 	Snapshot->AddElement(OBB, TransformMatrix, LogTRTank.GetCategoryName(), ELogVerbosity::Log, BoxColor);
 
 	// Draw barrel
-	const auto BarrelOBB = GetBounds(*TankBarrel);
-	const auto BarrelTransform = TankBarrel->GetComponentTransform();
+	const auto& BarrelOBB = GetBounds(*TankBarrel);
+	const auto& BarrelExtent = BarrelOBB.GetExtent();
+	const auto& GunBarrelLocation = TankTurret->GetSocketLocation(TankSockets::GunAttach) + TankBarrel->GetForwardVector() * BarrelExtent.X - TankBarrel->GetUpVector() * BarrelExtent.Z;
+	auto BarrelTransform = TankBarrel->GetComponentTransform();
+	BarrelTransform.SetTranslation(GunBarrelLocation);
 
 	FColor BarrelColor;
 	switch (TankAimingComponent->GetTankFiringStatus())
@@ -289,17 +293,29 @@ namespace
 
 		if (SocketName)
 		{
-			if (auto ParentComp = Comp.GetAttachParent(); ParentComp)
-			{
-				FTransform SocketTransform = ParentComp->GetSocketTransform(*SocketName);
-				FTransform RelativeTransform = ParentComp->GetRelativeTransform();
-				FVector RelativeOffset = RelativeTransform.InverseTransformPosition(SocketTransform.GetLocation());
-
-				RelativeCenter += RelativeOffset;
-			}
+			RelativeCenter += GetSocketRelativeLocation(Comp, *SocketName);
 		}
 
 		return FBox::BuildAABB(RelativeCenter, BoundsExtent);
+	}
+
+	FVector GetSocketRelativeLocation(const UStaticMeshComponent& Comp, const FName & SocketName)
+	{
+		const USceneComponent* CurrentComp = &Comp;
+		while (auto ParentComp = CurrentComp->GetAttachParent())
+		{
+			if (!ParentComp->DoesSocketExist(SocketName))
+			{
+				CurrentComp = ParentComp;
+				continue;
+			}
+
+			FTransform SocketTransform = ParentComp->GetSocketTransform(SocketName);
+			FTransform RelativeTransform = ParentComp->GetRelativeTransform();
+			return RelativeTransform.InverseTransformPosition(SocketTransform.GetLocation());
+		}
+
+		return FVector::ZeroVector;
 	}
 }
 
