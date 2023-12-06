@@ -12,6 +12,6 @@ namespace TR::DebugUtils
 		TRCORE_API void DrawForceAtLocation(const UPrimitiveComponent* Component, const FVector& Force, const FVector& Location, const FColor& Color = FColor::Red, float Scale = 1e4);
 	#else
 		inline void DrawCenterOfMass(const UPrimitiveComponent* component) {}
-		inline void DrawForceAtLocation(const UPrimitiveComponent* component, const FVector& Force, const FVector& Location) {}
-	#endif
+		inline void DrawForceAtLocation(const UPrimitiveComponent* Component, const FVector& Force, const FVector& Location, const FColor& Color = FColor::Red, float Scale = 1e4) {}
+#endif
 }
