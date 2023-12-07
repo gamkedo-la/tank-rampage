@@ -11,6 +11,8 @@
 #include "Logging/LoggingUtils.h"
 #include "VisualLogger/VisualLogger.h"
 
+#include "Curves/CurveFloat.h"
+
 
 ATankAIController::ATankAIController()
 {
@@ -25,6 +27,14 @@ ABaseTankPawn* ATankAIController::GetControlledTank() const
 void ATankAIController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	auto World = GetWorld();
+	const auto NowSeconds = World->GetTimeSeconds();
+
+	if (!World || NowSeconds < StartDelayTime)
+	{
+		return;
+	}
 
 	auto PlayerTank = GetPlayerTank();
 	auto ControlledTank = GetControlledTank();
@@ -42,13 +52,38 @@ void ATankAIController::Tick(float DeltaTime)
 
 	if (!IsPlayerInRange(AIContext))
 	{
+		FirstInRangeTime = TargetingErrorLastTime = -1;
 		return;
+	}
+	else if (FirstInRangeTime < 0)
+	{
+		FirstInRangeTime = NowSeconds;
+	}
+
+	if (NowSeconds - FirstInRangeTime < ReactionTime)
+	{
+		return;
+	}
+
+	if (NowSeconds - TargetingErrorLastTime >= TargetingErrorResetTime)
+	{
+		InitTargetingError(AIContext);
+		TargetingErrorLastTime = NowSeconds;
 	}
 
 	AimAtPlayerTank(AIContext);
 	Fire(AIContext);
 
 	MoveTowardPlayer(AIContext);
+}
+
+void ATankAIController::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// Do alternate checks for line of sight
+	bLOSflag = true;
+	bSkipExtraLOSChecks = false;
 }
 
 ABaseTankPawn* ATankAIController::GetPlayerTank() const
@@ -70,7 +105,24 @@ void ATankAIController::Fire(const FTankAIContext& AIContext)
 
 void ATankAIController::AimAtPlayerTank(const FTankAIContext& AIContext)
 {
-	AIContext.MyTank.AimAt(AIContext.PlayerTank.GetActorLocation());
+	const auto& PlayerTank = AIContext.PlayerTank;
+
+	auto PlayerVelocity = PlayerTank.GetVelocity();
+
+	FVector PredictiveOffset{ EForceInit::ForceInitToZero };
+	if (PlayerVelocity.SizeSquared() > FMath::Square(PlayerVelocityPredictiveThreshold))
+	{
+		// Assuming only the "X" direction ignoring gravity
+		const float PlayerDistanceMeters = AIContext.MyTank.GetDistanceTo(&PlayerTank);
+		const float InterceptTime = PlayerDistanceMeters / AIContext.MyTank.GetCurrentWeaponExitSpeed();
+
+		PredictiveOffset = PlayerVelocity * InterceptTime;
+	}
+
+	const auto PredictedPosition = AIContext.PlayerTank.GetActorLocation() + PredictiveOffset;
+	const auto& AimTarget = PredictedPosition + TargetingError;
+
+	AIContext.MyTank.AimAt(AimTarget);
 }
 
 void ATankAIController::MoveTowardPlayer(const FTankAIContext& AIContext)
@@ -102,6 +154,21 @@ bool ATankAIController::IsPlayerInRange(const FTankAIContext& AIContext) const
 
 	// Do alternate checks so multiple line trace points are used for reference
 	return LineOfSightTo(&AIContext.PlayerTank, FVector::ZeroVector, true);
+}
+
+void ATankAIController::InitTargetingError(const FTankAIContext& AIContext)
+{
+	if (!TargetingErrorByDistanceMeters)
+	{
+		UE_VLOG_UELOG(this, LogTRAI, Warning, TEXT("%s-%s: InitTargetingError: No TargetingErrorByDistanceMeters curve set!"),
+			*GetName(), *AIContext.MyTank.GetName());
+		return;
+	}
+
+	const float PlayerDistanceMeters = AIContext.MyTank.GetDistanceTo(&AIContext.PlayerTank) / 100;
+	const float TargetingErrorMagnitude = TargetingErrorByDistanceMeters->FloatCurve.Eval(PlayerDistanceMeters);
+
+	TargetingError = FMath::RandRange(-TargetingErrorMagnitude, TargetingErrorMagnitude) * FMath::VRand();
 }
 
 #if ENABLE_VISUAL_LOG

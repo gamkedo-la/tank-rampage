@@ -54,6 +54,8 @@ public:
 
 	UTankAimingComponent* GetTankAimingComponent() const;
 
+	float GetCurrentWeaponExitSpeed() const;
+
 #if ENABLE_VISUAL_LOG
 	virtual void GrabDebugSnapshot(FVisualLogEntry* Snapshot) const override;
 #endif
@@ -140,4 +142,10 @@ inline UTankAimingComponent* ABaseTankPawn::GetTankAimingComponent() const
 	check(TankAimingComponent);
 	return TankAimingComponent;
 }
+
+inline float ABaseTankPawn::GetCurrentWeaponExitSpeed() const
+{
+	return TankShellSpeed;
+}
+
 #pragma endregion Inline Definitions

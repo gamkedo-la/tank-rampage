@@ -8,6 +8,8 @@
 
 #include "TankAIController.generated.h"
 
+class UCurveFloat;
+
 /**
  * 
  */
@@ -24,6 +26,7 @@ public:
 	ABaseTankPawn* GetControlledTank() const override;
 
 	virtual void Tick(float DeltaTime) override;
+	virtual void BeginPlay() override;
 
 #if ENABLE_VISUAL_LOG
 	virtual void GrabDebugSnapshot(FVisualLogEntry* Snapshot) const override;
@@ -45,10 +48,31 @@ private:
 	void MoveTowardPlayer(const FTankAIContext& AIContext);
 	bool IsPlayerInRange(const FTankAIContext& AIContext) const;
 
+	void InitTargetingError(const FTankAIContext& AIContext);
+
 private:
 	UPROPERTY(EditDefaultsOnly)
 	float MaxAggroDistanceMeters{ 100.0f };
 
 	UPROPERTY(EditDefaultsOnly)
 	float MinMoveDistanceMeters{ 10.0f };
+
+	UPROPERTY(EditAnywhere)
+	float PlayerVelocityPredictiveThreshold{ 300.0f };
+
+	UPROPERTY(EditDefaultsOnly)
+	float StartDelayTime{ 3.0f };
+
+	UPROPERTY(EditAnywhere)
+	float ReactionTime{ 0.5f };
+
+	UPROPERTY(EditAnywhere)
+	float TargetingErrorResetTime{ 2.0f };
+
+	UPROPERTY(EditAnywhere)
+	UCurveFloat* TargetingErrorByDistanceMeters{};
+
+	float FirstInRangeTime{ -1.0f };
+	float TargetingErrorLastTime{ -1.0f };
+	FVector TargetingError{ EForceInit::ForceInitToZero };
 };
