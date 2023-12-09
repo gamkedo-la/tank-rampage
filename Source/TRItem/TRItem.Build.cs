@@ -3,9 +3,9 @@
 using UnrealBuildTool;
 
 // TODO: Refactor to TRItem - use redirectors to fix existing UCLASS,USTRUCT, or UENUM references
-public class TRWeapon : ModuleRules
+public class TRItem : ModuleRules
 {
-	public TRWeapon(ReadOnlyTargetRules Target) : base(Target)
+	public TRItem(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	

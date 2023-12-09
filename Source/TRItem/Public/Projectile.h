@@ -13,7 +13,7 @@ class UProjectileMovementComponent;
 class URadialForceComponent;
 
 UCLASS()
-class TRWEAPON_API AProjectile : public AActor, public IVisualLoggerDebugSnapshotInterface
+class TRITEM_API AProjectile : public AActor, public IVisualLoggerDebugSnapshotInterface
 {
 	GENERATED_BODY()
 	

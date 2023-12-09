@@ -32,7 +32,7 @@ public class TRTank : ModuleRules
 		var modulePrivateDependencyModuleNames = new string[]
 		{
 			"TRCore",
-			"TRWeapon",
+			"TRItem",
 		};
 
 		var enginePrivateDependencyModuleNames = new string[] 

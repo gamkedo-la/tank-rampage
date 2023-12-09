@@ -9,7 +9,7 @@
 #include "Engine/DamageEvents.h"
 
 #include "Logging/LoggingUtils.h"
-#include "TRWeaponLogging.h"
+#include "TRItemLogging.h"
 #include "VisualLogger/VisualLogger.h"
 
 AProjectile::AProjectile()
@@ -32,7 +32,7 @@ AProjectile::AProjectile()
 
 void AProjectile::Launch(float Speed)
 {
-	UE_VLOG_UELOG(this, LogTRWeapon, Log, TEXT("%s: Launch at %f cm/s"), *GetName(), Speed);
+	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: Launch at %f cm/s"), *GetName(), Speed);
 
 	ProjectileMovementComponent->SetVelocityInLocalSpace(FVector::ForwardVector * Speed);
 	ProjectileMovementComponent->Activate();
@@ -65,7 +65,7 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, U
 {
 	ExplosionForce->FireImpulse();
 
-	UE_VLOG_LOCATION(this, LogTRWeapon, Display, GetActorLocation(), ExplosionForce->Radius, FColor::Red, TEXT("Explosion"));
+	UE_VLOG_LOCATION(this, LogTRItem, Display, GetActorLocation(), ExplosionForce->Radius, FColor::Red, TEXT("Explosion"));
 
 	// TODO: Placeholder
 
@@ -109,7 +109,7 @@ void AProjectile::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
 	FBox Bounds{ Min, Max };
 
 	Snapshot->AddElement(Bounds, GetActorTransform().ToMatrixNoScale(),
-		LogTRWeapon.GetCategoryName(), ELogVerbosity::Log, FColor::Red,
+		LogTRItem.GetCategoryName(), ELogVerbosity::Log, FColor::Red,
 		*GetName());
 }
 
@@ -118,7 +118,7 @@ void AProjectile::InitDebugDraw()
 	// Ensure that state logged regularly so we see the updates in the visual logger
 	FTimerDelegate DebugDrawDelegate = FTimerDelegate::CreateLambda([this]()
 		{
-			UE_VLOG(this, LogTRWeapon, Log, TEXT("Get Projectile State"));
+			UE_VLOG(this, LogTRItem, Log, TEXT("Get Projectile State"));
 		});
 
 	GetWorldTimerManager().SetTimer(VisualLoggerTimer, DebugDrawDelegate, 0.05f, true);

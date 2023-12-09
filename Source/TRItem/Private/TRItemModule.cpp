@@ -2,9 +2,9 @@
 
 #include "Modules/ModuleManager.h"
 
-#include "TRWeaponLogging.h"
+#include "TRItemLogging.h"
 
-IMPLEMENT_MODULE( FDefaultModuleImpl, TRWeapon );
+IMPLEMENT_MODULE( FDefaultModuleImpl, TRItem );
 
 // Logging
-DEFINE_LOG_CATEGORY(LogTRWeapon);
+DEFINE_LOG_CATEGORY(LogTRItem);
