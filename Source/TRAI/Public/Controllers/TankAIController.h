@@ -57,6 +57,9 @@ private:
 	UPROPERTY(EditDefaultsOnly)
 	float MinMoveDistanceMeters{ 10.0f };
 
+	UPROPERTY(EditDefaultsOnly)
+	float AcceptanceRadiusMeters{ 5.0f };
+
 	UPROPERTY(EditAnywhere)
 	float PlayerVelocityPredictiveThreshold{ 300.0f };
 

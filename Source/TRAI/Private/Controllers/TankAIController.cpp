@@ -141,7 +141,7 @@ void ATankAIController::MoveTowardPlayer(const FTankAIContext& AIContext)
 		return;
 	}
 
-	MoveToLocation(TargetLocation, MinMoveDistance);
+	MoveToLocation(TargetLocation, MinMoveDistanceMeters * 100);
 }
 
 bool ATankAIController::IsPlayerInRange(const FTankAIContext& AIContext) const
