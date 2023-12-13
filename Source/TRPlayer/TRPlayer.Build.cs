@@ -35,6 +35,7 @@ public class TRPlayer : ModuleRules
 		{
 			"TRCore",
 			"TRTank",
+			"TRItem",
 		};
 
 		var enginePrivateDependencyModuleNames = new string[] 

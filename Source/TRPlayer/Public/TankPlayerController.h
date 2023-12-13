@@ -15,6 +15,7 @@ class UInputMappingContext;
 struct FInputActionValue;
 class UInputAction;
 class ABaseTankPawn;
+class UXPCollectionComponent;
 
 /**
  * 
@@ -50,6 +51,9 @@ private:
 	std::optional<FVector> GetLookVectorHitLocation(const FVector& LookDirection) const;
 
 private:
+
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = Components, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UXPCollectionComponent> XPCollectionComponent{};
 
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputMappingContext> InputMappingContext{};

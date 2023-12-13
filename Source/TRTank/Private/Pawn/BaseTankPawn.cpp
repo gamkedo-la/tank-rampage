@@ -16,6 +16,8 @@
 #include "TankSockets.h"
 #include "Projectile.h"
 
+#include "Subsystems/TankEventsSubsystem.h"
+
 #include "TRTankLogging.h"
 #include "Logging/LoggingUtils.h"
 #include "VisualLogger/VisualLogger.h"
@@ -113,11 +115,19 @@ float ABaseTankPawn::TakeDamage(float Damage, FDamageEvent const& DamageEvent, A
 
 	if (FMath::IsNearlyZero(Health))
 	{
-		// TODO: Only destroy AI tanks
 		if (auto MyController = GetController(); MyController && !MyController->IsPlayerController())
 		{
 			DetachFromControllerPendingDestroy();
 			Destroy();
+
+			auto World = GetWorld();
+			check(World);
+
+			auto TankEventsSubsystem = World->GetSubsystem<UTankEventsSubsystem>();
+			if (ensure(TankEventsSubsystem))
+			{
+				TankEventsSubsystem->OnTankDestroyed.Broadcast(this, EventInstigator, DamageCauser);
+			}
 		}
 
 		UE_LOG(LogTRTank, Display, TEXT("%s: TakeDamage - Killed from %s by %s"),
