@@ -9,7 +9,7 @@
 class AXPToken;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class TRPLAYER_API UXPCollectionComponent : public UActorComponent
+class UXPCollectionComponent : public UActorComponent
 {
 	GENERATED_BODY()
 

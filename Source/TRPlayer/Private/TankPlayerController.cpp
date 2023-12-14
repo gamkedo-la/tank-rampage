@@ -3,8 +3,6 @@
 
 #include "TankPlayerController.h"
 
-#include "XPCollectionComponent.h"
-
 #include "Logging/LoggingUtils.h"
 #include "TRPlayerLogging.h"
 #include "Pawn/BaseTankPawn.h"
@@ -21,8 +19,6 @@
 ATankPlayerController::ATankPlayerController()
 {
 	PrimaryActorTick.bCanEverTick = true;
-
-	XPCollectionComponent = CreateDefaultSubobject<UXPCollectionComponent>(TEXT("XP Collection"));
 }
 
 void ATankPlayerController::BeginPlay()

@@ -9,6 +9,7 @@
 class AXPToken;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnXPTokenOverlap, AXPToken*, Token, APawn*, PlayerPawn);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnXPLevelUp);
 
 /**
  * 
@@ -21,5 +22,7 @@ class TRITEM_API UXPSubsystem : public UWorldSubsystem
 public:
 	UPROPERTY(Category = "Notification", Transient, BlueprintAssignable)
 	FOnXPTokenOverlap OnXPTokenOverlap;
-	
+
+	UPROPERTY(Category = "Notification", Transient, BlueprintAssignable)
+	FOnXPLevelUp OnXPLevelUp;
 };

@@ -5,16 +5,16 @@
 
 #include "XPSubsystem.h"
 #include "XPToken.h"
+#include "RampageGameMode.h"
 
 #include "Logging/LoggingUtils.h"
-#include "TRPlayerLogging.h"
+#include "TankRampageLogging.h"
+#include "VisualLogger/VisualLogger.h"
 
-// Sets default values for his component's properties
 UXPCollectionComponent::UXPCollectionComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 }
-
 
 // Called when the game starts
 void UXPCollectionComponent::BeginPlay()
@@ -35,17 +35,17 @@ void UXPCollectionComponent::BeginPlay()
 
 void UXPCollectionComponent::OnTokenCollected(AXPToken* Token, APawn* PlayerPawn)
 {
-	if (!PlayerPawn || PlayerPawn->GetOwner() != GetOwner())
+	if (!Token)
 	{
-		UE_LOG(LogTRPlayer, Error, TEXT("%s:%s - OnTokenCollected: PlayerPawn=%s is not owned by this component"),
-			*LoggingUtils::GetName(GetOwner()), *GetName(), *LoggingUtils::GetName(PlayerPawn));
 		return;
 	}
 
-	// TODO: Increment level amount and notify UI to update progress bar
-	if (GEngine)
+	auto RampageGameMode = Cast<ARampageGameMode>(GetOwner());
+	if (!ensure(RampageGameMode))
 	{
-		GEngine->AddOnScreenDebugMessage(0, 3.0f, FColor::Green, FString::Printf(TEXT("Collected XP Token %s"), *LoggingUtils::GetName(Token)));
+		return;
 	}
+
+	RampageGameMode->OnTokenCollected(*Token);
 }
 
