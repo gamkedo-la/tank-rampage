@@ -35,7 +35,7 @@ void UXPCollectionComponent::BeginPlay()
 
 void UXPCollectionComponent::OnTokenCollected(AXPToken* Token, APawn* PlayerPawn)
 {
-	if (PlayerPawn != GetOwner())
+	if (!PlayerPawn || PlayerPawn->GetOwner() != GetOwner())
 	{
 		UE_LOG(LogTRPlayer, Error, TEXT("%s:%s - OnTokenCollected: PlayerPawn=%s is not owned by this component"),
 			*LoggingUtils::GetName(GetOwner()), *GetName(), *LoggingUtils::GetName(PlayerPawn));

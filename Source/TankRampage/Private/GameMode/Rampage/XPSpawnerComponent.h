@@ -20,6 +20,14 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
+	UFUNCTION()
+	void OnTankDestroyed(ABaseTankPawn* DestroyedTank, AController* DestroyedBy, AActor* DestroyedWith);
+
+	void SpawnToken(const FVector& Location, const AController& Owner) const;
+
+	FVector GetSpawnLocation(const FVector& BaseLocation) const;
+
+private:
 	UPROPERTY(EditDefaultsOnly, Category = "XP")
 	TSubclassOf<AXPToken> XPTokenClass{};
 };
