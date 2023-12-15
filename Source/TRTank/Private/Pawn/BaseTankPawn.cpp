@@ -211,6 +211,9 @@ void ABaseTankPawn::Fire()
 
 	UE_VLOG_UELOG(this, LogTRTank, Log, TEXT("%s: Fire: %s at %s"), *GetName(), *LoggingUtils::GetName(MainGunProjectile), *SpawnLocation.ToCompactString(), *SpawnRotation.ToCompactString());
 
+	check(TankBarrel);
+
+	SpawnedProjectile->Initialize(*TankBarrel, TankSockets::GunFire);
 	SpawnedProjectile->Launch(TankShellSpeed);
 
 	LastFireTimeSeconds = World->GetTimeSeconds();

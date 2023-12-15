@@ -11,6 +11,7 @@
 class UStaticMeshComponent;
 class UProjectileMovementComponent;
 class URadialForceComponent;
+class UNiagaraSystem;
 
 UCLASS()
 class TRITEM_API AProjectile : public AActor, public IVisualLoggerDebugSnapshotInterface
@@ -22,6 +23,8 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void Launch(float Speed);
+
+	void Initialize(USceneComponent& IncidentComponent, const FName& IncidentSocketName);
 
 #if ENABLE_VISUAL_LOG
 	virtual void GrabDebugSnapshot(FVisualLogEntry* Snapshot) const override;
@@ -35,6 +38,7 @@ protected:
 private:
 	void InitDebugDraw();
 	void DestroyDebugDraw();
+	void PlayFiringVfx();
 
 
 private:
@@ -51,8 +55,19 @@ private:
 	UPROPERTY(VisibleDefaultsOnly)
 	TObjectPtr<URadialForceComponent> ExplosionForce{};
 
+	UPROPERTY(Category = "Effects | Firing", EditDefaultsOnly)
+	TObjectPtr<UNiagaraSystem> FiringVfx{};
+
+	UPROPERTY(Category = "Effects | Firing", EditDefaultsOnly)
+	FName DirectionParameter{};
+
 	UPROPERTY(EditDefaultsOnly)
 	float MaxLifetime{ 10.0f };
+
+	UPROPERTY(Transient)
+	TObjectPtr<USceneComponent> AttachComponent{};
+
+	FName AttachSocketName{};
 
 #if ENABLE_VISUAL_LOG
 	FTimerHandle VisualLoggerTimer{};

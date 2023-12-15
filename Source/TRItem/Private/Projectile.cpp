@@ -12,6 +12,9 @@
 #include "TRItemLogging.h"
 #include "VisualLogger/VisualLogger.h"
 
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
+
 AProjectile::AProjectile()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -38,6 +41,14 @@ void AProjectile::Launch(float Speed)
 	ProjectileMovementComponent->Activate();
 
 	SetLifeSpan(MaxLifetime);
+
+	PlayFiringVfx();
+}
+
+void AProjectile::Initialize(USceneComponent& IncidentComponent, const FName& IncidentSocketName)
+{
+	AttachComponent = &IncidentComponent;
+	AttachSocketName = IncidentSocketName;
 }
 
 void AProjectile::BeginPlay()
@@ -61,6 +72,34 @@ void AProjectile::EndPlay(EEndPlayReason::Type EndPlayReason)
 	DestroyDebugDraw();
 }
 
+
+void AProjectile::PlayFiringVfx()
+{
+	if (!FiringVfx)
+	{
+		UE_VLOG_UELOG(this, LogTRItem, Warning, TEXT("%s: FiringVfx is not set"), *GetName());
+		return;
+	}
+
+	const auto& Direction = GetActorRotation().Vector(); // Muzzle socket rotation on tank barrel
+
+	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: FiringVfx: %s playing at %s"), *GetName(), *FiringVfx.GetName(), *GetActorLocation().ToCompactString());
+
+	check(AttachComponent);
+
+	UNiagaraComponent* NiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAttached(FiringVfx, AttachComponent, AttachSocketName, FVector::ZeroVector, FRotator::ZeroRotator,
+		EAttachLocation::Type::KeepRelativeOffset, true);
+
+	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: FiringVfx: %s playing NiagaraComponent=%s"), *GetName(), *LoggingUtils::GetName(NiagaraComp));
+
+	if (!NiagaraComp)
+	{
+		return;
+	}
+
+	NiagaraComp->SetVectorParameter(DirectionParameter, Direction);
+}
+
 void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
 {
 	ExplosionForce->FireImpulse();
@@ -81,6 +120,8 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, U
 
 	Destroy();
 }
+
+#pragma region Visual Logger
 
 #if ENABLE_VISUAL_LOG
 
@@ -136,3 +177,5 @@ void AProjectile::DestroyDebugDraw() {}
 
 
 #endif
+
+#pragma endregion Visual Logger
