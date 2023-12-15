@@ -41,6 +41,12 @@ public:
 	bool CanFire() const;
 
 	UFUNCTION(BlueprintCallable)
+	float GetFireCooldownTimeRemaining() const;
+
+	UFUNCTION(BlueprintCallable)
+	float GetFireCooldownProgressPercentage() const;
+
+	UFUNCTION(BlueprintCallable)
 	void SetLeftThrottle(float Value);
 
 	UFUNCTION(BlueprintCallable)

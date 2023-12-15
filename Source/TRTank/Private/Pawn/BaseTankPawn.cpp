@@ -166,6 +166,27 @@ bool ABaseTankPawn::CanFire() const
 	return World->GetTimeSeconds() - LastFireTimeSeconds > FireCooldownTimeSeconds;
 }
 
+float ABaseTankPawn::GetFireCooldownTimeRemaining() const
+{
+	UWorld* World = GetWorld();
+	check(World);
+	float CurrentTime = World->GetTimeSeconds();
+	float TimeElapsedSinceLastFired = CurrentTime - LastFireTimeSeconds;
+	bool bIsFireOnCooldown =  TimeElapsedSinceLastFired < FireCooldownTimeSeconds;
+	return bIsFireOnCooldown ? FireCooldownTimeSeconds - TimeElapsedSinceLastFired : 0.f;
+}
+
+float ABaseTankPawn::GetFireCooldownProgressPercentage() const
+{
+	UWorld* World = GetWorld();
+	check(World);
+	float CurrentTime = World->GetTimeSeconds();
+	float TimeElapsedSinceLastFired = CurrentTime - LastFireTimeSeconds;
+	bool bIsFireOnCooldown =  TimeElapsedSinceLastFired < FireCooldownTimeSeconds;
+	float ProgressPercentage =  TimeElapsedSinceLastFired/FireCooldownTimeSeconds;
+	return bIsFireOnCooldown ? ProgressPercentage : 1.f;
+}
+
 void ABaseTankPawn::AimAt(const FVector& Location)
 {
 	TankAimingComponent->AimAt(Location, TankShellSpeed);
