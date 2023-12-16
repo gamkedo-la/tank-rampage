@@ -24,8 +24,8 @@ AProjectile::AProjectile()
 	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
 	ProjectileMovementComponent->bAutoRegister = true;
 	ProjectileMovementComponent->bAutoActivate = false;
-	// This is needed for the projectile to actually move
-	ProjectileMovementComponent->bShouldBounce = true;
+	// Doesn't need to bounce as we destroy on hit
+	ProjectileMovementComponent->bShouldBounce = false;
 
 	ExplosionForce = CreateDefaultSubobject<URadialForceComponent>(TEXT("ExplosionForce"));
 	ExplosionForce->bAutoActivate = false;
@@ -101,11 +101,9 @@ void AProjectile::PlayFiringVfx()
 
 void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
 {
-	ExplosionForce->FireImpulse();
-
 	UE_VLOG_LOCATION(this, LogTRItem, Display, GetActorLocation(), ExplosionForce->Radius, FColor::Red, TEXT("Explosion"));
 
-	// TODO: Placeholder
+	bool bDestroy{};
 
 	if (OtherActor)
 	{
@@ -114,10 +112,20 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, U
 
 		auto Pawn = GetInstigator();
 
-		OtherActor->TakeDamage(100, DamageEvent, Pawn ? Pawn->GetController() : nullptr, this);
+		// Avoid damaging self unless configured to do so
+		if (Pawn != OtherActor || CanDamageInstigator())
+		{
+			bDestroy = true;
+			// TODO: Placeholder
+			OtherActor->TakeDamage(100, DamageEvent, Pawn ? Pawn->GetController() : nullptr, this);
+		}
 	}
 
-	Destroy();
+	if (bDestroy)
+	{
+		ExplosionForce->FireImpulse();
+		Destroy();
+	}
 }
 
 #pragma region Visual Logger

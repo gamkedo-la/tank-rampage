@@ -26,6 +26,9 @@ public:
 
 	void Initialize(USceneComponent& IncidentComponent, const FName& IncidentSocketName);
 
+	UFUNCTION(BlueprintPure)
+	bool CanDamageInstigator() const;
+
 #if ENABLE_VISUAL_LOG
 	virtual void GrabDebugSnapshot(FVisualLogEntry* Snapshot) const override;
 #endif
@@ -64,6 +67,12 @@ private:
 	UPROPERTY(EditDefaultsOnly)
 	float MaxLifetime{ 10.0f };
 
+	/*
+	* Indicates whether the tank that fired the weapon can be damaged by it.
+	*/
+	UPROPERTY(EditDefaultsOnly)
+	bool bCanDamageInstigator{ false };
+
 	UPROPERTY(Transient)
 	TObjectPtr<USceneComponent> AttachComponent{};
 
@@ -73,3 +82,12 @@ private:
 	FTimerHandle VisualLoggerTimer{};
 #endif
 };
+
+#pragma region Inline Definitions
+
+inline bool AProjectile::CanDamageInstigator() const
+{
+	return bCanDamageInstigator;
+}
+
+#pragma endregion Inline Definitions
