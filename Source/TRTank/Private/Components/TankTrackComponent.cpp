@@ -10,12 +10,42 @@
 #include "VisualLogger/VisualLogger.h"
 #include "Debug/TRDebugUtils.h"
 
+#include "GameFramework/MovementComponent.h" 
+
 UTankTrackComponent::UTankTrackComponent()
 {
+	bWantsInitializeComponent = true;
+
 	PrimaryComponentTick.bCanEverTick = true;
+	// Affecting physics so need to tick before physics - setting explicitly to make this apparent
+	PrimaryComponentTick.TickGroup = ETickingGroup::TG_PrePhysics;
 
 	BodyInstance.bNotifyRigidBodyCollision = false;
 	BodyInstance.bUseCCD = false;
+}
+
+void UTankTrackComponent::InitializeComponent()
+{
+	Super::InitializeComponent();
+
+	check(GetOwner());
+
+	auto MovementComponent = GetOwner()->FindComponentByClass<UMovementComponent>();
+
+	if (MovementComponent)
+	{
+		// Tick after movement - note that movement is ticked after pawn player controlller which is what processes the input for the frame so will respond to throttle on same frame
+		PrimaryComponentTick.AddPrerequisite(MovementComponent, MovementComponent->PrimaryComponentTick);
+	}
+	else
+	{
+		UE_LOG(LogTRTank, Error, TEXT("%s-%s: Owner does not have a UMovementComponent available"), *LoggingUtils::GetName(GetOwner()), *GetName());
+	}
+}
+
+void UTankTrackComponent::BeginPlay()
+{
+	Super::BeginPlay();
 }
 
 void UTankTrackComponent::SetThrottle(float InThrottle)
@@ -58,9 +88,7 @@ void UTankTrackComponent::DriveTrack(float Throttle)
 	}
 
 	const auto& AdjustedLocalForward = ForceRotation.GetForwardVector();
-
 	const auto& ForceDirection = GetComponentToWorld().TransformVector(AdjustedLocalForward);
-
 	const auto ForceApplied = ForceDirection * Throttle * TrackMaxDrivingForce;
 
 	auto RootComponent = Cast<UPrimitiveComponent>(GetOwner()->GetRootComponent());
@@ -74,15 +102,9 @@ void UTankTrackComponent::DriveTrack(float Throttle)
 
 	UE_LOG(LogTRTank, Verbose, TEXT("%s-%s: SetThrottle: %f"),
 		*LoggingUtils::GetName(GetOwner()), *GetName(), Throttle);
-
 	TR::DebugUtils::DrawForceAtLocation(RootComponent, ForceApplied, ForceLocation);
 
 	RootComponent->AddForceAtLocation(ForceApplied, ForceLocation);
-}
-
-void UTankTrackComponent::BeginPlay()
-{
-	Super::BeginPlay();
 }
 
 void UTankTrackComponent::ApplySidewaysForce(float DeltaTime)

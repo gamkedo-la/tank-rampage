@@ -21,7 +21,8 @@ namespace
 
 UTankAimingComponent::UTankAimingComponent()
 {
-	PrimaryComponentTick.bCanEverTick = true;
+	PrimaryComponentTick.bCanEverTick = false;
+
 	bWantsInitializeComponent = true;
 }
 
@@ -37,11 +38,6 @@ void UTankAimingComponent::SetTankComponents(const FTankComponents& TankComponen
 void UTankAimingComponent::BeginPlay()
 {
 	Super::BeginPlay();
-}
-
-void UTankAimingComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
 
 void UTankAimingComponent::InitializeComponent()

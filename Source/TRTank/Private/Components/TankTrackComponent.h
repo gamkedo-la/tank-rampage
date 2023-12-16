@@ -26,6 +26,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void InitializeComponent() override;
 
 	void ApplySidewaysForce(float DeltaTime);
 	void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction);
