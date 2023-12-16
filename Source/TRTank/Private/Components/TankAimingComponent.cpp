@@ -44,7 +44,7 @@ void UTankAimingComponent::InitializeComponent()
 {
 	Super::InitializeComponent();
 
-	UE_VLOG_UELOG(GetOwner(), LogTRTank, Log, TEXT("%s-%s: InitializeComponent"), *LoggingUtils::GetName(GetOwner()), *GetName());
+	UE_LOG(LogTRTank, Log, TEXT("%s-%s: InitializeComponent"), *LoggingUtils::GetName(GetOwner()), *GetName());
 }
 
 void UTankAimingComponent::AimAt(const FVector& Location, float LaunchSpeed)

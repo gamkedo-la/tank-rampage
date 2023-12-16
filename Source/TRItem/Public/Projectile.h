@@ -9,7 +9,7 @@
 #include "Projectile.generated.h"
 
 class UStaticMeshComponent;
-class UProjectileMovementComponent;
+class UFiredWeaponMovementComponent;
 class URadialForceComponent;
 class UNiagaraSystem;
 
@@ -35,8 +35,8 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaTime) override;
 	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
+	virtual void PostInitializeComponents() override;
 
 private:
 	void InitDebugDraw();
@@ -53,7 +53,7 @@ private:
 	TObjectPtr<UStaticMeshComponent> ProjectileMesh{};
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UProjectileMovementComponent> ProjectileMovementComponent{};
+	TObjectPtr<UFiredWeaponMovementComponent> ProjectileMovementComponent{};
 
 	UPROPERTY(VisibleDefaultsOnly)
 	TObjectPtr<URadialForceComponent> ExplosionForce{};

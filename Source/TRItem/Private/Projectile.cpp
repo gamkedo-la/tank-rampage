@@ -4,7 +4,7 @@
 #include "Projectile.h"
 
 #include "Components/StaticMeshComponent.h"
-#include "GameFramework/ProjectileMovementComponent.h"
+#include "FiredWeaponMovementComponent.h"
 #include "PhysicsEngine/RadialForceComponent.h"
 #include "Engine/DamageEvents.h"
 
@@ -21,7 +21,7 @@ AProjectile::AProjectile()
 
 	RootComponent = ProjectileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ProjectileMesh"));
 	
-	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
+	ProjectileMovementComponent = CreateDefaultSubobject<UFiredWeaponMovementComponent>(TEXT("ProjectileMovement"));
 	ProjectileMovementComponent->bAutoRegister = true;
 	ProjectileMovementComponent->bAutoActivate = false;
 	// Doesn't need to bounce as we destroy on hit
@@ -55,14 +55,12 @@ void AProjectile::BeginPlay()
 {
 	Super::BeginPlay();
 
-	ProjectileMesh->OnComponentHit.AddDynamic(this, &AProjectile::OnHit);
+	if (ensure(ProjectileMesh))
+	{
+		ProjectileMesh->OnComponentHit.AddDynamic(this, &AProjectile::OnHit);
+	}
 	
 	InitDebugDraw();
-}
-
-void AProjectile::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
 }
 
 void AProjectile::EndPlay(EEndPlayReason::Type EndPlayReason)
@@ -70,6 +68,21 @@ void AProjectile::EndPlay(EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 
 	DestroyDebugDraw();
+}
+
+void AProjectile::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	check(ProjectileMovementComponent);
+
+	ProjectileMovementComponent->SetCanDamageOwner(bCanDamageInstigator);
+
+	// Avoid self-hit unless configured to allow
+	if (ensure(ProjectileMesh) && !bCanDamageInstigator)
+	{
+		ProjectileMesh->IgnoreActorWhenMoving(GetOwner(), true);
+	}
 }
 
 void AProjectile::PlayFiringVfx()
@@ -101,9 +114,7 @@ void AProjectile::PlayFiringVfx()
 
 void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
 {
-	UE_VLOG_LOCATION(this, LogTRItem, Display, GetActorLocation(), ExplosionForce->Radius, FColor::Red, TEXT("Explosion"));
-
-	bool bDestroy{};
+	bool bDestroy = true;
 
 	if (OtherActor)
 	{
@@ -115,16 +126,24 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, U
 		// Avoid damaging self unless configured to do so
 		if (Pawn != OtherActor || CanDamageInstigator())
 		{
-			bDestroy = true;
 			// TODO: Placeholder
 			OtherActor->TakeDamage(100, DamageEvent, Pawn ? Pawn->GetController() : nullptr, this);
+		}
+		else
+		{
+			bDestroy = false;
 		}
 	}
 
 	if (bDestroy)
 	{
+		UE_VLOG_LOCATION(this, LogTRItem, Display, GetActorLocation(), ExplosionForce->Radius, FColor::Red, TEXT("Explosion"));
 		ExplosionForce->FireImpulse();
 		Destroy();
+	}
+	else if(OtherActor)
+	{	
+		UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: Ignoring self hit with instigator=%s"), *GetName(), *OtherActor->GetName());
 	}
 }
 
