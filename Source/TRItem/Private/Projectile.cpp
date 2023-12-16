@@ -72,7 +72,6 @@ void AProjectile::EndPlay(EEndPlayReason::Type EndPlayReason)
 	DestroyDebugDraw();
 }
 
-
 void AProjectile::PlayFiringVfx()
 {
 	if (!FiringVfx)
@@ -90,7 +89,7 @@ void AProjectile::PlayFiringVfx()
 	UNiagaraComponent* NiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAttached(FiringVfx, AttachComponent, AttachSocketName, FVector::ZeroVector, FRotator::ZeroRotator,
 		EAttachLocation::Type::KeepRelativeOffset, true);
 
-	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: FiringVfx: %s playing NiagaraComponent=%s"), *GetName(), *LoggingUtils::GetName(NiagaraComp));
+	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: FiringVfx: %s playing NiagaraComponent=%s"), *GetName(), *FiringVfx.GetName(), *LoggingUtils::GetName(NiagaraComp));
 
 	if (!NiagaraComp)
 	{
@@ -149,7 +148,7 @@ void AProjectile::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
 	ProjectileMesh->GetLocalBounds(Min, Max);
 	FBox Bounds{ Min, Max };
 
-	Snapshot->AddElement(Bounds, GetActorTransform().ToMatrixNoScale(),
+	Snapshot->AddElement(Bounds, GetActorTransform().ToMatrixWithScale(),
 		LogTRItem.GetCategoryName(), ELogVerbosity::Log, FColor::Red,
 		*GetName());
 }
