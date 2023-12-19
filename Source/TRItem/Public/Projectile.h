@@ -77,6 +77,7 @@ private:
 	TObjectPtr<USceneComponent> AttachComponent{};
 
 	FName AttachSocketName{};
+	FVector InitialDirection{ EForceInit::ForceInitToZero };
 
 #if ENABLE_VISUAL_LOG
 	FTimerHandle VisualLoggerTimer{};

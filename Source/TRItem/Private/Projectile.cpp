@@ -40,6 +40,8 @@ void AProjectile::Launch(float Speed)
 	ProjectileMovementComponent->SetVelocityInLocalSpace(FVector::ForwardVector * Speed);
 	ProjectileMovementComponent->Activate();
 
+	InitialDirection = GetActorRotation().Vector();
+
 	SetLifeSpan(MaxLifetime);
 
 	PlayFiringVfx();
@@ -118,16 +120,19 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, U
 
 	if (OtherActor)
 	{
-		FRadialDamageEvent DamageEvent;
-		DamageEvent.Origin = GetActorLocation();
+		// TODO: Should switch between FRadialDamageEvent and FPointDamageEvent based on type of weapon
+		FPointDamageEvent DamageEvent;
+		// TODO: Make configurable
+		DamageEvent.Damage = 100;
+		DamageEvent.HitInfo = Hit;
+		DamageEvent.ShotDirection = InitialDirection;
 
 		auto Pawn = GetInstigator();
 
 		// Avoid damaging self unless configured to do so
 		if (Pawn != OtherActor || CanDamageInstigator())
 		{
-			// TODO: Placeholder
-			OtherActor->TakeDamage(100, DamageEvent, Pawn ? Pawn->GetController() : nullptr, this);
+			OtherActor->TakeDamage(DamageEvent.Damage, DamageEvent, Pawn ? Pawn->GetController() : nullptr, this);
 		}
 		else
 		{

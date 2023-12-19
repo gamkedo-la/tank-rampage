@@ -17,6 +17,7 @@ class UTankTurretComponent;
 class UTankBarrelComponent;
 class UTankTrackComponent;
 class UTankMovementComponent;
+class UHealthComponent;
 
 class AProjectile;
 
@@ -59,6 +60,7 @@ public:
 	void TurnRight(float Throw);
 
 	UTankAimingComponent* GetTankAimingComponent() const;
+	UHealthComponent* GetHealthComponent() const;
 
 	float GetCurrentWeaponExitSpeed() const;
 
@@ -72,11 +74,8 @@ protected:
 
 	virtual void NotifyControllerChanged() override;
 
-	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
-
 private:
 	void UpdateSpringArmTickEnabled();
-
 
 protected:
 
@@ -85,6 +84,9 @@ protected:
 
 	UPROPERTY(Category = "Components", VisibleDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UTankMovementComponent> TankMovementComponent{};
+
+	UPROPERTY(Category = "Components", VisibleDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UHealthComponent> HealthComponent{};
 
 private:
 	UPROPERTY(Category = "Tank Model", VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -125,13 +127,6 @@ private:
 
 	UPROPERTY(Category = "Weapon", EditDefaultsOnly)
 	TSubclassOf<AProjectile> MainGunProjectile{};
-
-	// TODO: Placeholder - move to health component
-	UPROPERTY(Category = "Health", EditDefaultsOnly)
-	float MaxHealth{ 100.0f };
-
-	UPROPERTY(Category = "Health", VisibleInstanceOnly)
-	float Health{};
 };
 
 
@@ -147,6 +142,12 @@ inline UTankAimingComponent* ABaseTankPawn::GetTankAimingComponent() const
 {
 	check(TankAimingComponent);
 	return TankAimingComponent;
+}
+
+inline UHealthComponent* ABaseTankPawn::GetHealthComponent() const
+{
+	check(HealthComponent);
+	return HealthComponent;
 }
 
 inline float ABaseTankPawn::GetCurrentWeaponExitSpeed() const

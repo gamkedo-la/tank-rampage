@@ -9,6 +9,7 @@
 #include "TankAIController.generated.h"
 
 class UCurveFloat;
+class UHealthComponent;
 
 /**
  * 
@@ -32,6 +33,10 @@ public:
 	virtual void GrabDebugSnapshot(FVisualLogEntry* Snapshot) const override;
 #endif
 
+protected:
+	virtual void OnPossess(APawn* InPawn) override;
+
+
 private:
 
 	struct FTankAIContext
@@ -49,6 +54,9 @@ private:
 	bool IsPlayerInRange(const FTankAIContext& AIContext) const;
 
 	void InitTargetingError(const FTankAIContext& AIContext);
+
+	UFUNCTION()
+	void OnHealthChanged(UHealthComponent* HealthComponent, float PreviousHealthValue, AController* EventInstigator, AActor* ChangeCauser);
 
 private:
 	UPROPERTY(EditDefaultsOnly)

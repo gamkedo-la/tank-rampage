@@ -8,6 +8,7 @@
 #include "Components/TankBarrelComponent.h"
 #include "Components/TankTrackComponent.h"
 #include "Components/TankMovementComponent.h"
+#include "Components/HealthComponent.h"
 
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
@@ -65,14 +66,13 @@ ABaseTankPawn::ABaseTankPawn()
 
 	TankAimingComponent = CreateDefaultSubobject<UTankAimingComponent>(TEXT("TankAimingComponent"));
 	TankMovementComponent = CreateDefaultSubobject<UTankMovementComponent>(TEXT("TankMovement"));
+	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("Health"));
 }
 
 // Called when the game starts or when spawned
 void ABaseTankPawn::BeginPlay()
 {
 	Super::BeginPlay();
-
-	Health = MaxHealth;
 
 	// Cannot call this in the constructor
 	TankBody->SetMassOverrideInKg(NAME_None, 40000);
@@ -100,41 +100,6 @@ void ABaseTankPawn::NotifyControllerChanged()
 	Super::NotifyControllerChanged();
 
 	UpdateSpringArmTickEnabled();
-}
-
-float ABaseTankPawn::TakeDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
-{
-	UE_LOG(LogTRTank, Log, TEXT("%s: TakeDamage - Amount=%f from %s by %s"),
-		*GetName(), Damage, *LoggingUtils::GetName(DamageCauser), *LoggingUtils::GetName(EventInstigator));
-
-	// TODO: Placeholder
-
-	Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
-
-	Health = FMath::Clamp(Health - Damage, 0, MaxHealth);
-
-	if (FMath::IsNearlyZero(Health))
-	{
-		if (auto MyController = GetController(); MyController && !MyController->IsPlayerController())
-		{
-			DetachFromControllerPendingDestroy();
-			Destroy();
-
-			auto World = GetWorld();
-			check(World);
-
-			auto TankEventsSubsystem = World->GetSubsystem<UTankEventsSubsystem>();
-			if (ensure(TankEventsSubsystem))
-			{
-				TankEventsSubsystem->OnTankDestroyed.Broadcast(this, EventInstigator, DamageCauser);
-			}
-		}
-
-		UE_LOG(LogTRTank, Display, TEXT("%s: TakeDamage - Killed from %s by %s"),
-			*GetName(), *LoggingUtils::GetName(DamageCauser), *LoggingUtils::GetName(EventInstigator));
-	}
-
-	return Damage;
 }
 
 void ABaseTankPawn::UpdateSpringArmTickEnabled()
@@ -264,6 +229,8 @@ void ABaseTankPawn::TurnRight(float Throw)
 	TankMovementComponent->TurnRight(Throw);
 }
 
+#pragma region Visual Logger
+
 #if ENABLE_VISUAL_LOG
 
 void ABaseTankPawn::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
@@ -290,7 +257,9 @@ void ABaseTankPawn::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
 	Category.Category = FString::Printf(TEXT("Tank (%s)"), *GetName());
 
 	Category.Add(TEXT("Fire Cooldown Remaining"), FString::Printf(TEXT("%.1f"), FMath::Max(0, LastFireTimeSeconds + FireCooldownTimeSeconds - CurrentTimeSeconds)));
-	Category.Add(TEXT("Health"), FString::Printf(TEXT("%.1f"), Health));
+
+	// TODO: Move to health component visual logger
+	Category.Add(TEXT("Health"), FString::Printf(TEXT("%.1f"), HealthComponent->GetHealth()));
 
 	// TODO: Change color based on speed and stopping
 	// 
@@ -339,6 +308,8 @@ void ABaseTankPawn::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
 }
 
 #endif
+
+#pragma endregion Visual Logger
 
 namespace
 {

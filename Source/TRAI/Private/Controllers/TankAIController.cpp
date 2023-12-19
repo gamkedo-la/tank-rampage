@@ -5,11 +5,14 @@
 
 #include "Pawn/BaseTankPawn.h"
 #include "Components/TankAimingComponent.h"
+#include "Components/HealthComponent.h"
 
 #include "Kismet/GameplayStatics.h" 
 #include "TRAILogging.h"
 #include "Logging/LoggingUtils.h"
 #include "VisualLogger/VisualLogger.h"
+
+#include "Subsystems/TankEventsSubsystem.h"
 
 #include "Curves/CurveFloat.h"
 
@@ -171,12 +174,45 @@ void ATankAIController::InitTargetingError(const FTankAIContext& AIContext)
 	TargetingError = FMath::RandRange(-TargetingErrorMagnitude, TargetingErrorMagnitude) * FMath::VRand();
 }
 
+void ATankAIController::OnHealthChanged(UHealthComponent* HealthComponent, float PreviousHealthValue, AController* EventInstigator, AActor* ChangeCauser)
+{
+	check(HealthComponent);
+
+	if (auto Tank = GetControlledTank(); Tank && HealthComponent->IsDead())
+	{
+		auto World = GetWorld();
+		check(World);
+
+		auto TankEventsSubsystem = World->GetSubsystem<UTankEventsSubsystem>();
+		if (ensure(TankEventsSubsystem))
+		{
+			TankEventsSubsystem->OnTankDestroyed.Broadcast(Tank, EventInstigator, ChangeCauser);
+		}
+
+		Tank->DetachFromControllerPendingDestroy();
+		Tank->Destroy();
+	}
+}
+
 #if ENABLE_VISUAL_LOG
 void ATankAIController::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
 {
 	Super::GrabDebugSnapshot(Snapshot);
 
 	auto& Category = Snapshot->Status[0];
+}
+
+void ATankAIController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+
+	auto Tank = GetControlledTank();
+	if (!ensure(Tank))
+	{
+		return;
+	}
+
+	Tank->GetHealthComponent()->OnHealthChanged.AddDynamic(this, &ThisClass::OnHealthChanged);
 }
 
 #endif
