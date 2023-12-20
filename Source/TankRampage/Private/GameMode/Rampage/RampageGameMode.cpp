@@ -5,15 +5,17 @@
 
 #include "XPSpawnerComponent.h"
 #include "XPCollectionComponent.h"
-
 #include "RampageGameState.h"
-
+#include "Pawn/BaseTankPawn.h"
+#include "Components/HealthComponent.h"
+#include "Subsystems/TankEventsSubsystem.h"
 #include "XPToken.h"
 #include "XPSubsystem.h"
 
 #include "Logging/LoggingUtils.h"
 #include "VisualLogger/VisualLogger.h"
 #include "TankRampageLogging.h"
+#include "GameFramework/PlayerController.h"
 
 #include <limits>
 
@@ -23,9 +25,18 @@ ARampageGameMode::ARampageGameMode()
 	XPCollectionComponent = CreateDefaultSubobject<UXPCollectionComponent>(TEXT("XP Collection"));
 }
 
-void ARampageGameMode::OnTokenCollected(const AXPToken& Token)
+void ARampageGameMode::OnTokenCollected(const AXPToken& Token, APawn* PlayerPawn)
 {
-	UE_VLOG_UELOG(this, LogTankRampage, Log, TEXT("%s: OnTokenCollected: Token=%s"), *GetName(), *Token.GetName());
+	UE_VLOG_UELOG(this, LogTankRampage, Log, TEXT("%s: OnTokenCollected: Token=%s by PlayerPawn=%s"),
+		*GetName(), *Token.GetName(), *LoggingUtils::GetName(PlayerPawn));
+
+	if (auto Tank = Cast<ABaseTankPawn>(PlayerPawn); !Tank || Tank->GetHealthComponent()->IsDead())
+	{
+		UE_VLOG_UELOG(this, LogTankRampage, Log, TEXT("%s: OnTokenCollected: Skipping token collection as PlayerPawn=%s is DEAD"),
+			*GetName(), *LoggingUtils::GetName(PlayerPawn));
+
+		return;
+	}
 
 	AddXP(TokenXPAmount);
 }
@@ -34,21 +45,8 @@ void ARampageGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 
-	auto RampageGameState = GetGameState<ARampageGameState>();
-	if (!ensure(RampageGameState))
-	{
-		return;
-	}
-
-	if (XPLevels.IsEmpty())
-	{
-		UE_LOG(LogTankRampage, Error, TEXT("%s: No XP Levels set - No progression will happen!"), *GetName());
-		RampageGameState->LevelUpXP = std::numeric_limits<int32>::max();
-	}
-	else
-	{
-		RampageGameState->LevelUpXP = XPLevels[0];
-	}
+	InitializeGameState();
+	RegisterEvents();
 }
 
 void ARampageGameMode::AddXP(int32 XP)
@@ -96,5 +94,52 @@ void ARampageGameMode::AddXP(int32 XP)
 		{
 			XPSubsystem->OnXPLevelUp.Broadcast();
 		}
+	}
+}
+
+void ARampageGameMode::InitializeGameState()
+{
+	auto RampageGameState = GetGameState<ARampageGameState>();
+	if (!ensure(RampageGameState))
+	{
+		return;
+	}
+
+	if (XPLevels.IsEmpty())
+	{
+		UE_LOG(LogTankRampage, Error, TEXT("%s: No XP Levels set - No progression will happen!"), *GetName());
+		RampageGameState->LevelUpXP = std::numeric_limits<int32>::max();
+	}
+	else
+	{
+		RampageGameState->LevelUpXP = XPLevels[0];
+	}
+}
+
+void ARampageGameMode::RegisterEvents()
+{
+	auto World = GetWorld();
+	check(World);
+
+	auto TankEventsSubsystem = World->GetSubsystem<UTankEventsSubsystem>();
+	if (ensure(TankEventsSubsystem))
+	{
+		TankEventsSubsystem->OnTankDestroyed.AddDynamic(this, &ThisClass::OnTankDestroyed);
+	}
+}
+
+void ARampageGameMode::OnTankDestroyed(ABaseTankPawn* DestroyedTank, AController* DestroyedBy, AActor* DestroyedWith)
+{
+	check(DestroyedTank);
+
+	// TODO: We may want to consider spawning additional AI tanks as they are killed
+
+	auto Controller = DestroyedTank->GetController();
+	if (auto PlayerController = Cast<APlayerController>(Controller); PlayerController)
+	{
+		UE_VLOG_UELOG(this, LogTankRampage, Display,
+			TEXT("%s: Player %s-%s killed"), *GetName(), *DestroyedTank->GetName(), *Controller->GetName());
+		
+		PlayerController->GameHasEnded(DestroyedTank, false);
 	}
 }

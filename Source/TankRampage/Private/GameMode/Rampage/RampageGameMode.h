@@ -10,6 +10,7 @@
 class UXPSpawnerComponent;
 class AXPToken;
 class UXPCollectionComponent;
+class ABaseTank;
 
 /**
  * 
@@ -22,12 +23,21 @@ class ARampageGameMode : public AGameModeBase
 public:
 	ARampageGameMode();
 
-	void OnTokenCollected(const AXPToken& Token);
+	void OnTokenCollected(const AXPToken& Token, APawn* PlayerPawn);
 
 protected:
 	virtual void BeginPlay() override;
 
 	void AddXP(int32 XP);
+
+private:
+
+	void InitializeGameState();
+	void RegisterEvents();
+
+	UFUNCTION()
+	void OnTankDestroyed(ABaseTankPawn* DestroyedTank, AController* DestroyedBy, AActor* DestroyedWith);
+
 
 private:
 	UPROPERTY(Category = "Components", VisibleDefaultsOnly)

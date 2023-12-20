@@ -6,6 +6,8 @@
 #include "Logging/LoggingUtils.h"
 #include "TRPlayerLogging.h"
 #include "Pawn/BaseTankPawn.h"
+#include "Components/HealthComponent.h"
+#include "Subsystems/TankEventsSubsystem.h"
 
 #include "InputActionValue.h"
 #include "InputAction.h"
@@ -20,6 +22,23 @@
 ATankPlayerController::ATankPlayerController()
 {
 	PrimaryActorTick.bCanEverTick = true;
+}
+
+void ATankPlayerController::GameHasEnded(AActor* EndGameFocus, bool bIsWinner)
+{
+	UE_VLOG_UELOG(this, LogTRPlayer, Display,
+		TEXT("%s: GameHasEnded: %s"), *GetName(), bIsWinner ? TEXT("Won") : TEXT("Lost"));
+
+	Super::GameHasEnded(EndGameFocus, bIsWinner);
+
+	// TODO: This is placeholder logic - for now just pause for three seconds and then restart the level
+	// We will want a message to show on the HUD and transition to end game stats
+
+	FTimerHandle _;
+	GetWorldTimerManager().SetTimer(_, FTimerDelegate::CreateWeakLambda(this, [this]()
+	{
+		this->RestartLevel();
+	}), 5.0f, false);
 }
 
 void ATankPlayerController::BeginPlay()
@@ -77,6 +96,30 @@ ABaseTankPawn* ATankPlayerController::GetControlledTank() const
 	return Cast<ABaseTankPawn>(GetPawn());
 }
 
+void ATankPlayerController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+
+	auto Tank = GetControlledTank();
+	if (!ensure(Tank))
+	{
+		return;
+	}
+
+	Tank->GetHealthComponent()->OnHealthChanged.AddDynamic(this, &ThisClass::OnHealthChanged);
+}
+
+bool ATankPlayerController::IsControlledTankAlive() const
+{
+	auto Tank = GetControlledTank();
+	if (!Tank)
+	{
+		return false;
+	}
+
+	return Tank && Tank->GetHealthComponent()->IsAlive();
+}
+
 void ATankPlayerController::InitializeInputMappingContext()
 {
 	if (!InputMappingContext)
@@ -105,10 +148,12 @@ void ATankPlayerController::InitializeCamera()
 	PlayerCameraManager->ViewPitchMax = -MinPitch;
 }
 
+#pragma region Controls
+
 void ATankPlayerController::AimTowardCrosshair()
 {
 	auto ControlledTank = GetControlledTank();
-	if (!ControlledTank)
+	if (!ControlledTank || !IsControlledTankAlive())
 	{
 		return;
 	}
@@ -122,7 +167,7 @@ void ATankPlayerController::AimTowardCrosshair()
 void ATankPlayerController::OnFire()
 {
 	auto ControlledTank = GetControlledTank();
-	if (!ControlledTank)
+	if (!ControlledTank || !IsControlledTankAlive())
 	{
 		return;
 	}
@@ -133,7 +178,7 @@ void ATankPlayerController::OnFire()
 void ATankPlayerController::OnMove(const FInputActionValue& Value)
 {
 	auto ControlledTank = GetControlledTank();
-	if (!ControlledTank)
+	if (!ControlledTank || !IsControlledTankAlive())
 	{
 		return;
 	}
@@ -199,4 +244,23 @@ FVector2D ATankPlayerController::GetCrosshairScreenspaceLocation() const
 
 	// Origin is at top left of screen
 	return FVector2D(ViewportSizeX, ViewportSizeY) * CrosshairPositionFraction;
+}
+
+#pragma endregion Controls
+
+void ATankPlayerController::OnHealthChanged(UHealthComponent* HealthComponent, float PreviousHealthValue, AController* EventInstigator, AActor* ChangeCauser)
+{
+	check(HealthComponent);
+
+	if (auto Tank = GetControlledTank(); Tank && HealthComponent->IsDead())
+	{
+		auto World = GetWorld();
+		check(World);
+
+		auto TankEventsSubsystem = World->GetSubsystem<UTankEventsSubsystem>();
+		if (ensure(TankEventsSubsystem))
+		{
+			TankEventsSubsystem->OnTankDestroyed.Broadcast(Tank, EventInstigator, ChangeCauser);
+		}
+	}
 }

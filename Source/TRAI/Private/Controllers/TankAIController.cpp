@@ -198,14 +198,6 @@ void ATankAIController::OnHealthChanged(UHealthComponent* HealthComponent, float
 	}
 }
 
-#if ENABLE_VISUAL_LOG
-void ATankAIController::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
-{
-	Super::GrabDebugSnapshot(Snapshot);
-
-	auto& Category = Snapshot->Status[0];
-}
-
 void ATankAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
@@ -217,6 +209,14 @@ void ATankAIController::OnPossess(APawn* InPawn)
 	}
 
 	Tank->GetHealthComponent()->OnHealthChanged.AddDynamic(this, &ThisClass::OnHealthChanged);
+}
+
+#if ENABLE_VISUAL_LOG
+void ATankAIController::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
+{
+	Super::GrabDebugSnapshot(Snapshot);
+
+	auto& Category = Snapshot->Status[0];
 }
 
 #endif

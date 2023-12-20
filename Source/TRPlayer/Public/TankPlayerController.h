@@ -16,7 +16,7 @@ class UInputMappingContext;
 struct FInputActionValue;
 class UInputAction;
 class ABaseTankPawn;
-
+class UHealthComponent;
 /**
  * 
  */
@@ -28,6 +28,8 @@ class TRPLAYER_API ATankPlayerController : public ABasePlayerController, public 
 public:
 	ATankPlayerController();
 
+	virtual void GameHasEnded(AActor* EndGameFocus, bool bIsWinner) override;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
@@ -35,7 +37,12 @@ protected:
 
 	virtual ABaseTankPawn* GetControlledTank() const override;
 
+	virtual void OnPossess(APawn* InPawn) override;
+
 private:
+
+	bool IsControlledTankAlive() const;
+
 	void InitializeInputMappingContext();
 	void InitializeCamera();
 	
@@ -50,6 +57,9 @@ private:
 	void GetAimingData(FAimingData& AimingData) const;
 	
 	FVector2D GetCrosshairScreenspaceLocation() const;
+
+	UFUNCTION()
+	void OnHealthChanged(UHealthComponent* HealthComponent, float PreviousHealthValue, AController* EventInstigator, AActor* ChangeCauser);
 
 private:
 

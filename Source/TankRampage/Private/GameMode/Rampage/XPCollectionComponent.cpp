@@ -46,6 +46,6 @@ void UXPCollectionComponent::OnTokenCollected(AXPToken* Token, APawn* PlayerPawn
 		return;
 	}
 
-	RampageGameMode->OnTokenCollected(*Token);
+	RampageGameMode->OnTokenCollected(*Token, PlayerPawn);
 }
 
