@@ -46,20 +46,40 @@ void UTankAimingComponent::InitializeComponent()
 
 	UE_LOG(LogTRTank, Log, TEXT("%s-%s: InitializeComponent"), *LoggingUtils::GetName(GetOwner()), *GetName());
 }
-
-void UTankAimingComponent::AimAt(const FVector& Location, float LaunchSpeed)
+void UTankAimingComponent::AimAt(const FAimingData& AimingData, float LaunchSpeed)
 {
 	check(Barrel && Turret);
 
-	FVector ProjectileVelocity{ EForceInit::ForceInitToZero };
+	switch (CurrentAimingMode)
+	{
+	case EAimingMode::AssistedAim:
+		AssistedAimAt(AimingData, LaunchSpeed);
+		break;
+	case EAimingMode::ManualAim:
+		DirectAimAt(AimingData);
+		break;
+	default:
+		UE_VLOG_UELOG(GetOwner(),LogTRTank,Error,TEXT("Unknown Aiming Mode Hit"));
+		break;
+	}
+}
+void UTankAimingComponent::AssistedAimAt(const FAimingData& AimingData, float LaunchSpeed)
+{
+	if (!AimingData.bHitResult)
+	{
+		FiringStatus = ETankFiringStatus::NoTarget;
+		return;
+	}
+	
+	FVector OutProjectileVelocity{ EForceInit::ForceInitToZero };
 
 	const auto FireLocation = Barrel->GetSocketLocation(TankSockets::GunFire);
-
+	
 	const bool bSolutionFound = UGameplayStatics::SuggestProjectileVelocity(
 		this,
-		ProjectileVelocity,
+		OutProjectileVelocity,
 		FireLocation,
-		Location,
+		AimingData.HitLocation,
 		LaunchSpeed,
 		false,
 		0.0f,
@@ -69,12 +89,12 @@ void UTankAimingComponent::AimAt(const FVector& Location, float LaunchSpeed)
 		{},
 		false);
 
-	const auto AimDirection = ProjectileVelocity.GetSafeNormal();
+	const auto AimDirection = OutProjectileVelocity.GetSafeNormal();
 
 	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: AimAt - %s: Location=%s from barrelLocation=%s at LaunchSpeed=%f m/s with AimDirection=%AimDirection"),
-		*LoggingUtils::GetName(GetOwner()), *GetName(),
-		LoggingUtils::GetBoolString(bSolutionFound),
-		*Location.ToCompactString(), *Barrel->GetComponentLocation().ToCompactString(), LaunchSpeed / 100, *AimDirection.ToCompactString());
+	              *LoggingUtils::GetName(GetOwner()), *GetName(),
+	              LoggingUtils::GetBoolString(bSolutionFound),
+	              *AimingData.AimingWorldDirection.ToCompactString(), *Barrel->GetComponentLocation().ToCompactString(), LaunchSpeed / 100, *AimDirection.ToCompactString());
 
 	if (bSolutionFound)
 	{
@@ -84,6 +104,14 @@ void UTankAimingComponent::AimAt(const FVector& Location, float LaunchSpeed)
 	{
 		FiringStatus = ETankFiringStatus::NoTarget;
 	}
+}
+
+void UTankAimingComponent::DirectAimAt(const FAimingData& AimingData)
+{
+	const FVector FireOriginLocation = Barrel->GetSocketLocation(TankSockets::GunFire);
+	const FVector TargetLocation = AimingData.AimingOriginWorldLocation + AimingData.AimingWorldDirection*ZeroingDistance;
+	const FVector AimDirection = TargetLocation - FireOriginLocation; 
+	MoveBarrelTowards(AimDirection);
 }
 
 void UTankAimingComponent::MoveBarrelTowards(const FVector& AimDirection)
@@ -120,6 +148,11 @@ bool UTankAimingComponent::IsBarrelAlreadyAtTarget(const FVector& AimDirection) 
 }
 
 #if ENABLE_VISUAL_LOG
+
+void UTankAimingComponent::SetTankAimingMode(EAimingMode NewAimingMode)
+{
+	CurrentAimingMode = NewAimingMode;
+}
 
 void UTankAimingComponent::DescribeSelfToVisLog(FVisualLogEntry* Snapshot) const
 {

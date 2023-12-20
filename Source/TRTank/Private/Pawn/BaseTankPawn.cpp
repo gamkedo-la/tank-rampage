@@ -152,9 +152,9 @@ float ABaseTankPawn::GetFireCooldownProgressPercentage() const
 	return bIsFireOnCooldown ? ProgressPercentage : 1.f;
 }
 
-void ABaseTankPawn::AimAt(const FVector& Location)
+void ABaseTankPawn::AimAt(const FAimingData& AimingData)
 {
-	TankAimingComponent->AimAt(Location, TankShellSpeed);
+	TankAimingComponent->AimAt(AimingData, TankShellSpeed);
 }
 
 void ABaseTankPawn::Fire()

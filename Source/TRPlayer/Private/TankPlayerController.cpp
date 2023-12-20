@@ -15,6 +15,7 @@
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/PlayerCameraManager.h"
+#include "Components/TankAimingComponent.h"
 
 ATankPlayerController::ATankPlayerController()
 {
@@ -111,17 +112,11 @@ void ATankPlayerController::AimTowardCrosshair()
 	{
 		return;
 	}
-
-	const auto MaybeHitLocation = GetRaySightHitLocation();
-
-	if (!MaybeHitLocation)
-	{
-		return;
-	}
-
-	const auto& HitLocation = *MaybeHitLocation;
-
-	ControlledTank->AimAt(HitLocation);
+	
+	FAimingData AimingData;
+	GetAimingData(AimingData);
+	
+	ControlledTank->AimAt(AimingData);
 }
 
 void ATankPlayerController::OnFire()
@@ -165,16 +160,36 @@ void ATankPlayerController::OnLook(const FInputActionValue& Value)
 	}
 }
 
-std::optional<FVector> ATankPlayerController::GetRaySightHitLocation() const
+void ATankPlayerController::GetAimingData(FAimingData& AimingData) const
 {
-	// Find the crosshair position
-	const auto ScreenspaceLocation = GetCrosshairScreenspaceLocation();
+	const auto CrosshairScreenLocation = GetCrosshairScreenspaceLocation();
+	
+	DeprojectScreenPositionToWorld(
+		CrosshairScreenLocation.X,
+		CrosshairScreenLocation.Y,
+		AimingData.AimingOriginWorldLocation,
+		AimingData.AimingWorldDirection
+	);
 
-	// De-project the screen position of the crosshair to a world direction
-	const auto LookDirection = GetCrosshairWorldDirection(ScreenspaceLocation);
-
-	// Line-trace along that direction (look direction) and see what we hit (up to max range)
-	return GetLookVectorHitLocation(LookDirection);
+	//Setup Ray Trace
+	UWorld* World = GetWorld();
+	check(World);
+	FHitResult HitResult;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(GetPawn());
+	const auto& TraceStartLocation = AimingData.AimingOriginWorldLocation;
+	const auto TraceEndLocation = TraceStartLocation
+												+ MaxAimDistanceMeters * 100 //conversion to meters
+												* AimingData.AimingWorldDirection;
+	
+	AimingData.bHitResult = World->LineTraceSingleByChannel(
+		HitResult,
+		TraceStartLocation,
+		TraceEndLocation,
+		ECollisionChannel::ECC_Visibility,
+		Params);
+	
+	AimingData.HitLocation = HitResult.Location;
 }
 
 FVector2D ATankPlayerController::GetCrosshairScreenspaceLocation() const
@@ -184,51 +199,4 @@ FVector2D ATankPlayerController::GetCrosshairScreenspaceLocation() const
 
 	// Origin is at top left of screen
 	return FVector2D(ViewportSizeX, ViewportSizeY) * CrosshairPositionFraction;
-}
-
-FVector ATankPlayerController::GetCrosshairWorldDirection(const FVector2D& ScreenLocation) const
-{
-	FVector CameraWorldLocation, WorldDirection;
-
-	// CameraWorldLocation here is just the camera world location and isn't useful in this situation
-	DeprojectScreenPositionToWorld(
-		ScreenLocation.X,
-		ScreenLocation.Y,
-		CameraWorldLocation,
-		WorldDirection
-	);
-
-	return WorldDirection;
-}
-
-std::optional<FVector> ATankPlayerController::GetLookVectorHitLocation(const FVector& LookDirection) const
-{
-	auto World = GetWorld();
-
-	if (!World)
-	{
-		return std::nullopt;
-	}
-
-	check(PlayerCameraManager);
-
-	const auto& TraceStartLocation = PlayerCameraManager->GetCameraLocation();
-	const auto TraceEndLocation = TraceStartLocation + MaxAimDistanceMeters * 100 * LookDirection;
-
-	FHitResult HitResult;
-
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(GetPawn());
-
-	if (!World->LineTraceSingleByChannel(
-		HitResult,
-		TraceStartLocation,
-		TraceEndLocation,
-		ECollisionChannel::ECC_Visibility,
-		Params))
-	{
-		return std::nullopt;
-	}
-
-	return HitResult.Location;
 }

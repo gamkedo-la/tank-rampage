@@ -11,6 +11,7 @@
 #include "TankPlayerController.generated.h"
 
 
+struct FAimingData;
 class UInputMappingContext;
 struct FInputActionValue;
 class UInputAction;
@@ -37,6 +38,7 @@ protected:
 private:
 	void InitializeInputMappingContext();
 	void InitializeCamera();
+	
 	void AimTowardCrosshair();
 
 	void OnLook(const FInputActionValue& Value);
@@ -45,9 +47,9 @@ private:
 
 	std::optional<FVector> GetRaySightHitLocation() const;
 
+	void GetAimingData(FAimingData& AimingData) const;
+	
 	FVector2D GetCrosshairScreenspaceLocation() const;
-	FVector GetCrosshairWorldDirection(const FVector2D& ScreenLocation) const;
-	std::optional<FVector> GetLookVectorHitLocation(const FVector& LookDirection) const;
 
 private:
 

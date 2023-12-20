@@ -125,7 +125,11 @@ void ATankAIController::AimAtPlayerTank(const FTankAIContext& AIContext)
 	const auto PredictedPosition = AIContext.PlayerTank.GetActorLocation() + PredictiveOffset;
 	const auto& AimTarget = PredictedPosition + TargetingError;
 
-	AIContext.MyTank.AimAt(AimTarget);
+	FAimingData AimingData;
+	AimingData.bHitResult = true;
+	AimingData.HitLocation = AimTarget;
+	
+	AIContext.MyTank.AimAt(AimingData);
 }
 
 void ATankAIController::MoveTowardPlayer(const FTankAIContext& AIContext)

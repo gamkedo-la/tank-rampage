@@ -33,7 +33,7 @@ public:
 	USpringArmComponent* GetCameraSpringArm() const;
 
 	UFUNCTION(BlueprintCallable)
-	void AimAt(const FVector& Location);
+	void AimAt(const FAimingData& AimingData);
 
 	UFUNCTION(BlueprintCallable)
 	void Fire();
