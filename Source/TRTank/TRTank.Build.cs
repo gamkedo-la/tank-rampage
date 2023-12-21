@@ -21,6 +21,9 @@ public class TRTank : ModuleRules
 			"Core",
 			"CoreUObject",
 			"Engine",
+            "GameplayAbilities", // GAS
+			"GameplayTags", // GAS
+			"GameplayTasks", // GAS
 		};
 
 		PublicDependencyModuleNames.AddRange(enginePublicDependencyModuleNames);

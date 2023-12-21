@@ -6,6 +6,7 @@
 #include "GameFramework/Pawn.h"
 #include "Interfaces/ArmedActor.h"
 #include "VisualLogger/VisualLoggerDebugSnapshotInterface.h"
+#include "AbilitySystemInterface.h"
 
 #include "BaseTankPawn.generated.h"
 
@@ -20,9 +21,11 @@ class UTankMovementComponent;
 class UHealthComponent;
 
 class AProjectile;
+class UAbilitySystemComponent;
+class UAttributeSet;
 
 UCLASS()
-class TRTANK_API ABaseTankPawn : public APawn, public IVisualLoggerDebugSnapshotInterface, public IArmedActor
+class TRTANK_API ABaseTankPawn : public APawn, public IVisualLoggerDebugSnapshotInterface, public IArmedActor, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -64,6 +67,11 @@ public:
 
 	float GetCurrentWeaponExitSpeed() const;
 
+	// Inherited via IAbilitySystemInterface
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
+	UAttributeSet* GetAttributeSet() const;
+
 #if ENABLE_VISUAL_LOG
 	virtual void GrabDebugSnapshot(FVisualLogEntry* Snapshot) const override;
 #endif
@@ -87,6 +95,12 @@ protected:
 
 	UPROPERTY(Category = "Components", VisibleDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UHealthComponent> HealthComponent{};
+
+	UPROPERTY(Category = "GAS", VisibleDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent{};
+
+	UPROPERTY(Category = "GAS", VisibleDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UAttributeSet> AttributeSet{};
 
 private:
 	UPROPERTY(Category = "Tank Model", VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -153,6 +167,16 @@ inline UHealthComponent* ABaseTankPawn::GetHealthComponent() const
 inline float ABaseTankPawn::GetCurrentWeaponExitSpeed() const
 {
 	return TankShellSpeed;
+}
+
+inline UAbilitySystemComponent* ABaseTankPawn::GetAbilitySystemComponent() const
+{
+	return AbilitySystemComponent;
+}
+
+inline UAttributeSet* ABaseTankPawn::GetAttributeSet() const
+{
+	return AttributeSet;
 }
 
 #pragma endregion Inline Definitions

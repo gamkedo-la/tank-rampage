@@ -23,6 +23,9 @@
 #include "Logging/LoggingUtils.h"
 #include "VisualLogger/VisualLogger.h"
 
+#include "AbilitySystem/TRAbilitySystemComponent.h" 
+#include "AbilitySystem/TRAttributeSet.h"
+
 namespace
 {
 	FBox GetBounds(const UStaticMeshComponent& Comp, const FName* SocketName = nullptr);
@@ -67,6 +70,11 @@ ABaseTankPawn::ABaseTankPawn()
 	TankAimingComponent = CreateDefaultSubobject<UTankAimingComponent>(TEXT("TankAimingComponent"));
 	TankMovementComponent = CreateDefaultSubobject<UTankMovementComponent>(TEXT("TankMovement"));
 	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("Health"));
+
+	AbilitySystemComponent = CreateDefaultSubobject<UTRAbilitySystemComponent>(TEXT("Ability System"));
+	AbilitySystemComponent->SetIsReplicated(true);
+
+	AttributeSet = CreateDefaultSubobject<UTRAttributeSet>(TEXT("Attribute Set"));
 }
 
 // Called when the game starts or when spawned
@@ -178,7 +186,6 @@ void ABaseTankPawn::Fire()
 	{
 		return;
 	}
-
 
 	const FVector SpawnLocation = TankBarrel->GetSocketLocation(TankSockets::GunFire);
 	const FRotator SpawnRotation = TankBarrel->GetSocketRotation(TankSockets::GunFire);
