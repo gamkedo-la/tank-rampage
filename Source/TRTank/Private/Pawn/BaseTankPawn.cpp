@@ -103,11 +103,16 @@ void ABaseTankPawn::PostInitializeComponents()
 		});
 }
 
+// called on replicated clients and server
 void ABaseTankPawn::NotifyControllerChanged()
 {
+	UE_VLOG_UELOG(this, LogTRTank, Log, TEXT("%s: NotifyControllerChanged"), *GetName());
+
 	Super::NotifyControllerChanged();
 
 	UpdateSpringArmTickEnabled();
+
+	UpdateGameplayAbilitySystemAfterPossession(GetController());
 }
 
 void ABaseTankPawn::UpdateSpringArmTickEnabled()
@@ -124,6 +129,21 @@ void ABaseTankPawn::UpdateSpringArmTickEnabled()
 
 		CameraSpringArm->SetComponentTickEnabled(bIsLocalPlayerController);
 	}
+}
+
+void ABaseTankPawn::UpdateGameplayAbilitySystemAfterPossession(AController* NewController)
+{
+	UE_VLOG_UELOG(this, LogTRTank, Log, TEXT("%s: UpdateGameplayAbilitySystemAfterPossession: %s"), *GetName(), *LoggingUtils::GetName(NewController));
+
+	if (!ensure(AbilitySystemComponent) || !NewController)
+	{
+		return;
+	}
+
+	const auto bIsMixed = NewController->IsPlayerController();
+
+	AbilitySystemComponent->SetReplicationMode(bIsMixed ? EGameplayEffectReplicationMode::Mixed : EGameplayEffectReplicationMode::Minimal);
+	AbilitySystemComponent->InitAbilityActorInfo(this, this);
 }
 
 bool ABaseTankPawn::CanFire() const

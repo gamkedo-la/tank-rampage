@@ -85,6 +85,8 @@ protected:
 private:
 	void UpdateSpringArmTickEnabled();
 
+	void UpdateGameplayAbilitySystemAfterPossession(AController* NewController);
+
 protected:
 
 	UPROPERTY(Category = "Components", VisibleDefaultsOnly, BlueprintReadOnly)
