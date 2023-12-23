@@ -9,6 +9,8 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnHealthChanged, UHealthComponent*, HealthComponent, float, PreviousHealthValue, AController*, EventInstigator, AActor*, ChangeCauser);
 
 
+// TODO: Move health and max health into AttributeSet as part of GAS
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TRTANK_API UHealthComponent : public UActorComponent
 {

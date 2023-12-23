@@ -57,7 +57,7 @@ FVector UXPSpawnerComponent::GetSpawnLocation(const FVector& BaseLocation) const
 
 	// Spawn at ground
 	FCollisionObjectQueryParams Params;
-	Params.ObjectTypesToQuery = FCollisionObjectQueryParams::AllStaticObjects;
+	Params.ObjectTypesToQuery = FCollisionObjectQueryParams::AllStaticObjects | FCollisionObjectQueryParams::AllDynamicObjects;
 
 	FHitResult HitResult;
 

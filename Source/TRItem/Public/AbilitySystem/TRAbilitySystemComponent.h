@@ -13,5 +13,12 @@ UCLASS()
 class TRITEM_API UTRAbilitySystemComponent : public UAbilitySystemComponent
 {
 	GENERATED_BODY()
+
+public:
+#if ENABLE_VISUAL_LOG
+
+	void DescribeSelfToVisLog(FVisualLogEntry* Snapshot) const;
+
+#endif
 	
 };

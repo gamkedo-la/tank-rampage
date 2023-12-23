@@ -332,6 +332,7 @@ void ABaseTankPawn::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
 	Snapshot->AddArrow(FrontWorldLocation, FrontWorldLocation + ForwardVector * 100.0f, LogTRTank.GetCategoryName(), ELogVerbosity::Log, FColor::Red, TEXT("F"));
 
 	TankAimingComponent->DescribeSelfToVisLog(Snapshot);
+	AbilitySystemComponent->DescribeSelfToVisLog(Snapshot);
 }
 
 #endif

@@ -52,8 +52,6 @@ private:
 	void OnFire();
 	void OnMove(const FInputActionValue& Value);
 
-	std::optional<FVector> GetRaySightHitLocation() const;
-
 	void GetAimingData(FAimingData& AimingData) const;
 	
 	FVector2D GetCrosshairScreenspaceLocation() const;

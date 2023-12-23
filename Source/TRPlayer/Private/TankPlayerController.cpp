@@ -128,7 +128,15 @@ void ATankPlayerController::InitializeInputMappingContext()
 		return;
 	}
 
-	auto Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer());
+	auto LocalPlayer = GetLocalPlayer();
+	if (!LocalPlayer)
+	{
+		// on dedicated server
+		UE_LOG(LogTRPlayer, Display, TEXT("%s: BeginPlay - LocalPlayer is NULL - on dedicated server"), *GetName(), *GetName());
+		return;
+
+	}
+	auto Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(LocalPlayer);
 
 	if (!Subsystem)
 	{

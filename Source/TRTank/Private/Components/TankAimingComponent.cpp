@@ -147,12 +147,12 @@ bool UTankAimingComponent::IsBarrelAlreadyAtTarget(const FVector& AimDirection) 
 	return AimDirection.Equals(Barrel->GetForwardVector(), AimTolerance);
 }
 
-#if ENABLE_VISUAL_LOG
-
 void UTankAimingComponent::SetTankAimingMode(EAimingMode NewAimingMode)
 {
 	CurrentAimingMode = NewAimingMode;
 }
+
+#if ENABLE_VISUAL_LOG
 
 void UTankAimingComponent::DescribeSelfToVisLog(FVisualLogEntry* Snapshot) const
 {

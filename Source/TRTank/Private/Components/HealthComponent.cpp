@@ -21,7 +21,7 @@ void UHealthComponent::BeginPlay()
 
 	Health = MaxHealth;
 
-	GetOwner()->OnTakeAnyDamage.AddDynamic(this, &ThisClass::TakeDamage);
+	GetOwner()->OnTakeAnyDamage.AddUniqueDynamic(this, &ThisClass::TakeDamage);
 }
 
 void UHealthComponent::TakeDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser)
@@ -30,12 +30,12 @@ void UHealthComponent::TakeDamage(AActor* DamagedActor, float Damage, const UDam
 	Health = FMath::Clamp(Health - Damage, 0, MaxHealth);
 
 	UE_VLOG_UELOG(GetOwner(), LogTRTank, Log, TEXT("%s-%s: TakeDamage - Amount=%f from %s by %s health changed from %f -> %f"),
-		*GetName(), Damage, *LoggingUtils::GetName(DamageCauser), *LoggingUtils::GetName(InstigatedBy), PreviousHealth, Health);
+		*LoggingUtils::GetName(GetOwner()), *GetName(), Damage, *LoggingUtils::GetName(DamageCauser), *LoggingUtils::GetName(InstigatedBy), PreviousHealth, Health);
 
 	if (FMath::IsNearlyZero(Health))
 	{
-		UE_VLOG_UELOG(GetOwner(), LogTRTank, Display, TEXT("%s: TakeDamage - Killed from %s by %s"),
-			*GetName(), *LoggingUtils::GetName(DamageCauser), *LoggingUtils::GetName(InstigatedBy));
+		UE_VLOG_UELOG(GetOwner(), LogTRTank, Display, TEXT("%s-%s: TakeDamage - Killed from %s by %s"),
+			*LoggingUtils::GetName(GetOwner()), *GetName(), *LoggingUtils::GetName(DamageCauser), *LoggingUtils::GetName(InstigatedBy));
 	}
 
 	if (!FMath::IsNearlyEqual(Health, PreviousHealth))
