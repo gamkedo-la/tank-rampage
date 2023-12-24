@@ -20,9 +20,13 @@ class UTankTrackComponent;
 class UTankMovementComponent;
 class UHealthComponent;
 
-class AProjectile;
 class UAbilitySystemComponent;
 class UAttributeSet;
+
+class UWeapon;
+class UItem;
+class UItemDataAsset;
+
 
 UCLASS()
 class TRTANK_API ABaseTankPawn : public APawn, public IVisualLoggerDebugSnapshotInterface, public IArmedActor, public IAbilitySystemInterface
@@ -72,6 +76,9 @@ public:
 
 	UAttributeSet* GetAttributeSet() const;
 
+	UFUNCTION(BlueprintCallable)
+	void SetActiveWeaponIndex(int32 Index);
+
 #if ENABLE_VISUAL_LOG
 	virtual void GrabDebugSnapshot(FVisualLogEntry* Snapshot) const override;
 #endif
@@ -86,6 +93,8 @@ private:
 	void UpdateSpringArmTickEnabled();
 
 	void UpdateGameplayAbilitySystemAfterPossession(AController* NewController);
+
+	void InitWeapons();
 
 protected:
 
@@ -132,17 +141,13 @@ private:
 	UPROPERTY(Category = "Camera", VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> Camera{};
 
-	// TODO: Move to a weapon subclass of item
-	UPROPERTY(Category = "Firing", EditDefaultsOnly)
-	float TankShellSpeed{ 100000 };
-
-	UPROPERTY(Category = "Firing", EditDefaultsOnly)
-	float FireCooldownTimeSeconds{ 3.0f };
-
-	float LastFireTimeSeconds{ -1.0f };
-
 	UPROPERTY(Category = "Weapon", EditDefaultsOnly)
-	TSubclassOf<AProjectile> MainGunProjectile{};
+	TObjectPtr<UItemDataAsset> ItemDataAsset{};
+
+	UPROPERTY(Transient)
+	TArray<UWeapon*> Weapons;
+
+	int32 ActiveWeaponIndex{};
 };
 
 
@@ -164,11 +169,6 @@ inline UHealthComponent* ABaseTankPawn::GetHealthComponent() const
 {
 	check(HealthComponent);
 	return HealthComponent;
-}
-
-inline float ABaseTankPawn::GetCurrentWeaponExitSpeed() const
-{
-	return TankShellSpeed;
 }
 
 inline UAbilitySystemComponent* ABaseTankPawn::GetAbilitySystemComponent() const

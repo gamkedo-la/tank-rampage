@@ -15,7 +15,8 @@
 #include "Components/StaticMeshComponent.h"
 
 #include "TankSockets.h"
-#include "Projectile.h"
+#include "Item/Weapon.h"
+#include "Item/ItemDataAsset.h"
 
 #include "Subsystems/TankEventsSubsystem.h"
 
@@ -84,6 +85,8 @@ void ABaseTankPawn::BeginPlay()
 
 	// Cannot call this in the constructor
 	TankBody->SetMassOverrideInKg(NAME_None, 40000);
+
+	InitWeapons();
 }
 
 void ABaseTankPawn::PostInitializeComponents()
@@ -146,90 +149,88 @@ void ABaseTankPawn::UpdateGameplayAbilitySystemAfterPossession(AController* NewC
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
 }
 
+void ABaseTankPawn::InitWeapons()
+{
+	if (!ensure(ItemDataAsset))
+	{
+		return;
+	}
+
+	if (ensure(ItemDataAsset->MainGunClass))
+	{
+		auto Weapon = NewObject<UWeapon>(this, ItemDataAsset->MainGunClass, "MainGun");
+		if (Weapon)
+		{
+			Weapon->Initialize(this, ItemDataAsset);
+			Weapons.Add(Weapon);
+		}
+		else
+		{
+			UE_VLOG_UELOG(this, LogTRTank, Error, TEXT("%s: InitWeapons: Unable to create weapon with class=%s"),
+				*GetName(), *LoggingUtils::GetName(ItemDataAsset->MainGunClass));
+		}
+	}
+}
+
 bool ABaseTankPawn::CanFire() const
 {
 	auto World = GetWorld();
 	check(World);
 
-	if (LastFireTimeSeconds < 0)
+	if (ActiveWeaponIndex >= Weapons.Num())
 	{
-		return true;
+		return false;
 	}
 
-	return World->GetTimeSeconds() - LastFireTimeSeconds > FireCooldownTimeSeconds;
+	return Weapons[ActiveWeaponIndex]->CanBeActivated();
 }
 
 float ABaseTankPawn::GetFireCooldownTimeRemaining() const
 {
-	UWorld* World = GetWorld();
-	check(World);
-	float CurrentTime = World->GetTimeSeconds();
-	float TimeElapsedSinceLastFired = CurrentTime - LastFireTimeSeconds;
-	bool bIsFireOnCooldown =  TimeElapsedSinceLastFired < FireCooldownTimeSeconds;
-	return bIsFireOnCooldown ? FireCooldownTimeSeconds - TimeElapsedSinceLastFired : 0.f;
+	if (ActiveWeaponIndex >= Weapons.Num())
+	{
+		return 0;
+	}
+
+	return Weapons[ActiveWeaponIndex]->GetCooldownTimeRemaining();
 }
 
 float ABaseTankPawn::GetFireCooldownProgressPercentage() const
 {
-	UWorld* World = GetWorld();
-	check(World);
-	float CurrentTime = World->GetTimeSeconds();
-	float TimeElapsedSinceLastFired = CurrentTime - LastFireTimeSeconds;
-	bool bIsFireOnCooldown =  TimeElapsedSinceLastFired < FireCooldownTimeSeconds;
-	float ProgressPercentage =  TimeElapsedSinceLastFired/FireCooldownTimeSeconds;
-	return bIsFireOnCooldown ? ProgressPercentage : 1.f;
+	if (ActiveWeaponIndex >= Weapons.Num())
+	{
+		return 0;
+	}
+
+	return Weapons[ActiveWeaponIndex]->GetCooldownProgressPercentage();
+}
+
+float ABaseTankPawn::GetCurrentWeaponExitSpeed() const
+{
+	if (ActiveWeaponIndex >= Weapons.Num())
+	{
+		return 0;
+	}
+
+	return Weapons[ActiveWeaponIndex]->GetLaunchSpeed();
 }
 
 void ABaseTankPawn::AimAt(const FAimingData& AimingData)
 {
-	TankAimingComponent->AimAt(AimingData, TankShellSpeed);
+	TankAimingComponent->AimAt(AimingData, GetCurrentWeaponExitSpeed());
 }
 
 void ABaseTankPawn::Fire()
 {
 	check(TankBarrel);
 
-	auto World = GetWorld();
-	if (!World)
-	{
-		UE_VLOG_UELOG(this, LogTRTank, Error, TEXT("%s: Fire: World is NULL"), *GetName());
-		return;
-	}
-
-	if (!MainGunProjectile)
-	{
-		UE_VLOG_UELOG(this, LogTRTank, Error, TEXT("%s: Fire: MainGunProjectile is NULL"), *GetName());
-		return;
-	}
-
 	if (!CanFire())
 	{
 		return;
 	}
 
-	const FVector SpawnLocation = TankBarrel->GetSocketLocation(TankSockets::GunFire);
-	const FRotator SpawnRotation = TankBarrel->GetSocketRotation(TankSockets::GunFire);
-
-	FActorSpawnParameters SpawnParameters;
-	SpawnParameters.Instigator = this;
-	SpawnParameters.Owner = this;
-
-	auto SpawnedProjectile = World->SpawnActor<AProjectile>(MainGunProjectile, SpawnLocation, SpawnRotation, SpawnParameters);
-
-	if (!SpawnedProjectile)
-	{
-		UE_VLOG_UELOG(this, LogTRTank, Warning, TEXT("%s: Fire: Unable to spawn projectile %s at %s with rotation=%s"), *GetName(), *LoggingUtils::GetName(MainGunProjectile), *SpawnLocation.ToCompactString());
-		return;
-	}
-
-	UE_VLOG_UELOG(this, LogTRTank, Log, TEXT("%s: Fire: %s at %s"), *GetName(), *LoggingUtils::GetName(MainGunProjectile), *SpawnLocation.ToCompactString(), *SpawnRotation.ToCompactString());
-
-	check(TankBarrel);
-
-	SpawnedProjectile->Initialize(*TankBarrel, TankSockets::GunFire);
-	SpawnedProjectile->Launch(TankShellSpeed);
-
-	LastFireTimeSeconds = World->GetTimeSeconds();
+	auto ActiveWeapon = Weapons[ActiveWeaponIndex];
+	ActiveWeapon->Activate(TankBarrel, TankSockets::GunFire);
 }
 
 void ABaseTankPawn::SetLeftThrottle(float Value)
@@ -254,6 +255,14 @@ void ABaseTankPawn::TurnRight(float Throw)
 {
 	check(TankMovementComponent);
 	TankMovementComponent->TurnRight(Throw);
+}
+
+void ABaseTankPawn::SetActiveWeaponIndex(int32 Index)
+{
+	if (Index < Weapons.Num())
+	{
+		ActiveWeaponIndex = Index;
+	}
 }
 
 #pragma region Visual Logger
@@ -283,7 +292,16 @@ void ABaseTankPawn::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
 	FVisualLogStatusCategory& Category = Snapshot->Status[CatIndex];
 	Category.Category = FString::Printf(TEXT("Tank (%s)"), *GetName());
 
-	Category.Add(TEXT("Fire Cooldown Remaining"), FString::Printf(TEXT("%.1f"), FMath::Max(0, LastFireTimeSeconds + FireCooldownTimeSeconds - CurrentTimeSeconds)));
+	const UWeapon* ActiveWeapon = ActiveWeaponIndex < Weapons.Num() ? Weapons[ActiveWeaponIndex] : nullptr;
+
+	Category.Add(TEXT("Active Weapon"),
+		ActiveWeapon ? ActiveWeapon->GetClass()->GetName() : FString{ TEXT("None") });
+
+	if (ActiveWeapon)
+	{
+		Category.Add(TEXT("Fire Cooldown Remaining"), FString::Printf(TEXT("%.1fs"),
+			ActiveWeapon->GetCooldownTimeRemaining()));
+	}
 
 	// TODO: Move to health component visual logger
 	Category.Add(TEXT("Health"), FString::Printf(TEXT("%.1f"), HealthComponent->GetHealth()));

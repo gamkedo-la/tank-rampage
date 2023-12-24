@@ -3,8 +3,6 @@
 
 #include "AbilitySystem/TRAbilitySystemComponent.h"
 
-
-
 #pragma region Visual Logger
 
 #if ENABLE_VISUAL_LOG
