@@ -22,7 +22,6 @@ public:
 
 protected:
 	virtual bool DoActivation(USceneComponent& ActivationReferenceComponent, const FName& ActivationSocketName) override;
-	
 
 private:
 	UPROPERTY(Category = "Weapon", EditDefaultsOnly)
@@ -30,6 +29,9 @@ private:
 
 	UPROPERTY(Category = "Firing", EditDefaultsOnly)
 	float ProjectileLaunchSpeed{ 100000 };
+
+	UPROPERTY(Category = "Damage", EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	float DamageAmount{ 100.0f };
 };
 
 #pragma region Inline Definitions

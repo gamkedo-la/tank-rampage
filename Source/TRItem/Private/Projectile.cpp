@@ -47,10 +47,11 @@ void AProjectile::Launch(float Speed)
 	PlayFiringVfx();
 }
 
-void AProjectile::Initialize(USceneComponent& IncidentComponent, const FName& IncidentSocketName)
+void AProjectile::Initialize(USceneComponent& IncidentComponent, const FName& IncidentSocketName, float InDamageAmount)
 {
 	AttachComponent = &IncidentComponent;
 	AttachSocketName = IncidentSocketName;
+	DamageAmount = InDamageAmount;
 }
 
 void AProjectile::BeginPlay()
@@ -122,8 +123,7 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, U
 	{
 		// TODO: Should switch between FRadialDamageEvent and FPointDamageEvent based on type of weapon
 		FPointDamageEvent DamageEvent;
-		// TODO: Make configurable
-		DamageEvent.Damage = 100;
+		DamageEvent.Damage = DamageAmount;
 		DamageEvent.HitInfo = Hit;
 		DamageEvent.ShotDirection = InitialDirection;
 

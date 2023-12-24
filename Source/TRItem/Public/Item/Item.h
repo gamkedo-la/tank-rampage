@@ -63,11 +63,10 @@ protected:
 	UPROPERTY(Category = "Cooldown", BlueprintReadWrite)
 	float CooldownTimeSeconds{};
 
-	int32 ItemLevel{ 1 };
-	int32 MaxItemLevel{ 1 };
-
 private:
 	float LastActivationTimeSeconds{ -1.0f };
+	int32 ItemLevel{ 1 };
+	int32 MaxItemLevel{ 1 };
 
 	UPROPERTY(Transient)
 	TObjectPtr<APawn> Owner{};

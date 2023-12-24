@@ -24,7 +24,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void Launch(float Speed);
 
-	void Initialize(USceneComponent& IncidentComponent, const FName& IncidentSocketName);
+	void Initialize(USceneComponent& IncidentComponent, const FName& IncidentSocketName, float InDamageAmount);
 
 	UFUNCTION(BlueprintPure)
 	bool CanDamageInstigator() const;
@@ -67,11 +67,7 @@ private:
 	UPROPERTY(EditDefaultsOnly)
 	float MaxLifetime{ 10.0f };
 
-	/*
-	* Indicates whether the tank that fired the weapon can be damaged by it.
-	*/
-	UPROPERTY(EditDefaultsOnly)
-	bool bCanDamageInstigator{ false };
+	float DamageAmount{};
 
 	UPROPERTY(Transient)
 	TObjectPtr<USceneComponent> AttachComponent{};
@@ -82,6 +78,12 @@ private:
 #if ENABLE_VISUAL_LOG
 	FTimerHandle VisualLoggerTimer{};
 #endif
+
+	/*
+	* Indicates whether the tank that fired the weapon can be damaged by it.
+	*/
+	UPROPERTY(EditDefaultsOnly)
+	bool bCanDamageInstigator{ false };
 };
 
 #pragma region Inline Definitions

@@ -26,6 +26,7 @@ void UHealthComponent::BeginPlay()
 
 void UHealthComponent::TakeDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser)
 {
+	// TODO: If we don't switch to GAS, then would need to determine active defense bonuses here to reduce damage via tags in an FGameplayTagContainer added to an ActiveEffectsComponent or similar
 	const auto PreviousHealth = Health;
 	Health = FMath::Clamp(Health - Damage, 0, MaxHealth);
 

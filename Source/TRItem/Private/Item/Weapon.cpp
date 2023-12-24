@@ -34,7 +34,7 @@ bool UWeapon::DoActivation(USceneComponent& ActivationReferenceComponent, const 
 	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: DoActivation: %s at %s"), *GetName(),
 		*LoggingUtils::GetName(WeaponProjectileClass), *SpawnLocation.ToCompactString(), *SpawnRotation.ToCompactString());
 
-	SpawnedProjectile->Initialize(ActivationReferenceComponent, ActivationSocketName);
+	SpawnedProjectile->Initialize(ActivationReferenceComponent, ActivationSocketName, DamageAmount);
 	SpawnedProjectile->Launch(ProjectileLaunchSpeed);
 
 	return true;
