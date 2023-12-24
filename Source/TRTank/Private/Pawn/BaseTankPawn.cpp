@@ -16,7 +16,7 @@
 
 #include "TankSockets.h"
 #include "Item/Weapon.h"
-#include "Item/ItemDataAsset.h"
+#include "Item/ItemInventory.h"
 
 #include "Subsystems/TankEventsSubsystem.h"
 
@@ -76,6 +76,8 @@ ABaseTankPawn::ABaseTankPawn()
 	AbilitySystemComponent->SetIsReplicated(true);
 
 	AttributeSet = CreateDefaultSubobject<UTRAttributeSet>(TEXT("Attribute Set"));
+
+	ItemInventoryComponent = CreateDefaultSubobject<UItemInventory>(TEXT("Item Inventory"));
 }
 
 // Called when the game starts or when spawned
@@ -85,8 +87,6 @@ void ABaseTankPawn::BeginPlay()
 
 	// Cannot call this in the constructor
 	TankBody->SetMassOverrideInKg(NAME_None, 40000);
-
-	InitWeapons();
 }
 
 void ABaseTankPawn::PostInitializeComponents()
@@ -149,70 +149,53 @@ void ABaseTankPawn::UpdateGameplayAbilitySystemAfterPossession(AController* NewC
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
 }
 
-void ABaseTankPawn::InitWeapons()
-{
-	if (!ensure(ItemDataAsset))
-	{
-		return;
-	}
-
-	if (ensure(ItemDataAsset->MainGunClass))
-	{
-		auto Weapon = NewObject<UWeapon>(this, ItemDataAsset->MainGunClass, "MainGun");
-		if (Weapon)
-		{
-			Weapon->Initialize(this, ItemDataAsset);
-			Weapons.Add(Weapon);
-		}
-		else
-		{
-			UE_VLOG_UELOG(this, LogTRTank, Error, TEXT("%s: InitWeapons: Unable to create weapon with class=%s"),
-				*GetName(), *LoggingUtils::GetName(ItemDataAsset->MainGunClass));
-		}
-	}
-}
-
 bool ABaseTankPawn::CanFire() const
 {
 	auto World = GetWorld();
 	check(World);
 
-	if (ActiveWeaponIndex >= Weapons.Num())
+	if (!ItemInventoryComponent->HasAnyActiveWeapon())
 	{
 		return false;
 	}
 
-	return Weapons[ActiveWeaponIndex]->CanBeActivated();
+	return ItemInventoryComponent->GetActiveWeapon()->CanBeActivated();
 }
 
 float ABaseTankPawn::GetFireCooldownTimeRemaining() const
 {
-	if (ActiveWeaponIndex >= Weapons.Num())
+	auto ActiveWeapon = ItemInventoryComponent->GetActiveWeapon();
+
+	if (!ActiveWeapon)
 	{
 		return 0;
 	}
 
-	return Weapons[ActiveWeaponIndex]->GetCooldownTimeRemaining();
+	return ActiveWeapon->GetCooldownTimeRemaining();
 }
 
 float ABaseTankPawn::GetFireCooldownProgressPercentage() const
 {
-	if (ActiveWeaponIndex >= Weapons.Num())
+	auto ActiveWeapon = ItemInventoryComponent->GetActiveWeapon();
+
+	if (!ActiveWeapon)
 	{
 		return 0;
 	}
 
-	return Weapons[ActiveWeaponIndex]->GetCooldownProgressPercentage();
+	return ActiveWeapon->GetCooldownProgressPercentage();
 }
 
 float ABaseTankPawn::GetCurrentWeaponExitSpeed() const
 {
-	if (ActiveWeaponIndex >= Weapons.Num())
+	auto ActiveWeapon = ItemInventoryComponent->GetActiveWeapon();
+
+	if (!ActiveWeapon)
 	{
 		return 0;
 	}
 
-	return Weapons[ActiveWeaponIndex]->GetLaunchSpeed();
+	return ActiveWeapon->GetLaunchSpeed();
 }
 
 void ABaseTankPawn::AimAt(const FAimingData& AimingData)
@@ -229,7 +212,9 @@ void ABaseTankPawn::Fire()
 		return;
 	}
 
-	auto ActiveWeapon = Weapons[ActiveWeaponIndex];
+	auto ActiveWeapon = ItemInventoryComponent->GetActiveWeapon();
+	check(ActiveWeapon);
+
 	ActiveWeapon->Activate(TankBarrel, TankSockets::GunFire);
 }
 
@@ -255,14 +240,6 @@ void ABaseTankPawn::TurnRight(float Throw)
 {
 	check(TankMovementComponent);
 	TankMovementComponent->TurnRight(Throw);
-}
-
-void ABaseTankPawn::SetActiveWeaponIndex(int32 Index)
-{
-	if (Index < Weapons.Num())
-	{
-		ActiveWeaponIndex = Index;
-	}
 }
 
 #pragma region Visual Logger
@@ -291,20 +268,6 @@ void ABaseTankPawn::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
 	const int32 CatIndex = Snapshot->Status.AddZeroed();
 	FVisualLogStatusCategory& Category = Snapshot->Status[CatIndex];
 	Category.Category = FString::Printf(TEXT("Tank (%s)"), *GetName());
-
-	const UWeapon* ActiveWeapon = ActiveWeaponIndex < Weapons.Num() ? Weapons[ActiveWeaponIndex] : nullptr;
-
-	Category.Add(TEXT("Active Weapon"),
-		ActiveWeapon ? ActiveWeapon->GetClass()->GetName() : FString{ TEXT("None") });
-
-	if (ActiveWeapon)
-	{
-		Category.Add(TEXT("Fire Cooldown Remaining"), FString::Printf(TEXT("%.1fs"),
-			ActiveWeapon->GetCooldownTimeRemaining()));
-	}
-
-	// TODO: Move to health component visual logger
-	Category.Add(TEXT("Health"), FString::Printf(TEXT("%.1f"), HealthComponent->GetHealth()));
 
 	// TODO: Change color based on speed and stopping
 	// 
@@ -349,6 +312,8 @@ void ABaseTankPawn::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
 
 	Snapshot->AddArrow(FrontWorldLocation, FrontWorldLocation + ForwardVector * 100.0f, LogTRTank.GetCategoryName(), ELogVerbosity::Log, FColor::Red, TEXT("F"));
 
+	HealthComponent->DescribeSelfToVisLog(Snapshot);
+	ItemInventoryComponent->DescribeSelfToVisLog(Snapshot);
 	TankAimingComponent->DescribeSelfToVisLog(Snapshot);
 	AbilitySystemComponent->DescribeSelfToVisLog(Snapshot);
 }

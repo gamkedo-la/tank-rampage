@@ -19,13 +19,10 @@ class UTankBarrelComponent;
 class UTankTrackComponent;
 class UTankMovementComponent;
 class UHealthComponent;
+class UItemInventory;
 
 class UAbilitySystemComponent;
 class UAttributeSet;
-
-class UWeapon;
-class UItem;
-class UItemDataAsset;
 
 
 UCLASS()
@@ -76,8 +73,8 @@ public:
 
 	UAttributeSet* GetAttributeSet() const;
 
-	UFUNCTION(BlueprintCallable)
-	void SetActiveWeaponIndex(int32 Index);
+	UItemInventory* GetItemInventory() const;
+
 
 #if ENABLE_VISUAL_LOG
 	virtual void GrabDebugSnapshot(FVisualLogEntry* Snapshot) const override;
@@ -94,7 +91,6 @@ private:
 
 	void UpdateGameplayAbilitySystemAfterPossession(AController* NewController);
 
-	void InitWeapons();
 
 protected:
 
@@ -112,6 +108,9 @@ protected:
 
 	UPROPERTY(Category = "GAS", VisibleDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UAttributeSet> AttributeSet{};
+
+	UPROPERTY(Category = "Components", VisibleDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UItemInventory> ItemInventoryComponent{};
 
 private:
 	UPROPERTY(Category = "Tank Model", VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -140,14 +139,6 @@ private:
 
 	UPROPERTY(Category = "Camera", VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> Camera{};
-
-	UPROPERTY(Category = "Weapon", EditDefaultsOnly)
-	TObjectPtr<UItemDataAsset> ItemDataAsset{};
-
-	UPROPERTY(Transient)
-	TArray<UWeapon*> Weapons;
-
-	int32 ActiveWeaponIndex{};
 };
 
 
@@ -179,6 +170,11 @@ inline UAbilitySystemComponent* ABaseTankPawn::GetAbilitySystemComponent() const
 inline UAttributeSet* ABaseTankPawn::GetAttributeSet() const
 {
 	return AttributeSet;
+}
+
+inline UItemInventory* ABaseTankPawn::GetItemInventory() const
+{
+	return ItemInventoryComponent;
 }
 
 #pragma endregion Inline Definitions

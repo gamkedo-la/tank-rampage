@@ -43,3 +43,19 @@ void UHealthComponent::TakeDamage(AActor* DamagedActor, float Damage, const UDam
 		OnHealthChanged.Broadcast(this, PreviousHealth, InstigatedBy, DamageCauser);
 	}
 }
+
+#if ENABLE_VISUAL_LOG
+
+void UHealthComponent::DescribeSelfToVisLog(FVisualLogEntry* Snapshot) const
+{
+	FVisualLogStatusCategory Category;
+	Category.Category = TEXT("Health Component");
+
+	Category.Add(TEXT("Health"), FString::Printf(TEXT("%.1f"), GetHealth()));
+	Category.Add(TEXT("MaxHealth"), FString::Printf(TEXT("%.1f"), GetMaxHealth()));
+	Category.Add(TEXT("Health %"), FString::Printf(TEXT("%.1f"), GetHealthPercent() * 100));
+
+	Snapshot->Status.Add(Category);
+}
+
+#endif
