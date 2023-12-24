@@ -57,14 +57,13 @@ void ARampageGameMode::AddXP(int32 XP)
 		return;
 	}
 
-	const auto AppliedXP = FMath::Min(XP, RampageGameState->LevelUpXP - XP);
-	RampageGameState->CurrentXP += AppliedXP;
+	const auto AppliedXP = FMath::Min(XP, RampageGameState->LevelUpXP - RampageGameState->TotalXP);
 	RampageGameState->TotalXP += AppliedXP;
 
-	UE_VLOG_UELOG(this, LogTankRampage, Log, TEXT("%s: AddXP: XP=%d; AppliedXP=%d; Level=%d; XP Progress = %d / %d = %f; TotalXP=%d"),
-		*GetName(), XP, AppliedXP, RampageGameState->Level, RampageGameState->CurrentXP, RampageGameState->LevelUpXP, RampageGameState->TotalXP);
+	UE_VLOG_UELOG(this, LogTankRampage, Log, TEXT("%s: AddXP: XP=%d; AppliedXP=%d; Level=%d; TotalXP=%d; NextLevelXP=%d; Progress = %f"),
+		*GetName(), XP, AppliedXP, RampageGameState->Level + 1, RampageGameState->TotalXP, RampageGameState->LevelUpXP, RampageGameState->GetLevelPercent());
 
-	if (RampageGameState->CurrentXP >= RampageGameState->LevelUpXP)
+	if (RampageGameState->TotalXP == RampageGameState->LevelUpXP)
 	{
 		++RampageGameState->Level;
 
@@ -76,13 +75,14 @@ void ARampageGameMode::AddXP(int32 XP)
 		}
 		else
 		{
-			NextLevelXP = !XPLevels.IsEmpty() ? XPLevels.Last() : std::numeric_limits<int32>::max();
+			const auto PreviousLevelDiff = RampageGameState->LevelUpXP - RampageGameState->PreviousLevelXP;
+			NextLevelXP = RampageGameState->LevelUpXP + PreviousLevelDiff;
 
-			UE_VLOG_UELOG(this, LogTankRampage, Warning, TEXT("%s: New Level=%d over max configured XP levels=%d - clamping next level xp to last=%d"),
-				*GetName(), RampageGameState->Level + 1, XPLevels.Num(), NextLevelXP);
+			UE_VLOG_UELOG(this, LogTankRampage, Warning, TEXT("%s: New Level=%d over max configured XP levels=%d - clamping next level xp by last diff=%d to %d"),
+				*GetName(), RampageGameState->Level + 1, XPLevels.Num(), PreviousLevelDiff, NextLevelXP);
 		}
 
-		RampageGameState->CurrentXP = 0;
+		RampageGameState->PreviousLevelXP = RampageGameState->LevelUpXP;
 		RampageGameState->LevelUpXP = NextLevelXP;
 
 		UE_LOG(LogTankRampage, Display, TEXT("%s: Level up to %d"), *GetName(), RampageGameState->Level + 1);

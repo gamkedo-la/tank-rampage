@@ -19,7 +19,7 @@ public:
 	int32 GetCurrentLevel() const { return Level; }
 
 	UFUNCTION(BlueprintPure)
-	float GetLevelPercent() const { return static_cast<float>(CurrentXP) / LevelUpXP; };
+	float GetLevelPercent() const { return static_cast<float>(TotalXP - PreviousLevelXP) / (LevelUpXP - PreviousLevelXP); };
 
 	UFUNCTION(BlueprintPure)
 	int32 GetTotalXP() const { return TotalXP; }
@@ -29,7 +29,7 @@ private:
 	friend class ARampageGameMode;
 
 	int32 Level{};
-	int32 CurrentXP{};
+	int32 PreviousLevelXP{};
 	int32 LevelUpXP{};
 	int32 TotalXP{};
 };
