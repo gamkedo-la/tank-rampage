@@ -12,6 +12,9 @@
 #include "Components/SphereComponent.h" 
 #include "Components/StaticMeshComponent.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
+#include "AbilitySystemComponent.h"
+
 AXPToken::AXPToken()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -39,6 +42,31 @@ void AXPToken::BeginPlay()
 	UE_VLOG_LOCATION(this, LogTRItem, Log, GetActorLocation(), CollisionVolume->GetLocalBounds().SphereRadius, FColor::Blue, TEXT("XP Token"));
 }
 
+void AXPToken::ApplyEffectToTarget(AActor* Target, TSubclassOf<UGameplayEffect> GameplayEffectClass)
+{
+	if (!ensure(GameplayEffectClass))
+	{
+		return;
+	}
+
+	auto TargetAbilitySystemComponent = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Target);
+	if (!TargetAbilitySystemComponent)
+	{
+		return;
+	}
+
+	auto EffectContextHandle = TargetAbilitySystemComponent->MakeEffectContext();
+	EffectContextHandle.AddSourceObject(this);
+	EffectContextHandle.AddOrigin(GetActorLocation());
+
+	auto GameplayEffectSpecHandle = TargetAbilitySystemComponent->MakeOutgoingSpec(GameplayEffectClass, 1.0f, EffectContextHandle);
+	check(GameplayEffectSpecHandle.Data);
+
+	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: Applying effect %s to %s"), *GetName(), *LoggingUtils::GetName(GameplayEffectClass), *LoggingUtils::GetName(Target));
+
+	TargetAbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*GameplayEffectSpecHandle.Data);
+}
+
 void AXPToken::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	auto Pawn = Cast<APawn>(OtherActor);
@@ -62,7 +90,8 @@ void AXPToken::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* 
 
 		XPSubsystem->OnXPTokenOverlap.Broadcast(this, Pawn);
 
+		ApplyEffectToTarget(Pawn, InstantGameplayEffectClass);
+
 		Destroy();
 	}
 }
-
