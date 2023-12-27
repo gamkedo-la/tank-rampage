@@ -19,7 +19,7 @@ class TRITEM_API UItem : public UObject
 
 public:
 	UFUNCTION(BlueprintPure)
-	bool CanBeActivated() const;
+	virtual bool CanBeActivated() const;
 
 	UFUNCTION(BlueprintPure)
 	float GetCooldownTimeRemaining() const;

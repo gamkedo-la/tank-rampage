@@ -12,6 +12,44 @@
 
 bool UWeapon::DoActivation(USceneComponent& ActivationReferenceComponent, const FName& ActivationSocketName)
 {
+	if (!ensure(WeaponProjectileClass))
+	{
+		return false;
+	}
+
+	if (ProjectileCount == 1)
+	{
+		LaunchProjectile(ActivationReferenceComponent, ActivationSocketName);
+	}
+	else
+	{
+		auto World = GetWorld();
+		check(World);
+
+		bIsFiring = true;
+
+		World->GetTimerManager().SetTimer(LaunchDelayTimerHandle, FTimerDelegate::CreateWeakLambda(this,
+			[&ActivationSocketName, this, WeakCompReference = MakeWeakObjectPtr(&ActivationReferenceComponent), LoopCount = int32{0}]()mutable
+			{
+				// Have extra delay period between next possible activation to avoid possibility of cooldown being <= fire delay * projectileCount
+				if (!WeakCompReference.IsValid() || LoopCount >= ProjectileCount + 1)
+				{
+					ClearProjectileTimer();
+				}
+				else if (LoopCount < ProjectileCount)
+				{
+					LaunchProjectile(*WeakCompReference, ActivationSocketName);
+				}
+				++LoopCount;
+
+			}), ProjectileLaunchPeriod, true);
+	}
+
+	return true;
+}
+
+void UWeapon::LaunchProjectile(USceneComponent& ActivationReferenceComponent, const FName& ActivationSocketName) const
+{
 	const FVector SpawnLocation = ActivationReferenceComponent.GetSocketLocation(ActivationSocketName);
 	const FRotator SpawnRotation = ActivationReferenceComponent.GetSocketRotation(ActivationSocketName);
 
@@ -26,16 +64,35 @@ bool UWeapon::DoActivation(USceneComponent& ActivationReferenceComponent, const 
 
 	if (!SpawnedProjectile)
 	{
-		UE_VLOG_UELOG(this, LogTRItem, Warning, TEXT("%s: DoActivation: Unable to spawn projectile %s at %s with rotation=%s"),
+		UE_VLOG_UELOG(this, LogTRItem, Warning, TEXT("%s: LaunchProjectile: Unable to spawn projectile %s at %s with rotation=%s"),
 			*GetName(), *LoggingUtils::GetName(WeaponProjectileClass), *SpawnLocation.ToCompactString());
-		return false;
+		return;
 	}
 
-	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: DoActivation: %s at %s"), *GetName(),
+	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: LaunchProjectile: %s at %s"), *GetName(),
 		*LoggingUtils::GetName(WeaponProjectileClass), *SpawnLocation.ToCompactString(), *SpawnRotation.ToCompactString());
 
 	SpawnedProjectile->Initialize(ActivationReferenceComponent, ActivationSocketName, DamageAmount);
 	SpawnedProjectile->Launch(ProjectileLaunchSpeed);
+}
 
-	return true;
+void UWeapon::BeginDestroy()
+{
+	Super::BeginDestroy();
+
+	ClearProjectileTimer();
+}
+
+void UWeapon::ClearProjectileTimer()
+{
+	bIsFiring = false;
+
+	if (auto World = GetWorld(); World)
+	{
+		World->GetTimerManager().ClearTimer(LaunchDelayTimerHandle);
+	}
+	else
+	{
+		LaunchDelayTimerHandle.Invalidate();
+	}
 }

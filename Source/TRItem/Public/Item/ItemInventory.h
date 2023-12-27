@@ -22,10 +22,16 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetActiveWeaponIndex(int32 Index);
 
+	UFUNCTION(BlueprintPure)
 	UWeapon* GetActiveWeapon() const;
+
+	UFUNCTION(BlueprintPure)
 	bool HasAnyActiveWeapon() const;
 
-	UItem* GetItemByName(const FName& Name);
+	UFUNCTION(BlueprintPure)
+	UItem* GetItemByName(const FName& Name) const;
+
+	UFUNCTION(BlueprintCallable)
 	void AddItemByName(const FName& Name);
 
 

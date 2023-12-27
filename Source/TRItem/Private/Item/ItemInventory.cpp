@@ -55,7 +55,7 @@ void UItemInventory::SetActiveWeaponIndex(int32 Index)
 	}
 }
 
-UItem* UItemInventory::GetItemByName(const FName& Name)
+UItem* UItemInventory::GetItemByName(const FName& Name) const
 {
 	auto WeaponResult = Weapons.FindByPredicate([&](auto Weapon)
 	{
