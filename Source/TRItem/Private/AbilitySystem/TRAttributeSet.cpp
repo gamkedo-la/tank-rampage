@@ -2,7 +2,10 @@
 
 
 #include "AbilitySystem/TRAttributeSet.h"
+
 #include "AbilitySystemComponent.h"
+#include "GameplayEffectExtension.h"
+
 #include "Net/UnrealNetwork.h"
 
 UTRAttributeSet::UTRAttributeSet()
@@ -24,6 +27,24 @@ void UTRAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	DOREPLIFETIME_CONDITION_NOTIFY(UTRAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UTRAttributeSet, XPTotal, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UTRAttributeSet, XPLevel, COND_None, REPNOTIFY_Always);
+}
+
+void UTRAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
+{
+	Super::PreAttributeChange(Attribute, NewValue);
+
+	if (Attribute == GetHealthAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxHealth());
+	}
+}
+
+void UTRAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
+{
+	Super::PostGameplayEffectExecute(Data);
+
+	auto& EvaluatedData = Data.EvaluatedData;
+	// Can get the attribute being modified with EvaluatedData.Attribute
 }
 
 void UTRAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth) const
