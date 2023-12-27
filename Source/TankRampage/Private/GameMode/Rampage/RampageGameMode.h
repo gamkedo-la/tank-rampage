@@ -10,6 +10,8 @@
 class UXPSpawnerComponent;
 class AXPToken;
 class UXPCollectionComponent;
+class ULevelUnlocksComponent;
+
 class ABaseTank;
 
 /**
@@ -28,7 +30,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	void AddXP(int32 XP);
+	void AddXP(APawn* PlayerPawn, int32 XP);
 
 private:
 
@@ -45,6 +47,9 @@ private:
 
 	UPROPERTY(Category = "Components", VisibleDefaultsOnly)
 	TObjectPtr<UXPCollectionComponent> XPCollectionComponent{};
+
+	UPROPERTY(Category = "Components", VisibleDefaultsOnly)
+	TObjectPtr<ULevelUnlocksComponent> LevelUnlocksComponent{};
 
 	UPROPERTY(Category = "XP", EditDefaultsOnly)
 	int32 TokenXPAmount{ 1 };

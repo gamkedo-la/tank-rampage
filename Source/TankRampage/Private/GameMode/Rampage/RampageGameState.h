@@ -4,6 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameStateBase.h"
+
+#include "LevelUnlocksContext.h"
+
 #include "RampageGameState.generated.h"
 
 /**
@@ -24,9 +27,14 @@ public:
 	UFUNCTION(BlueprintPure)
 	int32 GetTotalXP() const { return TotalXP; }
 
+	UFUNCTION(BlueprintPure)
+	const FLevelUnlocksContext& GetNextLevelUnlocks() const { return NextLevelUnlocks; }
+
 private:
 
 	friend class ARampageGameMode;
+
+	FLevelUnlocksContext NextLevelUnlocks{};
 
 	int32 Level{};
 	int32 PreviousLevelXP{};

@@ -20,31 +20,6 @@ UItemInventory::UItemInventory()
 void UItemInventory::BeginPlay()
 {
 	Super::BeginPlay();
-
-	InitWeapons();
-}
-
-void UItemInventory::InitWeapons()
-{
-	if (!ensure(ItemDataAsset))
-	{
-		return;
-	}
-
-	if (ensure(ItemDataAsset->MainGunClass))
-	{
-		auto Weapon = NewObject<UWeapon>(GetOwner(), ItemDataAsset->MainGunClass, ItemNames::MainGunName);
-		if (Weapon)
-		{
-			Weapon->Initialize(Cast<APawn>(GetOwner()), ItemDataAsset);
-			Weapons.Add(Weapon);
-		}
-		else
-		{
-			UE_VLOG_UELOG(this, LogTRItem, Error, TEXT("%s-%s: InitWeapons: Unable to create weapon with class=%s"),
-				*LoggingUtils::GetName(GetOwner()), *GetName(), *LoggingUtils::GetName(ItemDataAsset->MainGunClass));
-		}
-	}
 }
 
 void UItemInventory::SetActiveWeaponIndex(int32 Index)
@@ -67,7 +42,35 @@ UItem* UItemInventory::GetItemByName(const FName& Name) const
 
 void UItemInventory::AddItemByName(const FName& Name)
 {
-	// TODO:
+	if (!ensure(ItemDataAsset))
+	{
+		return;
+	}
+
+	if (GetItemByName(Name))
+	{
+		UE_VLOG_UELOG(this, LogTRItem, Warning, TEXT("%s-%s: AddItemByName: Inventory already contains Name=%s"),
+			*LoggingUtils::GetName(GetOwner()), *GetName(), *Name.ToString());
+	}
+	else if (Name == ItemNames::MainGunName && ensure(ItemDataAsset->MainGunClass))
+	{
+		auto Weapon = NewObject<UWeapon>(GetOwner(), ItemDataAsset->MainGunClass, ItemNames::MainGunName);
+		if (Weapon)
+		{
+			Weapon->Initialize(Cast<APawn>(GetOwner()), ItemDataAsset);
+			Weapons.Add(Weapon);
+		}
+		else
+		{
+			UE_VLOG_UELOG(this, LogTRItem, Error, TEXT("%s-%s: AddItemByName: Unable to create weapon with class=%s"),
+				*LoggingUtils::GetName(GetOwner()), *GetName(), *LoggingUtils::GetName(ItemDataAsset->MainGunClass));
+		}
+	}
+	else
+	{
+		ensureAlwaysMsgf(true, TEXT("%s-%s: Attempted to add unsupported item with Name=%s"),
+			*LoggingUtils::GetName(GetOwner()), *GetName(), *Name.ToString());
+	}
 }
 
 #if ENABLE_VISUAL_LOG

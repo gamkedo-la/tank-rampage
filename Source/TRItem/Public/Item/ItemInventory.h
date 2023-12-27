@@ -45,9 +45,6 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
-	void InitWeapons();
-
-private:
 
 	UPROPERTY(Category = "Weapon", EditDefaultsOnly)
 	TObjectPtr<UItemDataAsset> ItemDataAsset{};

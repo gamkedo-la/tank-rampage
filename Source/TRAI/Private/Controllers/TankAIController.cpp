@@ -13,6 +13,8 @@
 #include "VisualLogger/VisualLogger.h"
 
 #include "Subsystems/TankEventsSubsystem.h"
+#include "Item/ItemInventory.h"
+#include "Item/ItemNames.h"
 
 #include "Curves/CurveFloat.h"
 
@@ -207,6 +209,9 @@ void ATankAIController::OnPossess(APawn* InPawn)
 	{
 		return;
 	}
+
+	// Give AI a basic item
+	Tank->GetItemInventory()->AddItemByName(ItemNames::MainGunName);
 
 	Tank->GetHealthComponent()->OnHealthChanged.AddDynamic(this, &ThisClass::OnHealthChanged);
 }

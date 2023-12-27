@@ -5,6 +5,8 @@
 
 #include "XPSpawnerComponent.h"
 #include "XPCollectionComponent.h"
+#include "LevelUnlocksComponent.h"
+
 #include "RampageGameState.h"
 #include "Pawn/BaseTankPawn.h"
 #include "Components/HealthComponent.h"
@@ -23,6 +25,7 @@ ARampageGameMode::ARampageGameMode()
 {
 	XPSpawnerComponent = CreateDefaultSubobject<UXPSpawnerComponent>(TEXT("XP Spawner"));
 	XPCollectionComponent = CreateDefaultSubobject<UXPCollectionComponent>(TEXT("XP Collection"));
+	LevelUnlocksComponent = CreateDefaultSubobject<ULevelUnlocksComponent>(TEXT("Level Unlocks"));
 }
 
 void ARampageGameMode::OnTokenCollected(const AXPToken& Token, APawn* PlayerPawn)
@@ -38,7 +41,7 @@ void ARampageGameMode::OnTokenCollected(const AXPToken& Token, APawn* PlayerPawn
 		return;
 	}
 
-	AddXP(TokenXPAmount);
+	AddXP(PlayerPawn, TokenXPAmount);
 }
 
 void ARampageGameMode::BeginPlay()
@@ -49,7 +52,7 @@ void ARampageGameMode::BeginPlay()
 	RegisterEvents();
 }
 
-void ARampageGameMode::AddXP(int32 XP)
+void ARampageGameMode::AddXP(APawn* PlayerPawn, int32 XP)
 {
 	auto RampageGameState = GetGameState<ARampageGameState>();
 	if (!ensure(RampageGameState))
@@ -90,8 +93,16 @@ void ARampageGameMode::AddXP(int32 XP)
 		auto World = GetWorld();
 		check(World);
 
+		// Update game state with upgrade options
+		if (auto UpgradeContextOpt = LevelUnlocksComponent->GetNextLevelUnlockOptions(RampageGameState->Level); UpgradeContextOpt)
+		{
+			UpgradeContextOpt->Pawn = PlayerPawn;
+			RampageGameState->NextLevelUnlocks = *UpgradeContextOpt;
+		}
+
 		if (auto XPSubsystem = World->GetSubsystem<UXPSubsystem>(); ensure(XPSubsystem))
 		{
+			// Hud will listen for this and present a dialog option to present upgrade options
 			XPSubsystem->OnXPLevelUp.Broadcast();
 		}
 	}

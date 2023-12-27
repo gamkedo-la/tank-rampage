@@ -33,6 +33,7 @@ public class TRAI : ModuleRules
 		{
 			"TRCore",
 			"TRTank",
+			"TRItem",
 		};
 
 		var enginePrivateDependencyModuleNames = new string[] 
