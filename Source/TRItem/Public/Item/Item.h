@@ -44,6 +44,12 @@ public:
 	UFUNCTION(BlueprintPure)
 	int32 GetMaxLevel() const;
 
+	/*
+	* Returns a user-friendly phrase for the item.
+	*/
+	UFUNCTION(BlueprintPure)
+	FString GetDescription() const;
+
 protected:
 	virtual bool DoActivation(USceneComponent& ActivationReferenceComponent, const FName& ActivationSocketName)
 		PURE_VIRTUAL(UItem::DoActivation, return false;);
@@ -69,6 +75,9 @@ private:
 	UPROPERTY(Category = "Level", EditDefaultsOnly)
 	int32 MaxItemLevel{ 1 };
 
+	UPROPERTY(Category = "Display", EditDefaultsOnly)
+	FString Description{};
+
 	UPROPERTY(Transient)
 	TObjectPtr<APawn> Owner{};
 };
@@ -93,6 +102,11 @@ inline int32 UItem::GetLevel() const
 inline int32 UItem::GetMaxLevel() const
 {
 	return MaxItemLevel;
+}
+
+inline FString UItem::GetDescription() const
+{
+	return Description;
 }
 
 #pragma endregion Inline Definitions
