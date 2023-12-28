@@ -30,6 +30,9 @@ public:
 	UFUNCTION(BlueprintPure)
 	const FLevelUnlocksContext& GetNextLevelUnlocks() const { return NextLevelUnlocks; }
 
+	UFUNCTION(BlueprintCallable)
+	void ApplyLevelUnlock(APawn* Pawn, const FLevelUnlock& Unlock);
+
 private:
 
 	friend class ARampageGameMode;

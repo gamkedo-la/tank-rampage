@@ -30,24 +30,26 @@ private:
 	void LaunchProjectile(USceneComponent& ActivationReferenceComponent, const FName& ActivationSocketName) const;
 	void ClearProjectileTimer();
 
+
+protected:
+	UPROPERTY(Category = "Firing", EditDefaultsOnly, BlueprintReadWrite)
+	float ProjectileLaunchSpeed{ 100000 };
+
+	UPROPERTY(Category = "Firing", EditDefaultsOnly, BlueprintReadWrite)
+	int32 ProjectileCount{ 1 };
+
+	UPROPERTY(Category = "Damage", EditDefaultsOnly, BlueprintReadWrite)
+	float DamageAmount{ 100.0f };
+
 private:
 	UPROPERTY(Category = "Weapon", EditDefaultsOnly)
 	TSubclassOf<AProjectile> WeaponProjectileClass{};
-
-	UPROPERTY(Category = "Firing", EditDefaultsOnly)
-	float ProjectileLaunchSpeed{ 100000 };
-
-	UPROPERTY(Category = "Firing", EditDefaultsOnly)
-	int32 ProjectileCount{ 1 };
 
 	/*
 	* Controls the delay time firing additional projectiles if <code>ProjectileCount > 1 </code>.
 	*/
 	UPROPERTY(Category = "Firing", EditDefaultsOnly)
 	float ProjectileLaunchPeriod{ 0.2f };
-
-	UPROPERTY(Category = "Damage", EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-	float DamageAmount{ 100.0f };
 
 	/*
 	* Prevent concurrent firing if multiple projectiles in process of being launched

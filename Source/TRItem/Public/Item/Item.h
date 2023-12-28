@@ -37,7 +37,6 @@ public:
 
 	void IncreaseLevel();
 	void SetLevel(int32 Level);
-	void SetMaxLevel(int32 Level);
 
 	UFUNCTION(BlueprintPure)
 	int32 GetLevel() const;
@@ -66,6 +65,8 @@ protected:
 private:
 	float LastActivationTimeSeconds{ -1.0f };
 	int32 ItemLevel{ 1 };
+
+	UPROPERTY(Category = "Level", EditDefaultsOnly)
 	int32 MaxItemLevel{ 1 };
 
 	UPROPERTY(Transient)
@@ -82,11 +83,6 @@ inline APawn* UItem::GetOwner() const
 inline void UItem::IncreaseLevel()
 {
 	SetLevel(ItemLevel + 1);
-}
-
-inline void UItem::SetMaxLevel(int32 Level)
-{
-	MaxItemLevel = Level;
 }
 
 inline int32 UItem::GetLevel() const
