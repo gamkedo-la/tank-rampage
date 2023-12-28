@@ -9,7 +9,7 @@
 class AProjectile;
 
 /**
- * 
+ * An item that can deal damage to enemies.
  */
 UCLASS()
 class TRITEM_API UWeapon : public UItem
@@ -20,7 +20,7 @@ public:
 	UFUNCTION(BlueprintPure)
 	float GetLaunchSpeed() const;
 
-	virtual bool CanBeActivated() const;
+	virtual bool CanBeActivated() const override;
 
 protected:
 	virtual bool DoActivation(USceneComponent& ActivationReferenceComponent, const FName& ActivationSocketName) override;
@@ -29,7 +29,6 @@ protected:
 private:
 	void LaunchProjectile(USceneComponent& ActivationReferenceComponent, const FName& ActivationSocketName) const;
 	void ClearProjectileTimer();
-
 
 protected:
 	UPROPERTY(Category = "Firing", EditDefaultsOnly, BlueprintReadWrite)

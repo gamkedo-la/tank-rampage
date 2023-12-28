@@ -14,6 +14,12 @@
 class UItem;
 class UItemInventory;
 
+/*
+* Gets available player unlocks based on the next level and also applies them to the player's inventory.
+* At least one new unlock will be returned in the available options as long as there is at least one new one at the given level and player can upgrade to it.
+* A player can be given an unlock if it is a level 1 item and player does not yet have that item in their inventory, or the player has the item and the next level of the 
+* upgrade is the one being considered.
+*/
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ULevelUnlocksComponent : public UActorComponent
 {
@@ -31,6 +37,11 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
+
+	void GiveLocalPlayerFirstWeapon() const;
+	void DetermineAvailableOptionCounts(int32 NextLevel, int32& NumCurrent, int32& NumAvailableOptions) const;
+	TArray<FLevelUnlock> GetAvailableUnlocks(const int32 NextLevel, const UItemInventory* ItemInventory, int32& NumCurrent, const int32 NumAvailableOptions) const;
+
 	std::optional<FLevelUnlocksContext> GetFirstLevelUnlockOptions() const;
 	FLevelUnlocksContext GetLevelUnlocksContext(int32 NextLevel, const TArray<FLevelUnlock>& TotalOptions, int32 NumAvailableOptions) const;
 

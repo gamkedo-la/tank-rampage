@@ -59,8 +59,15 @@ protected:
 
 	virtual void NativeInitialize(UItemDataAsset* InItemDataAsset) {}
 
+	/*
+	* Blueprint callback to apply upgrades to the item given the <code>NewLevel</code>.
+	*/
 	UFUNCTION(BlueprintNativeEvent)
 	void OnLevelChanged(int32 NewLevel, int32 PreviousLevel);
+
+	/*
+	* Native callback to apply upgrades to the item given the <code>NewLevel</code>.
+	*/
 	virtual void OnLevelChanged_Implementation(int32 NewLevel, int32 PreviousLevel) {}
 
 protected:

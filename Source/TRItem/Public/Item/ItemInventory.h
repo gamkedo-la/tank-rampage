@@ -10,6 +10,11 @@ class UWeapon;
 class UItem;
 class UItemDataAsset;
 
+/*
+* Contains the items that the player currently has available.  Items can be weapons like the main gun, missiles, EMP, mini nuke etc, or activatible effects like a shield or turbo speed.
+* Passive effects like health and armor upgrades are handled separately as they are permantently applied to the player's attributes and do not need to be activated. 
+* Item names are identified via constants in <code>ItemNames.h</code>.
+*/
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TRITEM_API UItemInventory : public UActorComponent
 {
@@ -19,8 +24,18 @@ public:
 	// Sets default values for this component's properties
 	UItemInventory();
 
+	/*
+	* Sets the active weapon with the given <code>Name</code>.
+	*/
 	UFUNCTION(BlueprintCallable)
-	void SetActiveWeaponIndex(int32 Index);
+	void SetActiveWeaponByName(const FName& Name);
+
+	/*
+	* Sets the active weapon. Player must already have this weapon in the inventory.
+	* To add a new weapon to inventory use <code>AddItemByName</code>.
+	*/
+	UFUNCTION(BlueprintCallable)
+	void SetActiveWeapon(UWeapon* Weapon);
 
 	UFUNCTION(BlueprintPure)
 	UWeapon* GetActiveWeapon() const;
@@ -31,6 +46,9 @@ public:
 	UFUNCTION(BlueprintPure)
 	UItem* GetItemByName(const FName& Name) const;
 
+	/*
+	* Adds a new item with the given <code>Name</code> to the inventory if it is a valid identifier and inventory does not already have this item.
+	*/
 	UFUNCTION(BlueprintCallable)
 	void AddItemByName(const FName& Name);
 

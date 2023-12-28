@@ -33,7 +33,7 @@ namespace
 	IndexArray ShuffleIndices(Random& Rng, int32 Count);
 
 	template<typename Random>
-	void PopulateRandomizedAvailableItems(Random& Rng, const TArray<FLevelUnlock>& PossibleUnlocks, TArray<FLevelUnlock>& OutAvailable, int32& Count);
+	void SelectRandomizedAvailableItems(Random& Rng, const TArray<FLevelUnlock>& PossibleUnlocks, TArray<FLevelUnlock>& OutAvailable, int32& Count);
 }
 
 // Initialize the random number generator with a seed from current time
@@ -46,50 +46,32 @@ void ULevelUnlocksComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// apply first unlock automatically
+	GiveLocalPlayerFirstWeapon();
+}
+
+void ULevelUnlocksComponent::GiveLocalPlayerFirstWeapon() const
+{
 	if (const auto& FirstLevelUnlockOpt = GetFirstLevelUnlockOptions(); FirstLevelUnlockOpt && FirstLevelUnlockOpt->Config)
 	{
 		auto World = GetWorld();
 		check(World);
 
 		World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this, FirstLevelUnlockOpt]
-			{
-				this->ApplyLevelUnlock(UGameplayStatics::GetPlayerPawn(this, 0), FirstLevelUnlockOpt->Config.AvailableUnlocks[0]);
-			}));
+		{
+			this->ApplyLevelUnlock(UGameplayStatics::GetPlayerPawn(this, 0), FirstLevelUnlockOpt->Config.AvailableUnlocks[0]);
+		}));
 	}
 }
 
 std::optional<FLevelUnlocksContext> ULevelUnlocksComponent::GetNextLevelUnlockOptions(APawn* Pawn, int32 NextLevel) const
 {
+	checkf(NextLevel >= 0, TEXT("NextLevel=%d < 0"), NextLevel);
+
 	// Make sure at least one level unlock is available
 	if (!ensure(!LevelUnlocks.IsEmpty()))
 	{
 		return std::nullopt;
 	}
-
-	// Offer 0 to N-1 previous upgrades passed on previously - if at the end of level - keep offering available previous upgrades
-	int32 NumCurrent;
-	int32 NumAvailableOptions;
-
-	if (NextLevel >= LevelUnlocks.Num())
-	{
-		UE_VLOG_UELOG(this, LogTankRampage, Log, TEXT("%s: GetNextLevelUnlockOptions : NextLevel=%d >= LevelUnlocks.Num()=%d - Offering previous unlocks"),
-			*GetName(), NextLevel, LevelUnlocks.Num());
-
-		NumAvailableOptions = GetNumUnlockOptions(LevelUnlocks.Last());
-		NumCurrent = 0;
-	}
-	else
-	{
-		NumAvailableOptions = GetNumUnlockOptions(LevelUnlocks[NextLevel]);
-		NumCurrent = NumAvailableOptions > 0 ? FMath::RandRange(1, NumAvailableOptions) : 0;
-	}
-
-	TArray<FLevelUnlock> UnlocksBuffer;
-	TArray<FLevelUnlock> AvailableUnlocks;
-
-	UnlocksBuffer.Reserve(MaxOptions);
-	AvailableUnlocks.Reserve(NumAvailableOptions);
 
 	const auto& ItemInventory = GetItemInventory(Pawn);
 	if (!ItemInventory)
@@ -100,37 +82,16 @@ std::optional<FLevelUnlocksContext> ULevelUnlocksComponent::GetNextLevelUnlockOp
 		return std::nullopt;
 	}
 
-	const auto& CurrentItems = ItemInventory->GetCurrentItems();
+	int32 NumCurrent, NumAvailableOptions;
+	DetermineAvailableOptionCounts(NextLevel, NumCurrent, NumAvailableOptions);
 
-	// Populate available previous
-	int32 NumPrevious = NumAvailableOptions - NumCurrent;
-
-	if (NumPrevious > 0)
-	{
-		// Start at previous level and iterate backwards
-		for (int32 i = FMath::Min(NextLevel, LevelUnlocks.Num()) - 1; i >= 0; --i)
-		{
-			PopulateViableUnlockOptions(CurrentItems, LevelUnlocks[i].AvailableUnlocks, UnlocksBuffer);
-		}
-
-		PopulateRandomizedAvailableItems(Rng, UnlocksBuffer, AvailableUnlocks, NumPrevious);
-	}
-
-	if (NumCurrent > 0)
-	{
-		UnlocksBuffer.Reset();
-		// if we didn't have enough previous to offer then increase NumCurrent
-		NumCurrent = NumAvailableOptions - NumPrevious;
-
-		PopulateViableUnlockOptions(CurrentItems, LevelUnlocks[NextLevel].AvailableUnlocks, UnlocksBuffer);
-		PopulateRandomizedAvailableItems(Rng, UnlocksBuffer, AvailableUnlocks, NumCurrent);
-	}
+	const TArray<FLevelUnlock> AvailableUnlocks = GetAvailableUnlocks(NextLevel, ItemInventory, NumCurrent, NumAvailableOptions);
 
 	if (AvailableUnlocks.Num() != NumAvailableOptions)
 	{
 		UE_VLOG_UELOG(this, LogTankRampage, Warning,
 			TEXT("%s: GetNextLevelUnlockOptions: Unable to populate all item choices - Pawn=%s; NextLevel=%d; Count=%d; NumCurrent=%d; NumAvailableOptions=%d; NumPrevious=%d"),
-			*GetName(), *LoggingUtils::GetName(Pawn), NextLevel, AvailableUnlocks.Num(), NumCurrent, NumAvailableOptions, NumPrevious);
+			*GetName(), *LoggingUtils::GetName(Pawn), NextLevel, AvailableUnlocks.Num(), NumCurrent, NumAvailableOptions, NumAvailableOptions - NumCurrent);
 	}
 
 	NumAvailableOptions = FMath::Min(NumAvailableOptions, AvailableUnlocks.Num());
@@ -144,6 +105,61 @@ std::optional<FLevelUnlocksContext> ULevelUnlocksComponent::GetNextLevelUnlockOp
 	}
 
 	return GetLevelUnlocksContext(NextLevel, AvailableUnlocks, NumAvailableOptions);
+}
+
+void ULevelUnlocksComponent::DetermineAvailableOptionCounts(int32 NextLevel, int32& NumCurrent, int32& NumAvailableOptions) const
+{
+	// Offer 0 to N-1 previous upgrades passed on previously - if at the end of level - keep offering available previous upgrades
+
+	if (NextLevel >= LevelUnlocks.Num())
+	{
+		UE_VLOG_UELOG(this, LogTankRampage, Display, TEXT("%s: DetermineAvailableOptionCounts : NextLevel=%d >= LevelUnlocks.Num()=%d - Offering previous unlocks"),
+			*GetName(), NextLevel, LevelUnlocks.Num());
+
+		NumAvailableOptions = GetNumUnlockOptions(LevelUnlocks.Last());
+		NumCurrent = 0;
+	}
+	else
+	{
+		NumAvailableOptions = GetNumUnlockOptions(LevelUnlocks[NextLevel]);
+		NumCurrent = NumAvailableOptions > 0 ? FMath::RandRange(1, NumAvailableOptions) : 0;
+	}
+}
+
+TArray<FLevelUnlock> ULevelUnlocksComponent::GetAvailableUnlocks(const int32 NextLevel, const UItemInventory* ItemInventory, int32& NumCurrent, const int32 NumAvailableOptions) const
+{
+	TArray<FLevelUnlock> PossibleUnlocks;
+	TArray<FLevelUnlock> AvailableUnlocks;
+
+	PossibleUnlocks.Reserve(MaxOptions);
+	AvailableUnlocks.Reserve(NumAvailableOptions);
+
+	const auto& CurrentItems = ItemInventory->GetCurrentItems();
+
+	int32 NumPrevious = NumAvailableOptions - NumCurrent;
+
+	if (NumPrevious > 0)
+	{
+		// Start at previous level and iterate backwards
+		for (int32 i = FMath::Min(NextLevel, LevelUnlocks.Num()) - 1; i >= 0; --i)
+		{
+			PopulateViableUnlockOptions(CurrentItems, LevelUnlocks[i].AvailableUnlocks, PossibleUnlocks);
+		}
+
+		SelectRandomizedAvailableItems(Rng, PossibleUnlocks, AvailableUnlocks, NumPrevious);
+	}
+
+	if (NumCurrent > 0)
+	{
+		PossibleUnlocks.Reset();
+		// if we didn't have enough previous to offer then increase NumCurrent
+		NumCurrent = NumAvailableOptions - NumPrevious;
+
+		PopulateViableUnlockOptions(CurrentItems, LevelUnlocks[NextLevel].AvailableUnlocks, PossibleUnlocks);
+		SelectRandomizedAvailableItems(Rng, PossibleUnlocks, AvailableUnlocks, NumCurrent);
+	}
+
+	return AvailableUnlocks;
 }
 
 void ULevelUnlocksComponent::ApplyLevelUnlock(APawn* Pawn, const FLevelUnlock& Unlock) const
@@ -251,7 +267,7 @@ namespace
 	}
 
 	template<typename Random>
-	void PopulateRandomizedAvailableItems(Random& Rng, const TArray<FLevelUnlock>& PossibleUnlocks, TArray<FLevelUnlock>& OutAvailable, int32& Count)
+	void SelectRandomizedAvailableItems(Random& Rng, const TArray<FLevelUnlock>& PossibleUnlocks, TArray<FLevelUnlock>& OutAvailable, int32& Count)
 	{
 		Count = FMath::Min(Count, PossibleUnlocks.Num());
 

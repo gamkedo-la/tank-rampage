@@ -22,9 +22,20 @@ void UItemInventory::BeginPlay()
 	Super::BeginPlay();
 }
 
-void UItemInventory::SetActiveWeaponIndex(int32 Index)
+void UItemInventory::SetActiveWeaponByName(const FName& Name)
 {
-	if (Index >= 0 && Index < Weapons.Num())
+	SetActiveWeapon(Cast<UWeapon>(GetItemByName(Name)));
+}
+
+void UItemInventory::SetActiveWeapon(UWeapon* Weapon)
+{
+	if (!Weapon)
+	{
+		return;
+	}
+
+	const auto Index = Weapons.Find(Weapon);
+	if (Index != INDEX_NONE)
 	{
 		ActiveWeaponIndex = Index;
 	}
