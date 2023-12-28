@@ -73,6 +73,23 @@ void UItemInventory::AddItemByName(const FName& Name)
 	}
 }
 
+TArray<UItem*> UItemInventory::GetCurrentItems() const
+{
+	TArray<UItem*> Items;
+	// Could do assignment here with Weapons but plan to add additional effects that will be in a separate array
+	Items.Reserve(Weapons.Num());
+	
+	for (auto Weapon : Weapons)
+	{
+		if (Weapon)
+		{
+			Items.Add(Weapon);
+		}
+	}
+
+	return Items;
+}
+
 #if ENABLE_VISUAL_LOG
 
 void UItemInventory::DescribeSelfToVisLog(FVisualLogEntry* Snapshot) const

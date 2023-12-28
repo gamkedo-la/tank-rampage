@@ -7,9 +7,12 @@
 #include "LevelUnlocksContext.h"
 
 #include <optional>
+#include <random>
 
 #include "LevelUnlocksComponent.generated.h"
 
+class UItem;
+class UItemInventory;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ULevelUnlocksComponent : public UActorComponent
@@ -19,13 +22,20 @@ class ULevelUnlocksComponent : public UActorComponent
 public:	
 	ULevelUnlocksComponent();
 
-	std::optional<FLevelUnlocksContext> GetNextLevelUnlockOptions(int32 NextLevel) const;
+	std::optional<FLevelUnlocksContext> GetNextLevelUnlockOptions(APawn* Pawn, int32 NextLevel) const;
 
 	UFUNCTION(BlueprintCallable)
-	void ApplyLevelUnlock(APawn* Pawn, const FLevelUnlock& Unlock);
+	void ApplyLevelUnlock(APawn* Pawn, const FLevelUnlock& Unlock) const;
 
 protected:
 	virtual void BeginPlay() override;
+
+private:
+	std::optional<FLevelUnlocksContext> GetFirstLevelUnlockOptions() const;
+	FLevelUnlocksContext GetLevelUnlocksContext(int32 NextLevel, const TArray<FLevelUnlock>& TotalOptions, int32 NumAvailableOptions) const;
+
+	void PopulateViableUnlockOptions(const TArray<UItem*>& CurrentItems, const TArray<FLevelUnlock>& TotalOptions, TArray<FLevelUnlock>& OutOptions) const;
+	UItemInventory* GetItemInventory(APawn* Pawn) const;
 
 private:
 
@@ -33,5 +43,7 @@ private:
 	// Then in begin play could convert it to this TArray<FLevelUnlocksConfig> structure
 	UPROPERTY(EditDefaultsOnly)
 	TArray<FLevelUnlocksConfig> LevelUnlocks;
+
+	mutable std::default_random_engine Rng;
 };
 

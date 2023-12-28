@@ -34,6 +34,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void AddItemByName(const FName& Name);
 
+	UFUNCTION(BlueprintPure)
+	TArray<UItem*> GetCurrentItems() const;
+
 
 #if ENABLE_VISUAL_LOG
 

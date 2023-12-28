@@ -34,6 +34,9 @@ struct FLevelUnlocksConfig
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (TitleProperty = "Description"))
 	TArray<FLevelUnlock> AvailableUnlocks;
 
+	UPROPERTY(EditDefaultsOnly)
+	int32 MaxUnlockOptions{ 3 };
+
 	operator bool() const;
 };
 

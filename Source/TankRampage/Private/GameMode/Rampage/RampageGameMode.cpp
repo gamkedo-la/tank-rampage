@@ -94,7 +94,7 @@ void ARampageGameMode::AddXP(APawn* PlayerPawn, int32 XP)
 		check(World);
 
 		// Update game state with upgrade options
-		if (auto UpgradeContextOpt = LevelUnlocksComponent->GetNextLevelUnlockOptions(RampageGameState->Level); UpgradeContextOpt)
+		if (auto UpgradeContextOpt = LevelUnlocksComponent->GetNextLevelUnlockOptions(PlayerPawn, RampageGameState->Level); UpgradeContextOpt)
 		{
 			UpgradeContextOpt->Pawn = PlayerPawn;
 			RampageGameState->NextLevelUnlocks = *UpgradeContextOpt;
