@@ -73,7 +73,7 @@ void UItemInventory::AddItemByName(const FName& Name)
 		}
 		else
 		{
-			UE_VLOG_UELOG(this, LogTRItem, Error, TEXT("%s-%s: AddItemByName: Unable to create weapon with class=%s"),
+			UE_VLOG_UELOG(GetOwner(), LogTRItem, Error, TEXT("%s-%s: AddItemByName: Unable to create weapon with class=%s"),
 				*LoggingUtils::GetName(GetOwner()), *GetName(), *LoggingUtils::GetName(ItemDataAsset->MainGunClass));
 		}
 	}

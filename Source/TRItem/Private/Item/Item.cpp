@@ -48,19 +48,19 @@ float UItem::GetCooldownProgressPercentage() const
 
 bool UItem::Activate(USceneComponent* ActivationReferenceComponent, const FName& ActivationSocketName)
 {
-	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: Activate: ActivationReferenceComponent=%s; ActivationSocketName=%s"),
-		*GetName(), *LoggingUtils::GetName(ActivationReferenceComponent), *ActivationSocketName.ToString());
+	UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s-%s: Activate: ActivationReferenceComponent=%s; ActivationSocketName=%s"),
+		*LoggingUtils::GetName(GetOuter()), *GetName(), *LoggingUtils::GetName(ActivationReferenceComponent), *ActivationSocketName.ToString());
 
 	auto World = GetWorld();
 	if (!World)
 	{
-		UE_VLOG_UELOG(this, LogTRItem, Error, TEXT("%s: Activate: World is NULL"), *GetName());
+		UE_VLOG_UELOG(GetOuter(), LogTRItem, Error, TEXT("%s-%s: Activate: World is NULL"), *LoggingUtils::GetName(GetOuter()), *GetName());
 		return false;
 	}
 
 	if (!ActivationReferenceComponent)
 	{
-		UE_VLOG_UELOG(this, LogTRItem, Error, TEXT("%s: ActivationReferenceComponent is NULL"), *GetName());
+		UE_VLOG_UELOG(GetOuter(), LogTRItem, Error, TEXT("%s-%s: ActivationReferenceComponent is NULL"), *LoggingUtils::GetName(GetOuter()), *GetName());
 		return false;
 	}
 
@@ -69,7 +69,7 @@ bool UItem::Activate(USceneComponent* ActivationReferenceComponent, const FName&
 		return false;
 	}
 
-	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: DoActivation"), *GetName());
+	UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s-%s: DoActivation"), *LoggingUtils::GetName(GetOuter()), *GetName());
 
 	if (!DoActivation(*ActivationReferenceComponent, ActivationSocketName))
 	{
@@ -83,8 +83,8 @@ bool UItem::Activate(USceneComponent* ActivationReferenceComponent, const FName&
 
 void UItem::Initialize(APawn* InOwner, UItemDataAsset* InItemDataAsset)
 {
-	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: Initialize: InOwner=%s; InItemDataAsset=%s"),
-		*GetName(), *LoggingUtils::GetName(InOwner), *LoggingUtils::GetName(InItemDataAsset));
+	UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s-%s: Initialize: InOwner=%s; InItemDataAsset=%s"),
+		*LoggingUtils::GetName(GetOuter()), *GetName(), *LoggingUtils::GetName(InOwner), *LoggingUtils::GetName(InItemDataAsset));
 
 	check(InItemDataAsset);
 
