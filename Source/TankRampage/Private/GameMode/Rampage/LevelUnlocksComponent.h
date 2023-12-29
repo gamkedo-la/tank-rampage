@@ -33,6 +33,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ApplyLevelUnlock(APawn* Pawn, const FLevelUnlock& Unlock) const;
 
+	void SetLevelUnlocks(const TArray<FLevelUnlocksConfig>& InLevelUnlocks);
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -50,11 +52,17 @@ private:
 
 private:
 
-	// TODO: A DataTable is a better option for maintaining this
-	// Then in begin play could convert it to this TArray<FLevelUnlocksConfig> structure
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(Transient)
 	TArray<FLevelUnlocksConfig> LevelUnlocks;
 
 	mutable std::default_random_engine Rng;
 };
 
+#pragma region Inline Definitions
+
+inline void ULevelUnlocksComponent::SetLevelUnlocks(const TArray<FLevelUnlocksConfig>& InLevelUnlocks)
+{
+	this->LevelUnlocks = InLevelUnlocks;
+}
+
+#pragma endregion Inline Definitions

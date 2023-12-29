@@ -28,6 +28,7 @@ public:
 	void OnTokenCollected(const AXPToken& Token, APawn* PlayerPawn);
 
 protected:
+	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
 
 	void AddXP(APawn* PlayerPawn, int32 XP);
@@ -54,6 +55,11 @@ private:
 	UPROPERTY(Category = "XP", EditDefaultsOnly)
 	int32 TokenXPAmount{ 1 };
 
-	UPROPERTY(Category = "XP", EditDefaultsOnly)
 	TArray<int32> XPLevels{};
+
+	UPROPERTY(Category = "XP", EditDefaultsOnly)
+	TObjectPtr<UDataTable> LevelUpDataTable{};
+
+	UPROPERTY(Category = "XP", EditDefaultsOnly)
+	TObjectPtr<UDataTable> LevelUnlocksDataTable{};
 };

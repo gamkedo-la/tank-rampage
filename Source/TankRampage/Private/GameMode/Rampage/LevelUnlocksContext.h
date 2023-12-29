@@ -35,7 +35,7 @@ struct FLevelUnlocksConfig
 	TArray<FLevelUnlock> AvailableUnlocks;
 
 	UPROPERTY(EditDefaultsOnly)
-	int32 MaxUnlockOptions{ 3 };
+	int32 MaxUnlockOptions{ };
 
 	operator bool() const;
 };

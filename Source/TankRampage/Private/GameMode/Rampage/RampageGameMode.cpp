@@ -14,6 +14,8 @@
 #include "XPToken.h"
 #include "XPSubsystem.h"
 
+#include "LevelUnlocksData.h"
+
 #include "Logging/LoggingUtils.h"
 #include "VisualLogger/VisualLogger.h"
 #include "TankRampageLogging.h"
@@ -42,6 +44,17 @@ void ARampageGameMode::OnTokenCollected(const AXPToken& Token, APawn* PlayerPawn
 	}
 
 	AddXP(PlayerPawn, TokenXPAmount);
+}
+
+void ARampageGameMode::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	XPLevels = LevelUnlocksParser::ToXPLevelRequirementsArray(LevelUpDataTable);
+	if (ensure(LevelUnlocksComponent))
+	{
+		LevelUnlocksComponent->SetLevelUnlocks(LevelUnlocksParser::ToConfigArray(LevelUnlocksDataTable, LevelUpDataTable));
+	}
 }
 
 void ARampageGameMode::BeginPlay()
@@ -98,6 +111,15 @@ void ARampageGameMode::AddXP(APawn* PlayerPawn, int32 XP)
 		{
 			UpgradeContextOpt->Pawn = PlayerPawn;
 			RampageGameState->NextLevelUnlocks = *UpgradeContextOpt;
+		}
+		else
+		{
+			// no more unlocks available - create default object
+			RampageGameState->NextLevelUnlocks = FLevelUnlocksContext{
+				.Config = {},
+				.Pawn = PlayerPawn,
+				.Level = RampageGameState->Level
+			};
 		}
 
 		if (auto XPSubsystem = World->GetSubsystem<UXPSubsystem>(); ensure(XPSubsystem))

@@ -74,7 +74,6 @@ private:
 	TArray<UWeapon*> Weapons{};
 
 	int32 ActiveWeaponIndex{};
-		
 };
 
 #pragma region Inline Defintions

@@ -193,7 +193,6 @@ void ULevelUnlocksComponent::ApplyLevelUnlock(APawn* Pawn, const FLevelUnlock& U
 	}
 }
 
-
 UItemInventory* ULevelUnlocksComponent::GetItemInventory(APawn* Pawn) const
 {
 	auto Tank = Cast<ABaseTankPawn>(Pawn);
