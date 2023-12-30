@@ -7,7 +7,7 @@
 #include "TRItemLogging.h"
 #include "VisualLogger/VisualLogger.h"
 
-#include "Item/ItemDataAsset.h"
+#include "Item/ItemConfigData.h"
 
 bool UItem::CanBeActivated() const
 {
@@ -81,17 +81,15 @@ bool UItem::Activate(USceneComponent* ActivationReferenceComponent, const FName&
 	return true;
 }
 
-void UItem::Initialize(APawn* InOwner, UItemDataAsset* InItemDataAsset)
+void UItem::Initialize(APawn* InOwner, const FItemConfigData& ItemConfigData)
 {
-	UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s-%s: Initialize: InOwner=%s; InItemDataAsset=%s"),
-		*LoggingUtils::GetName(GetOuter()), *GetName(), *LoggingUtils::GetName(InOwner), *LoggingUtils::GetName(InItemDataAsset));
-
-	check(InItemDataAsset);
+	UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s-%s: Initialize: InOwner=%s; ItemConfigData=%s"),
+		*LoggingUtils::GetName(GetOuter()), *GetName(), *LoggingUtils::GetName(InOwner), *ItemConfigData.ToString());
 
 	Owner = InOwner;
 
-	NativeInitialize(InItemDataAsset);
-	BlueprintInitialize(InItemDataAsset);
+	NativeInitialize(ItemConfigData);
+	BlueprintInitialize(ItemConfigData);
 }
 
 void UItem::SetLevel(int32 Level)

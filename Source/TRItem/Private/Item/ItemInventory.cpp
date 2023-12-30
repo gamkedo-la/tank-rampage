@@ -8,9 +8,9 @@
 #include "VisualLogger/VisualLogger.h"
 
 #include "Item/ItemDataAsset.h"
+#include "Item/ItemConfigData.h"
 #include "Item/Item.h"
 #include "Item/Weapon.h"
-#include "Item/ItemNames.h"
 
 UItemInventory::UItemInventory()
 {
@@ -53,7 +53,9 @@ UItem* UItemInventory::GetItemByName(const FName& Name) const
 
 void UItemInventory::AddItemByName(const FName& Name)
 {
-	if (!ensure(ItemDataAsset))
+	if (!ensureMsgf(ItemDataAsset, TEXT("ItemDataAsset is NULL"))
+		|| !ensureMsgf(ItemDataAsset->ItemConfigDataTable, TEXT("ItemDataAsset(%s)::ItemConfigDataTable is NULL"), *ItemDataAsset->GetName())
+	)
 	{
 		return;
 	}
@@ -62,25 +64,42 @@ void UItemInventory::AddItemByName(const FName& Name)
 	{
 		UE_VLOG_UELOG(this, LogTRItem, Warning, TEXT("%s-%s: AddItemByName: Inventory already contains Name=%s"),
 			*LoggingUtils::GetName(GetOwner()), *GetName(), *Name.ToString());
+
+		return;
 	}
-	else if (Name == ItemNames::MainGunName && ensure(ItemDataAsset->MainGunClass))
+
+	auto ItemConfigDataTable = ItemDataAsset->ItemConfigDataTable;
+
+	const auto Context = FString::Printf(TEXT("%s-%s: AddItemByName: %s -> %s"),
+		*LoggingUtils::GetName(GetOwner()), *GetName(), *ItemConfigDataTable->GetName(), *Name.ToString());
+
+	auto ItemConfigRow = ItemConfigDataTable->FindRow<FItemConfigData>(Name, Context);
+
+	if (!ItemConfigRow)
 	{
-		auto Weapon = NewObject<UWeapon>(GetOwner(), ItemDataAsset->MainGunClass, ItemNames::MainGunName);
+		UE_VLOG_UELOG(this, LogTRItem, Error, TEXT("%s - Could not find item"),
+			*Context);
+		return;
+	}
+
+	if (ensure(ItemConfigRow->Class) && ItemConfigRow->Class->IsChildOf<UWeapon>())
+	{
+		auto Weapon = NewObject<UWeapon>(GetOwner(), ItemConfigRow->Class, Name);
 		if (Weapon)
 		{
-			Weapon->Initialize(Cast<APawn>(GetOwner()), ItemDataAsset);
+			Weapon->Initialize(Cast<APawn>(GetOwner()), *ItemConfigRow);
 			Weapons.Add(Weapon);
 		}
 		else
 		{
-			UE_VLOG_UELOG(GetOwner(), LogTRItem, Error, TEXT("%s-%s: AddItemByName: Unable to create weapon with class=%s"),
-				*LoggingUtils::GetName(GetOwner()), *GetName(), *LoggingUtils::GetName(ItemDataAsset->MainGunClass));
+			UE_VLOG_UELOG(GetOwner(), LogTRItem, Error, TEXT("%s-%s: AddItemByName: Unable to create weapon with class=%s; Name=%s"),
+				*LoggingUtils::GetName(GetOwner()), *GetName(), *ItemConfigRow->Class, *Name.ToString());
 		}
 	}
 	else
 	{
-		ensureAlwaysMsgf(true, TEXT("%s-%s: Attempted to add unsupported item with Name=%s"),
-			*LoggingUtils::GetName(GetOwner()), *GetName(), *Name.ToString());
+		ensureAlwaysMsgf(true, TEXT("%s-%s: Attempted to add unsupported item with Name=%s and Class=%s"),
+			*LoggingUtils::GetName(GetOwner()), *GetName(), *Name.ToString(), *LoggingUtils::GetName(ItemConfigRow->Class));
 	}
 }
 

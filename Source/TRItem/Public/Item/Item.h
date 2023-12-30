@@ -30,7 +30,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	bool Activate(USceneComponent* ActivationReferenceComponent, const FName& ActivationSocketName);
 
-	void Initialize(APawn* InOwner, UItemDataAsset* InItemDataAsset);
+	void Initialize(APawn* InOwner, const FItemConfigData& ItemConfigData);
 
 	UFUNCTION(BlueprintPure)
 	APawn* GetOwner() const;
@@ -55,9 +55,9 @@ protected:
 		PURE_VIRTUAL(UItem::DoActivation, return false;);
 
 	UFUNCTION(BlueprintImplementableEvent)
-	void BlueprintInitialize(UItemDataAsset* InItemDataAsset);
+	void BlueprintInitialize(const FItemConfigData& ItemConfigData);
 
-	virtual void NativeInitialize(UItemDataAsset* InItemDataAsset) {}
+	virtual void NativeInitialize(const FItemConfigData& ItemConfigData) {}
 
 	/*
 	* Blueprint callback to apply upgrades to the item given the <code>NewLevel</code>.
