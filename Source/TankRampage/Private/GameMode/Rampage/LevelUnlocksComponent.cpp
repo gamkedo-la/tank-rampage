@@ -165,14 +165,14 @@ TArray<FLevelUnlock> ULevelUnlocksComponent::GetAvailableUnlocks(const int32 Nex
 void ULevelUnlocksComponent::ApplyLevelUnlock(APawn* Pawn, const FLevelUnlock& Unlock) const
 {
 	UE_VLOG_UELOG(this, LogTankRampage, Display, TEXT("%s: ApplyLevelUnlock - Pawn=%s; Unlock=%s"),
-		*GetName(), *LoggingUtils::GetName(Pawn), *Unlock.Description);
+		*GetName(), *LoggingUtils::GetName(Pawn), *Unlock.Description.ToString());
 
 	auto Tank = Cast<ABaseTankPawn>(Pawn);
 
 	if (!Tank)
 	{
 		UE_VLOG_UELOG(this, LogTankRampage, Error, TEXT("%s: ApplyLevelUnlock - Pawn=%s is not a Tank! Unlock=%s"),
-			*GetName(), *LoggingUtils::GetName(Pawn), *Unlock.Description);
+			*GetName(), *LoggingUtils::GetName(Pawn), *Unlock.Description.ToString());
 
 		return;
 	}

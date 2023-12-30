@@ -14,7 +14,7 @@ struct FLevelUnlock
 	GENERATED_BODY()
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	FString Description{};
+	FText Description{};
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FName ItemName{};

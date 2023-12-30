@@ -30,7 +30,7 @@ struct FLevelUnlocksData : public FTableRowBase
     int32 PlayerLevel{ 1 };
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, DisplayName = "Description")
-    FString Description{};
+    FText Description{};
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, DisplayName = "Item Name")
     FName ItemName{};
