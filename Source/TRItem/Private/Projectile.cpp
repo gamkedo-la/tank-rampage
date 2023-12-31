@@ -15,6 +15,9 @@
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
 
+#include "Kismet/GameplayStatics.h"
+#include "Components/AudioComponent.h"
+
 AProjectile::AProjectile()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -44,7 +47,7 @@ void AProjectile::Launch(float Speed)
 
 	SetLifeSpan(MaxLifetime);
 
-	PlayFiringVfx();
+	PlayFiringEffects();
 }
 
 void AProjectile::Initialize(USceneComponent& IncidentComponent, const FName& IncidentSocketName, float InDamageAmount)
@@ -88,6 +91,12 @@ void AProjectile::PostInitializeComponents()
 	}
 }
 
+void AProjectile::PlayFiringEffects()
+{
+	PlayFiringVfx();
+	PlayFiringSfx();
+}
+
 void AProjectile::PlayFiringVfx()
 {
 	if (!FiringVfx)
@@ -113,6 +122,29 @@ void AProjectile::PlayFiringVfx()
 	}
 
 	NiagaraComp->SetVectorParameter(DirectionParameter, Direction);
+}
+
+void AProjectile::PlayFiringSfx()
+{
+	if (!FiringSfx)
+	{
+		UE_VLOG_UELOG(this, LogTRItem, Warning, TEXT("%s: PlayFiringSfx is not set"), *GetName());
+		return;
+	}
+
+	// The owner of the audio component is derived from the world context object and this will control the sound concurrency
+	// We want to limit the number of times this plays when firing multiple shells so pass in the owner of the projectile
+	auto SpawnedAudioComponent = UGameplayStatics::SpawnSoundAtLocation(GetOwner(), FiringSfx, GetActorLocation(), GetActorRotation());
+
+	if (!SpawnedAudioComponent)
+	{
+		UE_VLOG_UELOG(this, LogTRItem, Error,
+			TEXT("%s-%s: PlayFiringSfx - Unable to spawn audio component for sfx=%s"),
+			*GetName(), *LoggingUtils::GetName(GetOwner()), *FiringSfx->GetName());
+		return;
+	}
+
+	SpawnedAudioComponent->bAutoDestroy = true;
 }
 
 void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)

@@ -12,6 +12,7 @@ class UStaticMeshComponent;
 class UFiredWeaponMovementComponent;
 class URadialForceComponent;
 class UNiagaraSystem;
+class USoundBase;
 
 UCLASS()
 class TRITEM_API AProjectile : public AActor, public IVisualLoggerDebugSnapshotInterface
@@ -41,8 +42,10 @@ protected:
 private:
 	void InitDebugDraw();
 	void DestroyDebugDraw();
-	void PlayFiringVfx();
 
+	void PlayFiringEffects();
+	void PlayFiringVfx();
+	void PlayFiringSfx();
 
 private:
 	UFUNCTION()
@@ -63,6 +66,9 @@ private:
 
 	UPROPERTY(Category = "Effects | Firing", EditDefaultsOnly)
 	FName DirectionParameter{};
+
+	UPROPERTY(Category = "Audio | Firing", EditDefaultsOnly)
+	TObjectPtr<USoundBase> FiringSfx{};
 
 	UPROPERTY(EditDefaultsOnly)
 	float MaxLifetime{ 10.0f };
