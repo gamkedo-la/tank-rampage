@@ -35,7 +35,8 @@ void UTRAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, fl
 
 	if (Attribute == GetHealthAttribute())
 	{
-		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxHealth());
+		// This only clamps the value returned by querying the modifier but doesn't permantently change the current health
+		NewValue = GetClampedHealth(NewValue);
 	}
 }
 
@@ -44,7 +45,12 @@ void UTRAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 	Super::PostGameplayEffectExecute(Data);
 
 	auto& EvaluatedData = Data.EvaluatedData;
-	// Can get the attribute being modified with EvaluatedData.Attribute
+
+	if (EvaluatedData.Attribute == GetHealthAttribute())
+	{
+		// This will permanently clamp the health attribute to the proper range
+		SetHealth(GetClampedHealth(GetHealth()));
+	}
 }
 
 void UTRAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth) const
@@ -65,4 +71,9 @@ void UTRAttributeSet::OnRep_XPTotal(const FGameplayAttributeData& OldXPTotal) co
 void UTRAttributeSet::OnRep_XPLevel(const FGameplayAttributeData& OldXPLevel) const
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UTRAttributeSet, XPLevel, OldXPLevel);
+}
+
+float UTRAttributeSet::GetClampedHealth(float CurrentHealth) const
+{
+	return FMath::Clamp(CurrentHealth, 0.0f, GetMaxHealth());
 }

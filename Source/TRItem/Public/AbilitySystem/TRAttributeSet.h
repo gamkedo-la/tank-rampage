@@ -65,4 +65,7 @@ private:
 	UFUNCTION()
 	void OnRep_XPLevel(const FGameplayAttributeData& OldXPLevel) const;
 
+
+	float GetClampedHealth(float CurrentHealth) const;
+
 };
