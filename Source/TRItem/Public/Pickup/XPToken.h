@@ -22,9 +22,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-private:
-	UFUNCTION()
-	void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	virtual void OnOverlap(APawn* PlayerPawn) override;
 
 private:
 	UPROPERTY(Category = "Collision", VisibleAnywhere)

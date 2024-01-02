@@ -34,36 +34,23 @@ void AXPToken::BeginPlay()
 {
 	Super::BeginPlay();
 
-	CollisionVolume->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnOverlapBegin);
+	RegisterOverlapEvent(CollisionVolume);
 
 	UE_VLOG_LOCATION(this, LogTRItem, Log, GetActorLocation(), CollisionVolume->GetLocalBounds().SphereRadius, FColor::Blue, TEXT("XP Token"));
 }
 
-void AXPToken::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void AXPToken::OnOverlap(APawn* PlayerPawn)
 {
-	auto Pawn = Cast<APawn>(OtherActor);
-	if (!Pawn)
-	{
-		return;
-	}
-
 	auto World = GetWorld();
 	if (!ensureMsgf(World, TEXT("World is NULL")))
 	{
 		return;
 	}
 
-	if (auto Controller = Pawn->GetController(); Controller && Controller->IsPlayerController())
-	{
-		auto XPSubsystem = World->GetSubsystem<UXPSubsystem>();
-		check(XPSubsystem);
+	auto XPSubsystem = World->GetSubsystem<UXPSubsystem>();
+	check(XPSubsystem);
 
-		UE_VLOG_LOCATION(this, LogTRItem, Log, GetActorLocation(), CollisionVolume->GetLocalBounds().SphereRadius, FColor::Emerald, TEXT("XP Token Collected"));
+	UE_VLOG_LOCATION(this, LogTRItem, Log, GetActorLocation(), CollisionVolume->GetLocalBounds().SphereRadius, FColor::Emerald, TEXT("XP Token Collected"));
 
-		XPSubsystem->OnXPTokenOverlap.Broadcast(this, Pawn);
-
-		ApplyEffectToTarget(Pawn, InstantGameplayEffectClass);
-
-		Destroy();
-	}
+	XPSubsystem->OnXPTokenOverlap.Broadcast(this, PlayerPawn);
 }

@@ -20,6 +20,35 @@ void ABasePickup::BeginPlay()
 	Super::BeginPlay();
 }
 
+void ABasePickup::RegisterOverlapEvent(UPrimitiveComponent* OverlapCheckComponent)
+{
+	if (!ensure(OverlapCheckComponent))
+	{
+		return;
+	}
+
+	OverlapCheckComponent->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnOverlapBegin);
+}
+
+void ABasePickup::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	auto Pawn = Cast<APawn>(OtherActor);
+	if (!Pawn)
+	{
+		return;
+	}
+
+	if (auto Controller = Pawn->GetController(); Controller && Controller->IsPlayerController())
+	{
+		OnOverlap(Pawn);
+		ReceiveOnOverlap(Pawn);
+
+		ApplyEffectToTarget(Pawn, InstantGameplayEffectClass);
+
+		Destroy();
+	}
+}
+
 void ABasePickup::ApplyEffectToTarget(AActor* Target, TSubclassOf<UGameplayEffect> GameplayEffectClass)
 {
 	if (!ensure(GameplayEffectClass))
