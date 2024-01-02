@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "Pickup/BasePickup.h"
 #include "XPToken.generated.h"
 
 class UGameplayEffect;
@@ -12,7 +12,7 @@ class UGameplayEffect;
 * XP token pickup from killed enemies.
 */
 UCLASS()
-class TRITEM_API AXPToken : public AActor
+class TRITEM_API AXPToken : public ABasePickup
 {
 	GENERATED_BODY()
 	
@@ -26,15 +26,10 @@ private:
 	UFUNCTION()
 	void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
-	void ApplyEffectToTarget(AActor* Target, TSubclassOf<UGameplayEffect> GameplayEffectClass);
-
 private:
 	UPROPERTY(Category = "Collision", VisibleAnywhere)
 	class USphereComponent* CollisionVolume{};
 
 	UPROPERTY(Category = "Mesh", VisibleAnywhere)
 	class UStaticMeshComponent* Mesh{};
-
-	UPROPERTY(EditDefaultsOnly, Category = "Applied Effects")
-	TSubclassOf<UGameplayEffect> InstantGameplayEffectClass;
 };

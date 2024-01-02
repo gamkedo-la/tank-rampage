@@ -4,7 +4,7 @@
 #include "XPCollectionComponent.h"
 
 #include "XPSubsystem.h"
-#include "XPToken.h"
+#include "Pickup/XPToken.h"
 #include "RampageGameMode.h"
 
 #include "Logging/LoggingUtils.h"

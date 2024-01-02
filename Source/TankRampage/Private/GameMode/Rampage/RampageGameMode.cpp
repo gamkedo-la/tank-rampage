@@ -11,7 +11,7 @@
 #include "Pawn/BaseTankPawn.h"
 #include "Components/HealthComponent.h"
 #include "Subsystems/TankEventsSubsystem.h"
-#include "XPToken.h"
+#include "Pickup/XPToken.h"
 #include "XPSubsystem.h"
 
 #include "LevelUnlocksData.h"

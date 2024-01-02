@@ -4,7 +4,7 @@
 #include "GameMode/Rampage/XPSpawnerComponent.h"
 
 #include "Subsystems/TankEventsSubsystem.h"
-#include "XPToken.h"
+#include "Pickup/XPToken.h"
 #include "Pawn/BaseTankPawn.h"
 
 #include "Logging/LoggingUtils.h"
