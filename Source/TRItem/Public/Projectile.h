@@ -12,6 +12,7 @@ class UStaticMeshComponent;
 class UFiredWeaponMovementComponent;
 class URadialForceComponent;
 class UNiagaraSystem;
+class UNiagaraComponent;
 class USoundBase;
 
 UCLASS()
@@ -23,9 +24,9 @@ public:
 	AProjectile();
 
 	UFUNCTION(BlueprintCallable)
-	void Launch(float Speed);
+	virtual void Launch(float Speed);
 
-	void Initialize(USceneComponent& IncidentComponent, const FName& IncidentSocketName, float InDamageAmount);
+	virtual void Initialize(USceneComponent& IncidentComponent, const FName& IncidentSocketName, float InDamageAmount);
 
 	UFUNCTION(BlueprintPure)
 	bool CanDamageInstigator() const;
@@ -35,9 +36,12 @@ public:
 #endif
 
 protected:
+	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
 	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
-	virtual void PostInitializeComponents() override;
+
+	UFUNCTION(BlueprintNativeEvent)
+	void SetNiagaraFireEffectParameters(UNiagaraComponent* NiagaraComponent);
 
 private:
 	void InitDebugDraw();
@@ -51,12 +55,14 @@ private:
 	UFUNCTION()
 	void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit);
 
+
+protected:
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UFiredWeaponMovementComponent> ProjectileMovementComponent{};
+
 private:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> ProjectileMesh{};
-
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UFiredWeaponMovementComponent> ProjectileMovementComponent{};
 
 	UPROPERTY(VisibleDefaultsOnly)
 	TObjectPtr<URadialForceComponent> ExplosionForce{};

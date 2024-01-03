@@ -105,8 +105,6 @@ void AProjectile::PlayFiringVfx()
 		return;
 	}
 
-	const auto& Direction = GetActorRotation().Vector(); // Muzzle socket rotation on tank barrel
-
 	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: FiringVfx: %s playing at %s"), *GetName(), *FiringVfx.GetName(), *GetActorLocation().ToCompactString());
 
 	check(AttachComponent);
@@ -121,7 +119,18 @@ void AProjectile::PlayFiringVfx()
 		return;
 	}
 
-	NiagaraComp->SetVectorParameter(DirectionParameter, Direction);
+	SetNiagaraFireEffectParameters(NiagaraComp);
+}
+
+void AProjectile::SetNiagaraFireEffectParameters_Implementation(UNiagaraComponent* NiagaraComponent)
+{
+	check(NiagaraComponent);
+
+	if (!DirectionParameter.IsNone())
+	{
+		const auto& Direction = GetActorRotation().Vector(); // Muzzle socket rotation on tank barrel
+		NiagaraComponent->SetVectorParameter(DirectionParameter, Direction);
+	}
 }
 
 void AProjectile::PlayFiringSfx()
