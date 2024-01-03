@@ -40,12 +40,12 @@ void AProjectile::Launch(float Speed)
 {
 	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: Launch at %f cm/s"), *GetName(), Speed);
 
+	SetLifeSpan(MaxLifetime);
+
 	ProjectileMovementComponent->SetVelocityInLocalSpace(FVector::ForwardVector * Speed);
 	ProjectileMovementComponent->Activate();
 
 	InitialDirection = GetActorRotation().Vector();
-
-	SetLifeSpan(MaxLifetime);
 
 	PlayFiringEffects();
 }

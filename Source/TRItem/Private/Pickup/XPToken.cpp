@@ -53,4 +53,6 @@ void AXPToken::OnOverlap(APawn* PlayerPawn)
 	UE_VLOG_LOCATION(this, LogTRItem, Log, GetActorLocation(), CollisionVolume->GetLocalBounds().SphereRadius, FColor::Emerald, TEXT("XP Token Collected"));
 
 	XPSubsystem->OnXPTokenOverlap.Broadcast(this, PlayerPawn);
+
+	MarkForDestroy();
 }

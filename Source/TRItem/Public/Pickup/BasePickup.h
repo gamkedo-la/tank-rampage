@@ -25,10 +25,22 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void RegisterOverlapEvent(UPrimitiveComponent* OverlapCheckComponent);
 
+	/*
+	* Handle overlap with player pawn.
+	*/
 	virtual void OnOverlap(APawn* PlayerPawn) {}
 
+	/*
+	* Handle overlap with player pawn.
+	*/
 	UFUNCTION(BlueprintImplementableEvent, meta=(DisplayName = "OnOverlap"))
 	void ReceiveOnOverlap(APawn* PlayerPawn);
+
+	/*
+	* Indicate that this actor should be destroyed once the current frame's processing is complete.
+	*/
+	UFUNCTION(BlueprintCallable)
+	void MarkForDestroy();
 
 private:
 	UFUNCTION()
