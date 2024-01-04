@@ -7,6 +7,7 @@
 #include "FiredWeaponMovementComponent.h"
 #include "PhysicsEngine/RadialForceComponent.h"
 #include "Engine/DamageEvents.h"
+#include "Item/WeaponConfig.h"
 
 #include "Logging/LoggingUtils.h"
 #include "TRItemLogging.h"
@@ -50,11 +51,11 @@ void AProjectile::Launch(float Speed)
 	PlayFiringEffects();
 }
 
-void AProjectile::Initialize(USceneComponent& IncidentComponent, const FName& IncidentSocketName, float InDamageAmount)
+void AProjectile::Initialize(USceneComponent& IncidentComponent, const FName& IncidentSocketName, const FProjectileDamageParams& InProjectileDamageParams)
 {
 	AttachComponent = &IncidentComponent;
 	AttachSocketName = IncidentSocketName;
-	DamageAmount = InDamageAmount;
+	ProjectileDamageParams = InProjectileDamageParams;
 }
 
 void AProjectile::BeginPlay()
@@ -162,18 +163,12 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, U
 
 	if (OtherActor)
 	{
-		// TODO: Should switch between FRadialDamageEvent and FPointDamageEvent based on type of weapon
-		FPointDamageEvent DamageEvent;
-		DamageEvent.Damage = DamageAmount;
-		DamageEvent.HitInfo = Hit;
-		DamageEvent.ShotDirection = InitialDirection;
-
 		auto Pawn = GetInstigator();
 
 		// Avoid damaging self unless configured to do so
 		if (Pawn != OtherActor || CanDamageInstigator())
 		{
-			OtherActor->TakeDamage(DamageEvent.Damage, DamageEvent, Pawn ? Pawn->GetController() : nullptr, this);
+			ApplyDamageTo(OtherActor, Hit, Pawn);
 		}
 		else
 		{
@@ -190,6 +185,40 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, U
 	else if(OtherActor)
 	{	
 		UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: Ignoring self hit with instigator=%s"), *GetName(), *OtherActor->GetName());
+	}
+}
+
+void AProjectile::ApplyDamageTo(AActor* OtherActor, const FHitResult& Hit, APawn* InstigatingPawn)
+{
+	check(OtherActor);
+
+	AController* const InstigatorController = InstigatingPawn ? InstigatingPawn->GetController() : nullptr;
+
+	if (ProjectileDamageParams.WeaponDamageType == EWeaponDamageType::Radial)
+	{
+		TArray<AActor*> IgnoreActors;
+		if (InstigatingPawn && !CanDamageInstigator())
+		{
+			IgnoreActors.Add(InstigatingPawn);
+		}
+
+		const auto ActualDamage = UGameplayStatics::ApplyRadialDamageWithFalloff(
+			this, ProjectileDamageParams.MaxDamageAmount, ProjectileDamageParams.MinDamageAmount,
+			Hit.ImpactPoint, ProjectileDamageParams.DamageInnerRadius, ProjectileDamageParams.DamageOuterRadius,
+			ProjectileDamageParams.DamageFalloff, nullptr, IgnoreActors, InstigatingPawn, InstigatorController);
+
+		UE_VLOG_LOCATION(this, LogTRItem, Log, Hit.ImpactPoint, ProjectileDamageParams.DamageInnerRadius, FColor::Red, TEXT("%s (%s -> %s): %f -> %f"),
+			*GetName(), *LoggingUtils::GetName(InstigatingPawn), *LoggingUtils::GetName(OtherActor), ProjectileDamageParams.MaxDamageAmount, ActualDamage);
+
+		UE_VLOG_LOCATION(this, LogTRItem, Log, Hit.ImpactPoint, ProjectileDamageParams.DamageOuterRadius, FColor::Orange, TEXT("%s (%s -> %s): %f -> %f"),
+			*GetName(), *LoggingUtils::GetName(InstigatingPawn), *LoggingUtils::GetName(OtherActor), ProjectileDamageParams.MinDamageAmount, ActualDamage);
+	}
+	else
+	{
+		const auto ActualDamage = UGameplayStatics::ApplyPointDamage(OtherActor, ProjectileDamageParams.MaxDamageAmount, InitialDirection, Hit, InstigatorController, InstigatingPawn, nullptr);
+
+		UE_VLOG_LOCATION(this, LogTRItem, Log, Hit.ImpactPoint, 50.0f, FColor::Red, TEXT("%s (%s): %f"),
+			*GetName(), *LoggingUtils::GetName(InstigatingPawn), ActualDamage);
 	}
 }
 

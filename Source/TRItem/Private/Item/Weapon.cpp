@@ -73,7 +73,17 @@ void UWeapon::LaunchProjectile(USceneComponent& ActivationReferenceComponent, co
 		*LoggingUtils::GetName(GetOuter()), *GetName(),
 		*LoggingUtils::GetName(WeaponProjectileClass), *SpawnLocation.ToCompactString(), *SpawnRotation.ToCompactString());
 
-	SpawnedProjectile->Initialize(ActivationReferenceComponent, ActivationSocketName, DamageAmount);
+	const FProjectileDamageParams ProjectileDamageParams
+	{
+		.WeaponDamageType = WeaponDamageType,
+		.MinDamageAmount = MinDamageAmount,
+		.MaxDamageAmount = DamageAmount,
+		.DamageInnerRadius = DamageInnerRadius,
+		.DamageOuterRadius = DamageOuterRadius,
+		.DamageFalloff = DamageFalloff
+	};
+
+	SpawnedProjectile->Initialize(ActivationReferenceComponent, ActivationSocketName, ProjectileDamageParams);
 	SpawnedProjectile->Launch(ProjectileLaunchSpeed);
 }
 

@@ -4,9 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "Item/Item.h"
+#include "Item/WeaponConfig.h"
+
 #include "Weapon.generated.h"
 
 class AProjectile;
+
 
 /**
  * An item that can deal damage to enemies.
@@ -37,8 +40,39 @@ protected:
 	UPROPERTY(Category = "Firing", EditDefaultsOnly, BlueprintReadWrite)
 	int32 ProjectileCount{ 1 };
 
+	UPROPERTY(Category = "Damage | Type", EditDefaultsOnly, BlueprintReadOnly)
+	EWeaponDamageType WeaponDamageType{ EWeaponDamageType::Point };
+
+	/*
+	* Max damage that can be dealt.  
+	  For point damage weapons this is just the damage amount, but for Radial damage weapons this is the max damage when within the inner radius.
+	*/
 	UPROPERTY(Category = "Damage", EditDefaultsOnly, BlueprintReadWrite)
 	float DamageAmount{ 100.0f };
+
+	/*
+	* Min damage that can be dealt within the outer radius (only applicable for WeaponDamageType of "Radial").
+	*/
+	UPROPERTY(Category = "Damage", EditDefaultsOnly, BlueprintReadWrite)
+	float MinDamageAmount{ 10.0f };
+
+	/*
+	* Inner radius of max damage (only applicable for WeaponDamageType of "Radial"). 
+	*/
+	UPROPERTY(Category = "Damage | Radial", EditDefaultsOnly, BlueprintReadWrite)
+	float DamageInnerRadius{ 250.0f };
+
+	/*
+	* Outer radius of min damage (only applicable for WeaponDamageType of "Radial").
+	*/
+	UPROPERTY(Category = "Damage | Radial", EditDefaultsOnly, BlueprintReadWrite)
+	float DamageOuterRadius{ 1000.0f };
+
+	/*
+	* Falloff amount between min and max radius (only applicable for WeaponDamageType of "Radial").
+	*/
+	UPROPERTY(Category = "Damage | Radial", EditDefaultsOnly, BlueprintReadWrite)
+	float DamageFalloff{ 1.0f };
 
 private:
 	UPROPERTY(Category = "Weapon", EditDefaultsOnly)

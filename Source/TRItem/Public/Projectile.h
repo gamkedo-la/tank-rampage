@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+
+#include "Item/WeaponConfig.h"
 #include "VisualLogger/VisualLoggerDebugSnapshotInterface.h"
 
 #include "Projectile.generated.h"
@@ -26,7 +28,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual void Launch(float Speed);
 
-	virtual void Initialize(USceneComponent& IncidentComponent, const FName& IncidentSocketName, float InDamageAmount);
+	virtual void Initialize(USceneComponent& IncidentComponent, const FName& IncidentSocketName, const FProjectileDamageParams& InProjectileDamageParams);
 
 	UFUNCTION(BlueprintPure)
 	bool CanDamageInstigator() const;
@@ -55,6 +57,7 @@ private:
 	UFUNCTION()
 	void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit);
 
+	void ApplyDamageTo(AActor* OtherActor, const FHitResult& Hit, APawn* InstigatingPawn);
 
 protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -79,7 +82,7 @@ private:
 	UPROPERTY(EditDefaultsOnly)
 	float MaxLifetime{ 10.0f };
 
-	float DamageAmount{};
+	FProjectileDamageParams ProjectileDamageParams{};
 
 	UPROPERTY(Transient)
 	TObjectPtr<USceneComponent> AttachComponent{};
