@@ -7,4 +7,6 @@
 namespace ItemNames
 {
 	inline const FName MainGunName = "MainGun";
+	inline const FName MissilesName = "Missiles";
+
 }

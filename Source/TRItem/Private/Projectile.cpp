@@ -217,16 +217,16 @@ void AProjectile::ApplyDamageTo(AActor* OtherActor, const FHitResult& Hit, APawn
 			IgnoreActors.Add(InstigatingPawn);
 		}
 
-		const auto ActualDamage = UGameplayStatics::ApplyRadialDamageWithFalloff(
+		UGameplayStatics::ApplyRadialDamageWithFalloff(
 			this, ProjectileDamageParams.MaxDamageAmount, ProjectileDamageParams.MinDamageAmount,
 			Hit.ImpactPoint, ProjectileDamageParams.DamageInnerRadius, ProjectileDamageParams.DamageOuterRadius,
 			ProjectileDamageParams.DamageFalloff, nullptr, IgnoreActors, InstigatingPawn, InstigatorController);
 
-		UE_VLOG_LOCATION(this, LogTRItem, Log, Hit.ImpactPoint, ProjectileDamageParams.DamageInnerRadius, FColor::Red, TEXT("%s (%s -> %s): %f -> %f"),
-			*GetName(), *LoggingUtils::GetName(InstigatingPawn), *LoggingUtils::GetName(OtherActor), ProjectileDamageParams.MaxDamageAmount, ActualDamage);
+		UE_VLOG_LOCATION(this, LogTRItem, Log, Hit.ImpactPoint, ProjectileDamageParams.DamageInnerRadius, FColor::Red, TEXT(""),
+			*GetName(), *LoggingUtils::GetName(InstigatingPawn), *LoggingUtils::GetName(OtherActor));
 
-		UE_VLOG_LOCATION(this, LogTRItem, Log, Hit.ImpactPoint, ProjectileDamageParams.DamageOuterRadius, FColor::Orange, TEXT("%s (%s -> %s): %f -> %f"),
-			*GetName(), *LoggingUtils::GetName(InstigatingPawn), *LoggingUtils::GetName(OtherActor), ProjectileDamageParams.MinDamageAmount, ActualDamage);
+		UE_VLOG_LOCATION(this, LogTRItem, Log, Hit.ImpactPoint, ProjectileDamageParams.DamageOuterRadius, FColor::Orange, TEXT("%s (%s -> %s): (%f,%f)"),
+			*GetName(), *LoggingUtils::GetName(InstigatingPawn), *LoggingUtils::GetName(OtherActor), ProjectileDamageParams.MinDamageAmount, ProjectileDamageParams.MaxDamageAmount);
 	}
 	else
 	{
