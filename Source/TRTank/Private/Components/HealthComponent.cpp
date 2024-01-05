@@ -5,6 +5,8 @@
 
 #include "Subsystems/TankEventsSubsystem.h"
 
+#include "TRTags.h"
+
 #include "TRTankLogging.h"
 #include "Logging/LoggingUtils.h"
 #include "VisualLogger/VisualLogger.h"
@@ -21,6 +23,9 @@ void UHealthComponent::BeginPlay()
 
 	Health = MaxHealth;
 
+	// TODO: Use gameplay tags
+	GetOwner()->Tags.Add(TR::Tags::Alive);
+
 	GetOwner()->OnTakeAnyDamage.AddUniqueDynamic(this, &ThisClass::TakeDamage);
 }
 
@@ -36,6 +41,11 @@ void UHealthComponent::TakeDamage(AActor* DamagedActor, float Damage, const UDam
 
 	if (FMath::IsNearlyZero(Health))
 	{
+		auto& Tags = GetOwner()->Tags;
+
+		Tags.Remove(TR::Tags::Alive);
+		Tags.Add(TR::Tags::Dead);
+
 		UE_VLOG_UELOG(GetOwner(), LogTRTank, Display, TEXT("%s-%s: TakeDamage - Killed from %s by %s"),
 			*LoggingUtils::GetName(GetOwner()), *GetName(), *LoggingUtils::GetName(DamageCauser), *LoggingUtils::GetName(InstigatedBy));
 	}

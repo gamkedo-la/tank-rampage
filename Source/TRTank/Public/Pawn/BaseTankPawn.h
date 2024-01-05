@@ -7,6 +7,7 @@
 #include "Interfaces/ArmedActor.h"
 #include "VisualLogger/VisualLoggerDebugSnapshotInterface.h"
 #include "AbilitySystemInterface.h"
+#include "Interfaces/Damageable.h"
 
 #include "BaseTankPawn.generated.h"
 
@@ -26,7 +27,7 @@ class UAttributeSet;
 
 
 UCLASS()
-class TRTANK_API ABaseTankPawn : public APawn, public IVisualLoggerDebugSnapshotInterface, public IArmedActor, public IAbilitySystemInterface
+class TRTANK_API ABaseTankPawn : public APawn, public IVisualLoggerDebugSnapshotInterface, public IArmedActor, public IAbilitySystemInterface, public IDamageable
 {
 	GENERATED_BODY()
 
@@ -64,7 +65,7 @@ public:
 	void TurnRight(float Throw);
 
 	UTankAimingComponent* GetTankAimingComponent() const;
-	UHealthComponent* GetHealthComponent() const;
+	virtual UHealthComponent* GetHealthComponent() const override;
 
 	float GetCurrentWeaponExitSpeed() const;
 

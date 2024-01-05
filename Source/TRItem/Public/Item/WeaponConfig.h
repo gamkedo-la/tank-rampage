@@ -43,3 +43,21 @@ struct FProjectileDamageParams
 	UPROPERTY(Category = "Damage | Radial", EditDefaultsOnly, BlueprintReadWrite)
 	float DamageFalloff{ 1.0f };
 };
+
+USTRUCT(BlueprintType)
+struct FProjectileHomingParams
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(Category = "Homing", BlueprintReadWrite)
+	float MaxSpeedMultiplier{ 0.0f };
+
+	UPROPERTY(Category = "Homing", BlueprintReadWrite)
+	float HomingAcceleration{ 0.0f };
+
+	UPROPERTY(Category = "Homing", BlueprintReadWrite)
+	float HomingTargetRefreshInterval{ 0.5f };
+
+	UPROPERTY(Transient)
+	TArray<AActor*> Targets{};
+};

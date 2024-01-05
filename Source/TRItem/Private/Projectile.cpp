@@ -9,12 +9,16 @@
 #include "Engine/DamageEvents.h"
 #include "Item/WeaponConfig.h"
 
+#include "TRTags.h"
+
 #include "Logging/LoggingUtils.h"
 #include "TRItemLogging.h"
 #include "VisualLogger/VisualLogger.h"
 
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
+
+#include <limits>
 
 #include "Kismet/GameplayStatics.h"
 #include "Components/AudioComponent.h"
@@ -43,6 +47,9 @@ void AProjectile::Launch(float Speed)
 
 	SetLifeSpan(MaxLifetime);
 
+	ProjectileMovementComponent->MaxSpeed = Speed * ProjectileHomingParams.MaxSpeedMultiplier;
+	ProjectileMovementComponent->HomingAccelerationMagnitude = ProjectileHomingParams.HomingAcceleration;
+
 	ProjectileMovementComponent->SetVelocityInLocalSpace(FVector::ForwardVector * Speed);
 	ProjectileMovementComponent->Activate();
 
@@ -51,11 +58,17 @@ void AProjectile::Launch(float Speed)
 	PlayFiringEffects();
 }
 
-void AProjectile::Initialize(USceneComponent& IncidentComponent, const FName& IncidentSocketName, const FProjectileDamageParams& InProjectileDamageParams)
+void AProjectile::Initialize(USceneComponent& IncidentComponent, const FName& IncidentSocketName, const FProjectileDamageParams& InProjectileDamageParams, 
+	const std::optional<FProjectileHomingParams>& InOptHomingParams)
 {
 	AttachComponent = &IncidentComponent;
 	AttachSocketName = IncidentSocketName;
 	ProjectileDamageParams = InProjectileDamageParams;
+
+	if (InOptHomingParams)
+	{
+		InitHomingInfo(*InOptHomingParams);
+	}
 }
 
 void AProjectile::BeginPlay()
@@ -73,6 +86,8 @@ void AProjectile::BeginPlay()
 void AProjectile::EndPlay(EEndPlayReason::Type EndPlayReason)
 {
 	Super::EndPlay(EndPlayReason);
+
+	GetWorldTimerManager().ClearTimer(HomingTargetTimerHandle);
 
 	DestroyDebugDraw();
 }
@@ -221,6 +236,56 @@ void AProjectile::ApplyDamageTo(AActor* OtherActor, const FHitResult& Hit, APawn
 			*GetName(), *LoggingUtils::GetName(InstigatingPawn), ActualDamage);
 	}
 }
+
+#pragma region Homing
+
+void AProjectile::InitHomingInfo(const FProjectileHomingParams& InProjectileHomingParams)
+{
+	ProjectileHomingParams = InProjectileHomingParams;
+
+	GetWorldTimerManager().SetTimer(HomingTargetTimerHandle, this, &AProjectile::RefreshHomingTarget,
+		ProjectileHomingParams.HomingTargetRefreshInterval, true, ProjectileHomingParams.HomingTargetRefreshInterval);
+}
+
+void AProjectile::RefreshHomingTarget()
+{
+	std::pair<AActor*, float> BestTarget{ nullptr, std::numeric_limits<float>::max() };
+	int32 ViableCount{};
+
+	const auto& CurrentLocation = GetActorLocation();
+
+	for (auto PotentialTarget : ProjectileHomingParams.Targets)
+	{
+		// TODO: Use gameplay tags
+		if (!IsValid(PotentialTarget) || PotentialTarget->ActorHasTag(TR::Tags::Dead))
+		{
+			continue;
+		}
+
+		++ViableCount;
+		const float DistSq = FVector::DistSquared(CurrentLocation, PotentialTarget->GetActorLocation());
+		if (DistSq < BestTarget.second)
+		{
+			BestTarget = { PotentialTarget, DistSq };
+		}
+	}
+
+	ProjectileMovementComponent->HomingTargetComponent = GetHomingSceneComponent(BestTarget.first);
+
+	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: RefreshHomingTarget: Selected %s out of %d viable"), *GetName(), *LoggingUtils::GetName(BestTarget.first), ViableCount);
+}
+
+USceneComponent* AProjectile::GetHomingSceneComponent(AActor* Actor)
+{
+	if (!Actor)
+	{
+		return nullptr;
+	}
+
+	return Actor->GetRootComponent();
+}
+
+#pragma endregion Homing
 
 #pragma region Visual Logger
 

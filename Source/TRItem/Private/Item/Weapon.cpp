@@ -3,12 +3,21 @@
 
 #include "Item/Weapon.h"
 #include "Item/ItemDataAsset.h"
+#include "TRTags.h"
 
 #include "Projectile.h"
+#include "Kismet/GameplayStatics.h"
 
 #include "Logging/LoggingUtils.h"
 #include "TRItemLogging.h"
 #include "VisualLogger/VisualLogger.h"
+
+#include <optional>
+
+namespace
+{
+	constexpr float HomingTargetsUpdateFrequency = 3.0f;
+}
 
 bool UWeapon::DoActivation(USceneComponent& ActivationReferenceComponent, const FName& ActivationSocketName)
 {
@@ -60,18 +69,19 @@ void UWeapon::LaunchProjectile(USceneComponent& ActivationReferenceComponent, co
 	auto World = GetWorld();
 	check(World);
 
-	auto SpawnedProjectile = World->SpawnActor<AProjectile>(WeaponProjectileClass, SpawnLocation, SpawnRotation, SpawnParameters);
+	auto ChosenWeaponProjectileClass = ChooseProjectileClass();
+	auto SpawnedProjectile = World->SpawnActor<AProjectile>(ChosenWeaponProjectileClass, SpawnLocation, SpawnRotation, SpawnParameters);
 
 	if (!SpawnedProjectile)
 	{
 		UE_VLOG_UELOG(GetOuter(), LogTRItem, Warning, TEXT("%s-%s: LaunchProjectile: Unable to spawn projectile %s at %s with rotation=%s"),
-			*LoggingUtils::GetName(GetOuter()), *GetName(), *LoggingUtils::GetName(WeaponProjectileClass), *SpawnLocation.ToCompactString());
+			*LoggingUtils::GetName(GetOuter()), *GetName(), *LoggingUtils::GetName(ChosenWeaponProjectileClass), *SpawnLocation.ToCompactString());
 		return;
 	}
 
 	UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s-%s: LaunchProjectile: %s at %s"),
 		*LoggingUtils::GetName(GetOuter()), *GetName(),
-		*LoggingUtils::GetName(WeaponProjectileClass), *SpawnLocation.ToCompactString(), *SpawnRotation.ToCompactString());
+		*LoggingUtils::GetName(ChosenWeaponProjectileClass), *SpawnLocation.ToCompactString(), *SpawnRotation.ToCompactString());
 
 	const FProjectileDamageParams ProjectileDamageParams
 	{
@@ -83,7 +93,21 @@ void UWeapon::LaunchProjectile(USceneComponent& ActivationReferenceComponent, co
 		.DamageFalloff = DamageFalloff
 	};
 
-	SpawnedProjectile->Initialize(ActivationReferenceComponent, ActivationSocketName, ProjectileDamageParams);
+	std::optional<FProjectileHomingParams> OptHomingParams;
+
+	if (bIsHoming)
+	{
+		UpdateHomingTargets();
+
+		OptHomingParams = FProjectileHomingParams{
+			.MaxSpeedMultiplier = MaxSpeedMultiplier,
+			.HomingAcceleration = HomingAcceleration,
+			.HomingTargetRefreshInterval = HomingTargetRefreshInterval,
+			.Targets = HomingTargets
+		};
+	}
+
+	SpawnedProjectile->Initialize(ActivationReferenceComponent, ActivationSocketName, ProjectileDamageParams, OptHomingParams);
 	SpawnedProjectile->Launch(ProjectileLaunchSpeed);
 }
 
@@ -106,4 +130,50 @@ void UWeapon::ClearProjectileTimer()
 	{
 		LaunchDelayTimerHandle.Invalidate();
 	}
+}
+
+void UWeapon::UpdateHomingTargets() const
+{
+	auto World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	const float CurrentTimeSeconds = World->GetTimeSeconds();
+
+	if (HomingTargetLastUpdateTime < 0)
+	{
+		TArray<AActor*> Actors;
+		for (const auto& Class : HomingTargetClasses)
+		{
+			// Actors gets reset inside the function call
+			UGameplayStatics::GetAllActorsOfClassWithTag(this, Class, TR::Tags::Alive, Actors);
+			HomingTargets.Append(Actors);
+		}
+
+		// Don't try to aim toward self
+		HomingTargets.Remove(GetOwner());
+
+		HomingTargetLastUpdateTime = CurrentTimeSeconds;
+	}
+	else if(CurrentTimeSeconds - HomingTargetLastUpdateTime >= HomingTargetsUpdateFrequency)
+	{
+		HomingTargets.RemoveAll([](auto Actor)
+		{
+			return !IsValid(Actor) || Actor->ActorHasTag(TR::Tags::Dead);
+		});
+
+		HomingTargetLastUpdateTime = CurrentTimeSeconds;
+	}
+}
+
+TSubclassOf<AProjectile> UWeapon::ChooseProjectileClass() const
+{
+	if (bIsHoming && ensure(WeaponHomingProjectileClass))
+	{
+		return WeaponHomingProjectileClass;
+	}
+
+	return WeaponProjectileClass;
 }

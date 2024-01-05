@@ -8,6 +8,8 @@
 #include "Item/WeaponConfig.h"
 #include "VisualLogger/VisualLoggerDebugSnapshotInterface.h"
 
+#include <optional>
+
 #include "Projectile.generated.h"
 
 class UStaticMeshComponent;
@@ -28,7 +30,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual void Launch(float Speed);
 
-	virtual void Initialize(USceneComponent& IncidentComponent, const FName& IncidentSocketName, const FProjectileDamageParams& InProjectileDamageParams);
+	virtual void Initialize(USceneComponent& IncidentComponent, const FName& IncidentSocketName, const FProjectileDamageParams& InProjectileDamageParams,
+		const std::optional<FProjectileHomingParams>& InOptHomingParams = std::nullopt);
 
 	UFUNCTION(BlueprintPure)
 	bool CanDamageInstigator() const;
@@ -58,6 +61,12 @@ private:
 	void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit);
 
 	void ApplyDamageTo(AActor* OtherActor, const FHitResult& Hit, APawn* InstigatingPawn);
+
+	UFUNCTION()
+	void RefreshHomingTarget();
+
+	void InitHomingInfo(const FProjectileHomingParams& InProjectileHomingParams);
+	static USceneComponent* GetHomingSceneComponent(AActor* Actor);
 
 protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -97,7 +106,11 @@ private:
 	/*
 	* Indicates whether the tank that fired the weapon can be damaged by it.
 	*/
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(Transient)
+	FProjectileHomingParams ProjectileHomingParams{};
+
+	FTimerHandle HomingTargetTimerHandle{};
+
 	bool bCanDamageInstigator{ false };
 };
 

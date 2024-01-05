@@ -32,6 +32,9 @@ protected:
 private:
 	void LaunchProjectile(USceneComponent& ActivationReferenceComponent, const FName& ActivationSocketName) const;
 	void ClearProjectileTimer();
+	void UpdateHomingTargets() const;
+
+	TSubclassOf<AProjectile> ChooseProjectileClass() const;
 
 protected:
 	UPROPERTY(Category = "Firing", EditDefaultsOnly, BlueprintReadWrite)
@@ -74,9 +77,28 @@ protected:
 	UPROPERTY(Category = "Damage | Radial", EditDefaultsOnly, BlueprintReadWrite)
 	float DamageFalloff{ 1.0f };
 
+
+	UPROPERTY(Category = "Homing", EditDefaultsOnly, BlueprintReadWrite)
+	bool bIsHoming{};
+
+	UPROPERTY(Category = "Homing", EditDefaultsOnly, BlueprintReadWrite)
+	float MaxSpeedMultiplier{ 1.5f };
+
+	UPROPERTY(Category = "Homing", EditDefaultsOnly, BlueprintReadWrite)
+	float HomingAcceleration{ 5000.0f };
+
+	UPROPERTY(Category = "Homing", EditDefaultsOnly)
+	float HomingTargetRefreshInterval{ 0.5f };
+
+	UPROPERTY(Category = "Homing", EditDefaultsOnly, meta = (MustImplement = "/Script/TRTank.Damageable"))
+	TArray<TSubclassOf<AActor>> HomingTargetClasses{ };
+
 private:
 	UPROPERTY(Category = "Weapon", EditDefaultsOnly)
 	TSubclassOf<AProjectile> WeaponProjectileClass{};
+
+	UPROPERTY(Category = "Weapon", EditDefaultsOnly)
+	TSubclassOf<AProjectile> WeaponHomingProjectileClass{};
 
 	/*
 	* Controls the delay time firing additional projectiles if <code>ProjectileCount > 1 </code>.
@@ -90,6 +112,11 @@ private:
 	bool bIsFiring{};
 
 	FTimerHandle LaunchDelayTimerHandle{};
+
+	UPROPERTY(Transient)
+	mutable TArray<AActor*> HomingTargets{};
+
+	mutable float HomingTargetLastUpdateTime{ -1.0f };
 };
 
 #pragma region Inline Definitions
