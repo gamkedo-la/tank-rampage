@@ -60,7 +60,7 @@ private:
 	UFUNCTION()
 	void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit);
 
-	void ApplyDamageTo(AActor* OtherActor, const FHitResult& Hit, APawn* InstigatingPawn);
+	bool ApplyDamageTo(AActor* OtherActor, const FHitResult& Hit, APawn* InstigatingPawn);
 
 	UFUNCTION()
 	void RefreshHomingTarget();
@@ -111,6 +111,7 @@ private:
 
 	FTimerHandle HomingTargetTimerHandle{};
 
+	UPROPERTY(Category = "Damage", EditDefaultsOnly)
 	bool bCanDamageInstigator{ false };
 };
 

@@ -65,6 +65,12 @@ void AProjectile::Initialize(USceneComponent& IncidentComponent, const FName& In
 	AttachSocketName = IncidentSocketName;
 	ProjectileDamageParams = InProjectileDamageParams;
 
+	if (ProjectileDamageParams.WeaponDamageType == EWeaponDamageType::Radial)
+	{
+		ExplosionForce->Falloff = ERadialImpulseFalloff::RIF_Linear;
+		ExplosionForce->Radius = ProjectileDamageParams.DamageOuterRadius;
+	}
+
 	if (InOptHomingParams)
 	{
 		InitHomingInfo(*InOptHomingParams);
@@ -178,17 +184,7 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, U
 
 	if (OtherActor)
 	{
-		auto Pawn = GetInstigator();
-
-		// Avoid damaging self unless configured to do so
-		if (Pawn != OtherActor || CanDamageInstigator())
-		{
-			ApplyDamageTo(OtherActor, Hit, Pawn);
-		}
-		else
-		{
-			bDestroy = false;
-		}
+		bDestroy = ApplyDamageTo(OtherActor, Hit, GetInstigator());
 	}
 
 	if (bDestroy)
@@ -203,7 +199,7 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, U
 	}
 }
 
-void AProjectile::ApplyDamageTo(AActor* OtherActor, const FHitResult& Hit, APawn* InstigatingPawn)
+bool AProjectile::ApplyDamageTo(AActor* OtherActor, const FHitResult& Hit, APawn* InstigatingPawn)
 {
 	check(OtherActor);
 
@@ -220,7 +216,7 @@ void AProjectile::ApplyDamageTo(AActor* OtherActor, const FHitResult& Hit, APawn
 		UGameplayStatics::ApplyRadialDamageWithFalloff(
 			this, ProjectileDamageParams.MaxDamageAmount, ProjectileDamageParams.MinDamageAmount,
 			Hit.ImpactPoint, ProjectileDamageParams.DamageInnerRadius, ProjectileDamageParams.DamageOuterRadius,
-			ProjectileDamageParams.DamageFalloff, nullptr, IgnoreActors, InstigatingPawn, InstigatorController);
+			ProjectileDamageParams.DamageFalloff, nullptr, IgnoreActors, this, InstigatorController);
 
 		UE_VLOG_LOCATION(this, LogTRItem, Log, Hit.ImpactPoint, ProjectileDamageParams.DamageInnerRadius, FColor::Red, TEXT(""),
 			*GetName(), *LoggingUtils::GetName(InstigatingPawn), *LoggingUtils::GetName(OtherActor));
@@ -230,11 +226,21 @@ void AProjectile::ApplyDamageTo(AActor* OtherActor, const FHitResult& Hit, APawn
 	}
 	else
 	{
-		const auto ActualDamage = UGameplayStatics::ApplyPointDamage(OtherActor, ProjectileDamageParams.MaxDamageAmount, InitialDirection, Hit, InstigatorController, InstigatingPawn, nullptr);
+		// Avoid damaging self unless configured to do so
+		if (InstigatingPawn != OtherActor || CanDamageInstigator())
+		{
+			const auto ActualDamage = UGameplayStatics::ApplyPointDamage(OtherActor, ProjectileDamageParams.MaxDamageAmount, InitialDirection, Hit, InstigatorController, this, nullptr);
 
-		UE_VLOG_LOCATION(this, LogTRItem, Log, Hit.ImpactPoint, 50.0f, FColor::Red, TEXT("%s (%s): %f"),
-			*GetName(), *LoggingUtils::GetName(InstigatingPawn), ActualDamage);
+			UE_VLOG_LOCATION(this, LogTRItem, Log, Hit.ImpactPoint, 50.0f, FColor::Red, TEXT("%s (%s): %f"),
+				*GetName(), *LoggingUtils::GetName(InstigatingPawn), ActualDamage);
+		}
+		else
+		{
+			return false;
+		}
 	}
+
+	return true;
 }
 
 #pragma region Homing
