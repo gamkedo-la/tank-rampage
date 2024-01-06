@@ -277,6 +277,7 @@ void AProjectile::RefreshHomingTarget()
 	}
 
 	ProjectileMovementComponent->HomingTargetComponent = GetHomingSceneComponent(BestTarget.first);
+	ProjectileMovementComponent->bIsHomingProjectile = true;
 
 	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: RefreshHomingTarget: Selected %s out of %d viable"), *GetName(), *LoggingUtils::GetName(BestTarget.first), ViableCount);
 }

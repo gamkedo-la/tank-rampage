@@ -150,12 +150,18 @@ void UWeapon::UpdateHomingTargets() const
 			// Actors gets reset inside the function call
 			UGameplayStatics::GetAllActorsOfClassWithTag(this, Class, TR::Tags::Alive, Actors);
 			HomingTargets.Append(Actors);
+
+			UE_VLOG_UELOG(GetOuter(), LogTRItem, Verbose, TEXT("%s: UpdateHomingTarget - Init - Found %d actor%s that were alive with class %s"),
+				*GetName(), Actors.Num(), LoggingUtils::Pluralize(Actors.Num()), *LoggingUtils::GetName(Class));
 		}
 
 		// Don't try to aim toward self
 		HomingTargets.Remove(GetOwner());
 
 		HomingTargetLastUpdateTime = CurrentTimeSeconds;
+
+		UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s: UpdateHomingTarget - Init - Found %d total target%s"),
+			*GetName(), HomingTargets.Num(), LoggingUtils::Pluralize(Actors.Num()));
 	}
 	else if(CurrentTimeSeconds - HomingTargetLastUpdateTime >= HomingTargetsUpdateFrequency)
 	{
@@ -165,6 +171,9 @@ void UWeapon::UpdateHomingTargets() const
 		});
 
 		HomingTargetLastUpdateTime = CurrentTimeSeconds;
+
+		UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s: UpdateHomingTarget - Removed dead actors - %d target%s remaining"),
+			*GetName(), HomingTargets.Num(), LoggingUtils::Pluralize(HomingTargets.Num()));
 	}
 }
 

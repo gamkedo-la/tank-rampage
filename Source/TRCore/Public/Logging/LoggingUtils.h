@@ -28,6 +28,9 @@ namespace LoggingUtils
 	FString GetName(const UObject* Object);
 
 	auto GetBoolString(bool Result);
+
+	template<std::integral T>
+	auto Pluralize(T value);
 }
 
 #pragma region Inline Definitions
@@ -48,6 +51,12 @@ namespace LoggingUtils
 	inline auto GetBoolString(bool bResult)
 	{
 		return bResult ? TEXT("TRUE") : TEXT("FALSE");
+	}
+
+	template<std::integral T>
+	inline auto Pluralize(T value)
+	{
+		return value != 1 ? TEXT("s") : TEXT("");
 	}
 }
 
