@@ -24,6 +24,7 @@ class UItemInventory;
 
 class UAbilitySystemComponent;
 class UAttributeSet;
+class UGameplayEffect;
 
 
 UCLASS()
@@ -92,6 +93,7 @@ private:
 
 	void UpdateGameplayAbilitySystemAfterPossession(AController* NewController);
 
+	void InitializeAttributes();
 
 protected:
 
@@ -109,6 +111,9 @@ protected:
 
 	UPROPERTY(Category = "GAS", VisibleDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UAttributeSet> AttributeSet{};
+
+	UPROPERTY(Category = "GAS", EditDefaultsOnly)
+	TSubclassOf<UGameplayEffect> DefaultAttributes{};
 
 	UPROPERTY(Category = "Components", VisibleDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UItemInventory> ItemInventoryComponent{};

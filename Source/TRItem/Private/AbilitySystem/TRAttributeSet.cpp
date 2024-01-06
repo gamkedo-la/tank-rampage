@@ -11,8 +11,6 @@
 UTRAttributeSet::UTRAttributeSet()
 {
 	// constructor is too early for setter, but we can use the initter here
-	InitHealth(2000);
-	InitMaxHealth(2000);
 
 	InitXPLevel(1);
 	InitXPTotal(0);

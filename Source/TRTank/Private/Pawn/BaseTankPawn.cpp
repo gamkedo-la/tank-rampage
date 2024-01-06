@@ -147,6 +147,23 @@ void ABaseTankPawn::UpdateGameplayAbilitySystemAfterPossession(AController* NewC
 
 	AbilitySystemComponent->SetReplicationMode(bIsMixed ? EGameplayEffectReplicationMode::Mixed : EGameplayEffectReplicationMode::Minimal);
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
+
+	InitializeAttributes();
+}
+
+void ABaseTankPawn::InitializeAttributes()
+{
+	// Init gameplay effect only needs to be done on the server since the attributes are replicated
+	if (!HasAuthority() || !ensure(DefaultAttributes))
+	{
+		return;
+	}
+
+	auto ContextHandle = AbilitySystemComponent->MakeEffectContext();
+	ContextHandle.AddSourceObject(this);
+
+	auto SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(DefaultAttributes, 1.0f, ContextHandle);
+	AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data, AbilitySystemComponent);
 }
 
 bool ABaseTankPawn::CanFire() const
