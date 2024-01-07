@@ -186,7 +186,7 @@ void ULevelUnlocksComponent::ApplyLevelUnlock(APawn* Pawn, const FLevelUnlock& U
 	else
 	{
 		auto Item = Inventory->GetItemByName(Unlock.ItemName);
-		if (ensureAlwaysMsgf(Item, TEXT("ItemName=%s exists in inventory")), *Unlock.ItemName.ToString())
+		if (ensureAlwaysMsgf(Item, TEXT("ItemName=%s exists in inventory"), *Unlock.ItemName.ToString()))
 		{
 			Item->SetLevel(Unlock.Level);
 		}

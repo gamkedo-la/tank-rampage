@@ -59,5 +59,5 @@ struct FProjectileHomingParams
 	float HomingTargetRefreshInterval{ 0.5f };
 
 	UPROPERTY(Transient)
-	TArray<AActor*> Targets{};
+	TSet<AActor*> Targets{};
 };

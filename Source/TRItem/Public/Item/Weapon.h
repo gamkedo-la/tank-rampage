@@ -30,11 +30,16 @@ protected:
 	virtual void BeginDestroy() override;
 
 private:
-	void LaunchProjectile(USceneComponent& ActivationReferenceComponent, const FName& ActivationSocketName) const;
+	void LaunchProjectile(USceneComponent& ActivationReferenceComponent, const FName& ActivationSocketName);
 	void ClearProjectileTimer();
-	void UpdateHomingTargets() const;
+	void UpdateHomingTargets(AProjectile& Projectile);
 
 	TSubclassOf<AProjectile> ChooseProjectileClass() const;
+
+	UFUNCTION()
+	void OnProjectileDestroyed(AActor* Actor);
+
+	void OnHomingTargetSelected(AProjectile* Projectile, AActor* Target);
 
 protected:
 	UPROPERTY(Category = "Firing", EditDefaultsOnly, BlueprintReadWrite)
@@ -114,9 +119,13 @@ private:
 	FTimerHandle LaunchDelayTimerHandle{};
 
 	UPROPERTY(Transient)
-	mutable TArray<AActor*> HomingTargets{};
+	TSet<AActor*> AvailableHomingTargets{};
+	
+	/* Maps projectiles to tracked target actors */
+	UPROPERTY(Transient)
+	TMap<AProjectile*, AActor*> ProjectileTargetMap{};
 
-	mutable float HomingTargetLastUpdateTime{ -1.0f };
+	float HomingTargetLastUpdateTime{ -1.0f };
 };
 
 #pragma region Inline Definitions

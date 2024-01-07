@@ -19,6 +19,8 @@ class UNiagaraSystem;
 class UNiagaraComponent;
 class USoundBase;
 
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnHomingTargetSelected, AProjectile* /* Projectile*/, AActor* /*Target*/);
+
 UCLASS()
 class TRITEM_API AProjectile : public AActor, public IVisualLoggerDebugSnapshotInterface
 {
@@ -40,6 +42,13 @@ public:
 	virtual void GrabDebugSnapshot(FVisualLogEntry* Snapshot) const override;
 #endif
 
+	FOnHomingTargetSelected OnHomingTargetSelected{};
+
+	void AddAvailableHomingTarget(AActor* Actor);
+	void RemoveAvailableHomingTarget(AActor* Actor);
+
+	AActor* GetCurrentHomingTargetActor() const;
+
 protected:
 	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
@@ -55,6 +64,8 @@ private:
 	void PlayFiringEffects();
 	void PlayFiringVfx();
 	void PlayFiringSfx();
+
+	FVector GetGroundLocation() const;
 
 private:
 	UFUNCTION()
@@ -90,6 +101,15 @@ private:
 
 	UPROPERTY(EditDefaultsOnly)
 	float MaxLifetime{ 10.0f };
+
+	/*
+	* If target is below the ground under the projectile, this is the maximum absolute value of the cosine of angle between projectile to ground and projectile to target. 
+	*/
+	UPROPERTY(Category = "Homing", EditDefaultsOnly)
+	float HomingGroundAngleCosineThreshold{ 0.85f };
+
+	UPROPERTY(Category = "Homing", EditDefaultsOnly)
+	float MaxZDifference{ 5000.0f };
 
 	FProjectileDamageParams ProjectileDamageParams{};
 

@@ -243,6 +243,7 @@ bool AProjectile::ApplyDamageTo(AActor* OtherActor, const FHitResult& Hit, APawn
 	return true;
 }
 
+
 #pragma region Homing
 
 void AProjectile::InitHomingInfo(const FProjectileHomingParams& InProjectileHomingParams)
@@ -250,7 +251,10 @@ void AProjectile::InitHomingInfo(const FProjectileHomingParams& InProjectileHomi
 	ProjectileHomingParams = InProjectileHomingParams;
 
 	GetWorldTimerManager().SetTimer(HomingTargetTimerHandle, this, &AProjectile::RefreshHomingTarget,
-		ProjectileHomingParams.HomingTargetRefreshInterval, true, ProjectileHomingParams.HomingTargetRefreshInterval);
+		ProjectileHomingParams.HomingTargetRefreshInterval, true);
+
+	// Run also immediately
+	RefreshHomingTarget();
 }
 
 void AProjectile::RefreshHomingTarget()
@@ -259,6 +263,10 @@ void AProjectile::RefreshHomingTarget()
 	int32 ViableCount{};
 
 	const auto& CurrentLocation = GetActorLocation();
+	const auto& VelocityDirection = GetVelocity().GetSafeNormal();
+
+	const FVector GroundLocation = GetGroundLocation();
+	const FVector ToGroundDirection = (GroundLocation - CurrentLocation).GetSafeNormal();
 
 	for (auto PotentialTarget : ProjectileHomingParams.Targets)
 	{
@@ -269,17 +277,104 @@ void AProjectile::RefreshHomingTarget()
 		}
 
 		++ViableCount;
-		const float DistSq = FVector::DistSquared(CurrentLocation, PotentialTarget->GetActorLocation());
-		if (DistSq < BestTarget.second)
+
+		// consider both distance and alignment
+		const auto& TargetLocation = PotentialTarget->GetActorLocation();
+		const auto ToTarget = TargetLocation - CurrentLocation;
+		const auto Dist = FMath::Max(0.01, ToTarget.Size());
+		const auto ToTargetDirection = ToTarget / Dist;
+
+		if (FMath::Abs(CurrentLocation.Z - TargetLocation.Z) <= MaxZDifference && (
+			TargetLocation.Z >= GroundLocation.Z || FMath::Abs(ToTargetDirection | ToGroundDirection) <= HomingGroundAngleCosineThreshold))
 		{
-			BestTarget = { PotentialTarget, DistSq };
+			// ensure alignment always positive and > 0
+			const auto Alignment = (ToTargetDirection | VelocityDirection) + 1.01;
+			const auto Score = Dist / FMath::Cube(Alignment);
+
+			if (Score < BestTarget.second)
+			{
+				BestTarget = { PotentialTarget, Score };
+			}
 		}
 	}
 
-	ProjectileMovementComponent->HomingTargetComponent = GetHomingSceneComponent(BestTarget.first);
+	auto NewHomingTarget = BestTarget.first;
+	auto PreviousHomingTarget = GetCurrentHomingTargetActor();
+
+	ProjectileMovementComponent->HomingTargetComponent = GetHomingSceneComponent(NewHomingTarget);
 	ProjectileMovementComponent->bIsHomingProjectile = true;
 
-	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: RefreshHomingTarget: Selected %s out of %d viable"), *GetName(), *LoggingUtils::GetName(BestTarget.first), ViableCount);
+	// Not finding a target is a valid result and should be broadcast
+	if (PreviousHomingTarget != NewHomingTarget)
+	{
+		OnHomingTargetSelected.Broadcast(this, NewHomingTarget);
+	}
+
+	if (NewHomingTarget)
+	{
+		UE_VLOG_LOCATION(this, LogTRItem, Log, NewHomingTarget->GetActorLocation(), 50.0f, FColor::Yellow, TEXT("%s: Homing Target (%s)"), *GetName(), *NewHomingTarget->GetActorLocation().ToCompactString());
+	}
+
+	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: RefreshHomingTarget: Selected %s out of %d viable"), *GetName(), *LoggingUtils::GetName(NewHomingTarget), ViableCount);
+
+}
+
+FVector AProjectile::GetGroundLocation() const
+{
+	const FVector& CurrentLocation = GetActorLocation();
+	auto World = GetWorld();
+
+	if (World)
+	{
+		FHitResult Hit;
+		FCollisionQueryParams Params;
+		Params.AddIgnoredActor(this);
+
+		if (World->LineTraceSingleByChannel(Hit, CurrentLocation, CurrentLocation - FVector(0, 0, 10000),
+			ECollisionChannel::ECC_Visibility, Params))
+		{
+			return Hit.Location;
+		}
+
+	}
+
+	return CurrentLocation - FVector(0, 0, 500);
+}
+
+void AProjectile::AddAvailableHomingTarget(AActor* Actor)
+{
+	if (!ProjectileMovementComponent->bIsHomingProjectile)
+	{
+		return;
+	}
+
+	ProjectileHomingParams.Targets.Add(Actor);
+}
+
+void AProjectile::RemoveAvailableHomingTarget(AActor* Actor)
+{
+	if (!ProjectileMovementComponent->bIsHomingProjectile)
+	{
+		return;
+	}
+
+	ProjectileHomingParams.Targets.Remove(Actor);
+}
+
+AActor* AProjectile::GetCurrentHomingTargetActor() const
+{
+	if (!ProjectileMovementComponent->bIsHomingProjectile)
+	{
+		return nullptr;
+	}
+
+	auto SceneComponent = ProjectileMovementComponent->HomingTargetComponent.Get();
+	if (!SceneComponent)
+	{
+		return nullptr;
+	}
+
+	return SceneComponent->GetOwner();
 }
 
 USceneComponent* AProjectile::GetHomingSceneComponent(AActor* Actor)

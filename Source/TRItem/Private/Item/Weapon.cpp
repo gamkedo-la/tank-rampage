@@ -57,7 +57,7 @@ bool UWeapon::DoActivation(USceneComponent& ActivationReferenceComponent, const 
 	return true;
 }
 
-void UWeapon::LaunchProjectile(USceneComponent& ActivationReferenceComponent, const FName& ActivationSocketName) const
+void UWeapon::LaunchProjectile(USceneComponent& ActivationReferenceComponent, const FName& ActivationSocketName)
 {
 	const FVector SpawnLocation = ActivationReferenceComponent.GetSocketLocation(ActivationSocketName);
 	const FRotator SpawnRotation = ActivationReferenceComponent.GetSocketRotation(ActivationSocketName);
@@ -81,7 +81,7 @@ void UWeapon::LaunchProjectile(USceneComponent& ActivationReferenceComponent, co
 
 	UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s-%s: LaunchProjectile: %s at %s"),
 		*LoggingUtils::GetName(GetOuter()), *GetName(),
-		*LoggingUtils::GetName(ChosenWeaponProjectileClass), *SpawnLocation.ToCompactString(), *SpawnRotation.ToCompactString());
+		*LoggingUtils::GetName(SpawnedProjectile), *SpawnLocation.ToCompactString(), *SpawnRotation.ToCompactString());
 
 	const FProjectileDamageParams ProjectileDamageParams
 	{
@@ -97,13 +97,13 @@ void UWeapon::LaunchProjectile(USceneComponent& ActivationReferenceComponent, co
 
 	if (bIsHoming)
 	{
-		UpdateHomingTargets();
+		UpdateHomingTargets(*SpawnedProjectile);
 
 		OptHomingParams = FProjectileHomingParams{
 			.MaxSpeedMultiplier = MaxSpeedMultiplier,
 			.HomingAcceleration = HomingAcceleration,
 			.HomingTargetRefreshInterval = HomingTargetRefreshInterval,
-			.Targets = HomingTargets
+			.Targets = AvailableHomingTargets
 		};
 	}
 
@@ -132,13 +132,16 @@ void UWeapon::ClearProjectileTimer()
 	}
 }
 
-void UWeapon::UpdateHomingTargets() const
+void UWeapon::UpdateHomingTargets(AProjectile& Projectile)
 {
 	auto World = GetWorld();
 	if (!World)
 	{
 		return;
 	}
+
+	Projectile.OnDestroyed.AddDynamic(this, &ThisClass::OnProjectileDestroyed);
+	Projectile.OnHomingTargetSelected.AddUObject(this, &ThisClass::OnHomingTargetSelected);
 
 	const float CurrentTimeSeconds = World->GetTimeSeconds();
 
@@ -149,31 +152,35 @@ void UWeapon::UpdateHomingTargets() const
 		{
 			// Actors gets reset inside the function call
 			UGameplayStatics::GetAllActorsOfClassWithTag(this, Class, TR::Tags::Alive, Actors);
-			HomingTargets.Append(Actors);
+			AvailableHomingTargets.Append(Actors);
 
 			UE_VLOG_UELOG(GetOuter(), LogTRItem, Verbose, TEXT("%s: UpdateHomingTarget - Init - Found %d actor%s that were alive with class %s"),
 				*GetName(), Actors.Num(), LoggingUtils::Pluralize(Actors.Num()), *LoggingUtils::GetName(Class));
 		}
 
 		// Don't try to aim toward self
-		HomingTargets.Remove(GetOwner());
+		AvailableHomingTargets.Remove(GetOwner());
 
 		HomingTargetLastUpdateTime = CurrentTimeSeconds;
 
 		UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s: UpdateHomingTarget - Init - Found %d total target%s"),
-			*GetName(), HomingTargets.Num(), LoggingUtils::Pluralize(Actors.Num()));
+			*GetName(), AvailableHomingTargets.Num(), LoggingUtils::Pluralize(Actors.Num()));
 	}
 	else if(CurrentTimeSeconds - HomingTargetLastUpdateTime >= HomingTargetsUpdateFrequency)
 	{
-		HomingTargets.RemoveAll([](auto Actor)
+		for (auto It = AvailableHomingTargets.CreateIterator(); It; ++It)
 		{
-			return !IsValid(Actor) || Actor->ActorHasTag(TR::Tags::Dead);
-		});
+			auto Actor = *It;
+			if (!IsValid(Actor) || Actor->ActorHasTag(TR::Tags::Dead))
+			{
+				It.RemoveCurrent();
+			}
+		}
 
 		HomingTargetLastUpdateTime = CurrentTimeSeconds;
 
 		UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s: UpdateHomingTarget - Removed dead actors - %d target%s remaining"),
-			*GetName(), HomingTargets.Num(), LoggingUtils::Pluralize(HomingTargets.Num()));
+			*GetName(), AvailableHomingTargets.Num(), LoggingUtils::Pluralize(AvailableHomingTargets.Num()));
 	}
 }
 
@@ -185,4 +192,71 @@ TSubclassOf<AProjectile> UWeapon::ChooseProjectileClass() const
 	}
 
 	return WeaponProjectileClass;
+}
+
+void UWeapon::OnProjectileDestroyed(AActor* Actor)
+{
+	auto DestroyedProjectile = Cast<AProjectile>(Actor);
+	if (!DestroyedProjectile)
+	{
+		return;
+	}
+
+	AActor* DestroyedProjectileHomingTarget{};
+	ProjectileTargetMap.RemoveAndCopyValue(DestroyedProjectile, DestroyedProjectileHomingTarget);
+
+	if (!IsValid(DestroyedProjectileHomingTarget))
+	{
+		return;
+	}
+
+	AvailableHomingTargets.Add(DestroyedProjectileHomingTarget);
+
+	for (auto [Projectile, _] : ProjectileTargetMap)
+	{
+		if (Projectile)
+		{
+			Projectile->AddAvailableHomingTarget(DestroyedProjectileHomingTarget);
+		}
+	}
+}
+
+void UWeapon::OnHomingTargetSelected(AProjectile* InProjectile, AActor* InTarget)
+{
+	check(InProjectile);
+
+	AActor** PreviousHomingTargetFindResult = ProjectileTargetMap.Find(InProjectile);
+	AActor* PreviousHomingTarget = PreviousHomingTargetFindResult && IsValid(*PreviousHomingTargetFindResult) ? *PreviousHomingTargetFindResult : nullptr;
+
+	if (InTarget)
+	{
+		ProjectileTargetMap.Add(InProjectile, InTarget);
+		AvailableHomingTargets.Remove(InTarget);
+	}
+	else
+	{
+		ProjectileTargetMap.Remove(InProjectile);
+	}
+
+	if (PreviousHomingTarget)
+	{
+		AvailableHomingTargets.Add(PreviousHomingTarget);
+	}
+
+	for (auto [Projectile, _] : ProjectileTargetMap)
+	{
+		if (!Projectile || Projectile == InProjectile)
+		{
+			continue;
+		}
+
+		if (InTarget)
+		{
+			Projectile->RemoveAvailableHomingTarget(InTarget);
+		}
+		if (PreviousHomingTarget)
+		{
+			Projectile->AddAvailableHomingTarget(PreviousHomingTarget);
+		}
+	}
 }
