@@ -10,6 +10,8 @@ class UWeapon;
 class UItem;
 class UItemDataAsset;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnInventoryItemAdded, const UItemInventory*, Inventory, const FName&, Name, int32, Index, const FItemConfigData&, ItemConfigData);
+
 /*
 * Contains the items that the player currently has available.  Items can be weapons like the main gun, missiles, EMP, mini nuke etc, or activatible effects like a shield or turbo speed.
 * Passive effects like health and armor upgrades are handled separately as they are permantently applied to the player's attributes and do not need to be activated. 
@@ -31,6 +33,12 @@ public:
 	void SetActiveWeaponByName(const FName& Name);
 
 	/*
+	* Sets the active weapon with the given <code>Index</code>.
+	*/
+	UFUNCTION(BlueprintCallable)
+	void SetActiveWeaponByIndex(int32 Index);
+
+	/*
 	* Sets the active weapon. Player must already have this weapon in the inventory.
 	* To add a new weapon to inventory use <code>AddItemByName</code>.
 	*/
@@ -48,12 +56,16 @@ public:
 
 	/*
 	* Adds a new item with the given <code>Name</code> to the inventory if it is a valid identifier and inventory does not already have this item.
+	* Returns the index of the item in the inventory or <code>INDEX_NONE</code> if it cannot be added.
 	*/
 	UFUNCTION(BlueprintCallable)
-	void AddItemByName(const FName& Name);
+	int32 AddItemByName(const FName& Name);
 
 	UFUNCTION(BlueprintPure)
 	TArray<UItem*> GetCurrentItems() const;
+
+	UPROPERTY(Category = "Notification", Transient, BlueprintAssignable)
+	FOnInventoryItemAdded OnInventoryItemAdded{};
 
 
 #if ENABLE_VISUAL_LOG

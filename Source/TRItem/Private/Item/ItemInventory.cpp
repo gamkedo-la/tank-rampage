@@ -27,6 +27,14 @@ void UItemInventory::SetActiveWeaponByName(const FName& Name)
 	SetActiveWeapon(Cast<UWeapon>(GetItemByName(Name)));
 }
 
+void UItemInventory::SetActiveWeaponByIndex(int32 Index)
+{
+	if (Index >= 0 && Index < Weapons.Num())
+	{
+		ActiveWeaponIndex = Index;
+	}
+}
+
 void UItemInventory::SetActiveWeapon(UWeapon* Weapon)
 {
 	if (!Weapon)
@@ -51,13 +59,13 @@ UItem* UItemInventory::GetItemByName(const FName& Name) const
 	return WeaponResult ? *WeaponResult : nullptr;
 }
 
-void UItemInventory::AddItemByName(const FName& Name)
+int32 UItemInventory::AddItemByName(const FName& Name)
 {
 	if (!ensureMsgf(ItemDataAsset, TEXT("ItemDataAsset is NULL"))
 		|| !ensureMsgf(ItemDataAsset->ItemConfigDataTable, TEXT("ItemDataAsset(%s)::ItemConfigDataTable is NULL"), *ItemDataAsset->GetName())
 	)
 	{
-		return;
+		return INDEX_NONE;
 	}
 
 	if (GetItemByName(Name))
@@ -65,7 +73,7 @@ void UItemInventory::AddItemByName(const FName& Name)
 		UE_VLOG_UELOG(this, LogTRItem, Warning, TEXT("%s-%s: AddItemByName: Inventory already contains Name=%s"),
 			*LoggingUtils::GetName(GetOwner()), *GetName(), *Name.ToString());
 
-		return;
+		return INDEX_NONE;
 	}
 
 	auto ItemConfigDataTable = ItemDataAsset->ItemConfigDataTable;
@@ -79,7 +87,7 @@ void UItemInventory::AddItemByName(const FName& Name)
 	{
 		UE_VLOG_UELOG(this, LogTRItem, Error, TEXT("%s - Could not find item"),
 			*Context);
-		return;
+		return INDEX_NONE;
 	}
 
 	if (ensure(ItemConfigRow->Class) && ItemConfigRow->Class->IsChildOf<UWeapon>())
@@ -88,7 +96,11 @@ void UItemInventory::AddItemByName(const FName& Name)
 		if (Weapon)
 		{
 			Weapon->Initialize(Cast<APawn>(GetOwner()), *ItemConfigRow);
-			Weapons.Add(Weapon);
+			int32 AddedIndex = Weapons.Add(Weapon);
+
+			OnInventoryItemAdded.Broadcast(this, Name, AddedIndex, *ItemConfigRow);
+
+			return AddedIndex;
 		}
 		else
 		{
@@ -101,6 +113,8 @@ void UItemInventory::AddItemByName(const FName& Name)
 		ensureAlwaysMsgf(true, TEXT("%s-%s: Attempted to add unsupported item with Name=%s and Class=%s"),
 			*LoggingUtils::GetName(GetOwner()), *GetName(), *Name.ToString(), *LoggingUtils::GetName(ItemConfigRow->Class));
 	}
+
+	return INDEX_NONE;
 }
 
 TArray<UItem*> UItemInventory::GetCurrentItems() const
