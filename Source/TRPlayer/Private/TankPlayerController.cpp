@@ -172,6 +172,24 @@ void ATankPlayerController::BindWeaponSelectActions(UEnhancedInputComponent& Enh
 		// Cannot bind a lambda so no way to pass in the index
 		EnhancedInputComponent.BindAction(WeaponSelectAction, ETriggerEvent::Triggered, this, &ThisClass::OnSelectWeapon);
 	}
+
+	if (WeaponNextAction)
+	{
+		EnhancedInputComponent.BindAction(WeaponNextAction, ETriggerEvent::Completed, this, &ThisClass::OnNextWeapon);
+	}
+	else
+	{
+		UE_LOG(LogTRPlayer, Error, TEXT("%s: BindWeaponSelectActions - WeaponNextAction not bound"), *GetName());
+	}
+
+	if (WeaponPreviousAction)
+	{
+		EnhancedInputComponent.BindAction(WeaponPreviousAction, ETriggerEvent::Completed, this, &ThisClass::OnPreviousWeapon);
+	}
+	else
+	{
+		UE_LOG(LogTRPlayer, Error, TEXT("%s: BindWeaponSelectActions - WeaponPreviousAction not bound"), *GetName());
+	}
 }
 
 #pragma region Controls
@@ -227,6 +245,40 @@ void ATankPlayerController::OnSelectWeapon(const FInputActionInstance& InputActi
 		UE_LOG(LogTRPlayer, Error, TEXT("%s: OnSelectWeapon - Cannot find bound weapon index for source input action=%s"),
 			*GetName(), *LoggingUtils::GetName(InputActionInstance.GetSourceAction()));
 	}
+}
+
+void ATankPlayerController::OnNextWeapon()
+{
+	UE_LOG(LogTRPlayer, Log, TEXT("%s: OnScrollWeapon - OnNextWeapon"),
+		*GetName());
+
+	auto ControlledTank = GetControlledTank();
+	if (!ControlledTank || !IsControlledTankAlive())
+	{
+		return;
+	}
+
+	auto ItemInventory = ControlledTank->GetItemInventory();
+	check(ItemInventory);
+
+	ItemInventory->SetNextWeaponActive();
+}
+
+void ATankPlayerController::OnPreviousWeapon()
+{
+	UE_LOG(LogTRPlayer, Log, TEXT("%s: OnScrollWeapon - OnPreviousWeapon"),
+		*GetName());
+
+	auto ControlledTank = GetControlledTank();
+	if (!ControlledTank || !IsControlledTankAlive())
+	{
+		return;
+	}
+
+	auto ItemInventory = ControlledTank->GetItemInventory();
+	check(ItemInventory);
+
+	ItemInventory->SetPreviousWeaponActive();
 }
 
 void ATankPlayerController::SelectWeapon(int32 WeaponIndex) const

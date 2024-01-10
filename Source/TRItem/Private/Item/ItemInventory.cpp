@@ -22,6 +22,32 @@ void UItemInventory::BeginPlay()
 	Super::BeginPlay();
 }
 
+bool UItemInventory::RotateActiveWeapon(int32 Offset)
+{
+	if (Weapons.IsEmpty())
+	{
+		return false;
+	}
+
+	int32 NewIndex = ActiveWeaponIndex + Offset;
+	if (NewIndex < 0)
+	{
+		NewIndex += Weapons.Num();
+	}
+	else
+	{
+		NewIndex %= Weapons.Num();
+	}
+
+	if (NewIndex == ActiveWeaponIndex)
+	{
+		return false;
+	}
+
+	SetActiveWeaponByIndex(NewIndex);
+	return true;
+}
+
 bool UItemInventory::CanWeaponBeActivatedByIndex(int32 WeaponIndex) const
 {
 	if (!IsWeaponAvailableByIndex(WeaponIndex))

@@ -51,6 +51,12 @@ public:
 	UFUNCTION(BlueprintPure)
 	bool HasAnyActiveWeapon() const;
 
+	UFUNCTION(BlueprintCallable)
+	bool SetNextWeaponActive();
+
+	UFUNCTION(BlueprintCallable)
+	bool SetPreviousWeaponActive();
+
 	UFUNCTION(BlueprintPure)
 	int32 GetNumWeapons() const;
 
@@ -96,6 +102,9 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
+	bool RotateActiveWeapon(int32 Offset);
+
+private:
 
 	UPROPERTY(Category = "Weapon", EditDefaultsOnly)
 	TObjectPtr<UItemDataAsset> ItemDataAsset{};
@@ -111,6 +120,16 @@ private:
 inline bool UItemInventory::HasAnyActiveWeapon() const
 {
 	return ActiveWeaponIndex < GetNumWeapons();
+}
+
+inline bool UItemInventory::SetNextWeaponActive()
+{
+	return RotateActiveWeapon(1);
+}
+
+inline bool UItemInventory::SetPreviousWeaponActive()
+{
+	return RotateActiveWeapon(-1);
 }
 
 inline UWeapon* UItemInventory::GetActiveWeapon() const

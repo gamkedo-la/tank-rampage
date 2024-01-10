@@ -57,6 +57,8 @@ private:
 	void OnMove(const FInputActionValue& Value);
 
 	void OnSelectWeapon(const FInputActionInstance& InputActionInstance);
+	void OnNextWeapon();
+	void OnPreviousWeapon();
 
 	void SelectWeapon(int32 WeaponIndex) const;
 
@@ -83,6 +85,12 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = Input)
 	TArray<const UInputAction*> WeaponSelectActions{};
+
+	UPROPERTY(EditDefaultsOnly, Category = Input)
+	TObjectPtr<UInputAction> WeaponNextAction{};
+
+	UPROPERTY(EditDefaultsOnly, Category = Input)
+	TObjectPtr<UInputAction> WeaponPreviousAction{};
 
 	UPROPERTY(EditDefaultsOnly, Category = Input, meta=(ClampMin = "-90", ClampMax = "90"))
 	float MinPitch{ -20.0f };
