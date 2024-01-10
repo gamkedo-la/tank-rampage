@@ -22,6 +22,22 @@ void UItemInventory::BeginPlay()
 	Super::BeginPlay();
 }
 
+bool UItemInventory::CanWeaponBeActivatedByIndex(int32 WeaponIndex) const
+{
+	if (!IsWeaponAvailableByIndex(WeaponIndex))
+	{
+		return false;
+	}
+
+	auto Item = Weapons[WeaponIndex];
+	if (!Item)
+	{
+		return false;
+	}
+
+	return Item->CanBeActivated();
+}
+
 void UItemInventory::SetActiveWeaponByName(const FName& Name)
 {
 	SetActiveWeapon(Cast<UWeapon>(GetItemByName(Name)));
@@ -29,7 +45,7 @@ void UItemInventory::SetActiveWeaponByName(const FName& Name)
 
 void UItemInventory::SetActiveWeaponByIndex(int32 Index)
 {
-	if (Index >= 0 && Index < Weapons.Num())
+	if (IsWeaponAvailableByIndex(Index))
 	{
 		ActiveWeaponIndex = Index;
 	}

@@ -17,6 +17,9 @@ struct FInputActionValue;
 class UInputAction;
 class ABaseTankPawn;
 class UHealthComponent;
+class UEnhancedInputComponent;
+struct FInputActionInstance;
+
 /**
  * 
  */
@@ -45,12 +48,17 @@ private:
 
 	void InitializeInputMappingContext();
 	void InitializeCamera();
-	
+	void BindWeaponSelectActions(UEnhancedInputComponent& EnhancedInputComponent);
+
 	void AimTowardCrosshair();
 
 	void OnLook(const FInputActionValue& Value);
 	void OnFire();
 	void OnMove(const FInputActionValue& Value);
+
+	void OnSelectWeapon(const FInputActionInstance& InputActionInstance);
+
+	void SelectWeapon(int32 WeaponIndex) const;
 
 	void GetAimingData(FAimingData& AimingData) const;
 	
@@ -72,6 +80,9 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> MoveAction{};
+
+	UPROPERTY(EditDefaultsOnly, Category = Input)
+	TArray<const UInputAction*> WeaponSelectActions{};
 
 	UPROPERTY(EditDefaultsOnly, Category = Input, meta=(ClampMin = "-90", ClampMax = "90"))
 	float MinPitch{ -20.0f };

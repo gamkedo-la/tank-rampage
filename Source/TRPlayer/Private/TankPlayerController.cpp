@@ -7,6 +7,7 @@
 #include "TRPlayerLogging.h"
 #include "Pawn/BaseTankPawn.h"
 #include "Components/HealthComponent.h"
+#include "Item/ItemInventory.h"
 #include "Subsystems/TankEventsSubsystem.h"
 
 #include "InputActionValue.h"
@@ -82,6 +83,8 @@ void ATankPlayerController::SetupInputComponent()
 	{
 		UE_LOG(LogTRPlayer, Error, TEXT("%s: SetupPlayerInputComponent - MoveAction not bound"), *GetName());
 	}
+
+	BindWeaponSelectActions(*EnhancedInputComponent);
 }
 
 void ATankPlayerController::Tick(float DeltaTime)
@@ -156,6 +159,21 @@ void ATankPlayerController::InitializeCamera()
 	PlayerCameraManager->ViewPitchMax = -MinPitch;
 }
 
+void ATankPlayerController::BindWeaponSelectActions(UEnhancedInputComponent& EnhancedInputComponent)
+{
+	for (int32 i = 0; i < WeaponSelectActions.Num(); ++i)
+	{
+		auto WeaponSelectAction = WeaponSelectActions[i];
+		if (!ensureAlwaysMsgf(WeaponSelectAction, TEXT("WeaponSelectAction[%d] is NULL"), i))
+		{
+			continue;
+		}
+
+		// Cannot bind a lambda so no way to pass in the index
+		EnhancedInputComponent.BindAction(WeaponSelectAction, ETriggerEvent::Triggered, this, &ThisClass::OnSelectWeapon);
+	}
+}
+
 #pragma region Controls
 
 void ATankPlayerController::AimTowardCrosshair()
@@ -195,6 +213,46 @@ void ATankPlayerController::OnMove(const FInputActionValue& Value)
 
 	ControlledTank->MoveForward(MoveAxisValue.Y);
 	ControlledTank->TurnRight(MoveAxisValue.X);
+}
+
+void ATankPlayerController::OnSelectWeapon(const FInputActionInstance& InputActionInstance)
+{
+	const int32 FoundIndex = WeaponSelectActions.Find(InputActionInstance.GetSourceAction());
+	if (FoundIndex != INDEX_NONE)
+	{
+		SelectWeapon(FoundIndex);
+	}
+	else
+	{
+		UE_LOG(LogTRPlayer, Error, TEXT("%s: OnSelectWeapon - Cannot find bound weapon index for source input action=%s"),
+			*GetName(), *LoggingUtils::GetName(InputActionInstance.GetSourceAction()));
+	}
+}
+
+void ATankPlayerController::SelectWeapon(int32 WeaponIndex) const
+{
+	auto ControlledTank = GetControlledTank();
+	if (!ControlledTank || !IsControlledTankAlive())
+	{
+		return;
+	}
+
+	auto ItemInventory = ControlledTank->GetItemInventory();
+	check(ItemInventory);
+
+	// TODO: Switch to CanWeaponBeActivatedByIndex if we don't want player to switch to a weapon still in cooldown
+	if (ItemInventory->IsWeaponAvailableByIndex(WeaponIndex))
+	{
+		UE_VLOG_UELOG(this, LogTRPlayer, Log,
+			TEXT("%s: SelectWeapon: %d"), *GetName(), WeaponIndex);
+
+		ItemInventory->SetActiveWeaponByIndex(WeaponIndex);
+	}
+	else
+	{
+		UE_VLOG_UELOG(this, LogTRPlayer, Log,
+			TEXT("%s: SelectWeapon: %d - Cannot be selected as that weapon slot hasn't been filled yet"), *GetName(), WeaponIndex);
+	}
 }
 
 void ATankPlayerController::OnLook(const FInputActionValue& Value)

@@ -52,7 +52,25 @@ public:
 	bool HasAnyActiveWeapon() const;
 
 	UFUNCTION(BlueprintPure)
+	int32 GetNumWeapons() const;
+
+	/*
+	* Is the <code>WeaponIndex</code> available in the inventory.
+	*/
+	UFUNCTION(BlueprintPure)
+	bool IsWeaponAvailableByIndex(int32 WeaponIndex) const;
+
+	/*
+	* Is weapon both available and not in cooldown and ready to be activated.
+	*/
+	UFUNCTION(BlueprintPure)
+	bool CanWeaponBeActivatedByIndex(int32 WeaponIndex) const;
+
+	UFUNCTION(BlueprintPure)
 	UItem* GetItemByName(const FName& Name) const;
+
+	UFUNCTION(BlueprintPure)
+	bool HasItem(const FName& Name) const;
 
 	/*
 	* Adds a new item with the given <code>Name</code> to the inventory if it is a valid identifier and inventory does not already have this item.
@@ -92,12 +110,27 @@ private:
 
 inline bool UItemInventory::HasAnyActiveWeapon() const
 {
-	return ActiveWeaponIndex < Weapons.Num();
+	return ActiveWeaponIndex < GetNumWeapons();
 }
 
 inline UWeapon* UItemInventory::GetActiveWeapon() const
 {
 	return HasAnyActiveWeapon() ? Weapons[ActiveWeaponIndex] : nullptr;
+}
+
+inline int32 UItemInventory::GetNumWeapons() const
+{
+	return Weapons.Num();
+}
+
+inline bool UItemInventory::IsWeaponAvailableByIndex(int32 WeaponIndex) const
+{
+	return ActiveWeaponIndex >= 0 && WeaponIndex < GetNumWeapons();
+}
+
+inline bool UItemInventory::HasItem(const FName& Name) const
+{
+	return GetItemByName(Name) != nullptr;
 }
 
 #pragma endregion Inline Definitions
