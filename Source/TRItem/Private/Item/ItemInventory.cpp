@@ -17,9 +17,9 @@ UItemInventory::UItemInventory()
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
-void UItemInventory::BeginPlay()
+void UItemInventory::Clear()
 {
-	Super::BeginPlay();
+	Weapons.Reset();
 }
 
 bool UItemInventory::RotateActiveWeapon(int32 Offset)

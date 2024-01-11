@@ -216,6 +216,19 @@ void ATankAIController::OnPossess(APawn* InPawn)
 	Tank->GetHealthComponent()->OnHealthChanged.AddDynamic(this, &ThisClass::OnHealthChanged);
 }
 
+void ATankAIController::OnUnPossess()
+{
+	auto Tank = GetControlledTank();
+
+	Super::OnUnPossess();
+
+	if (Tank)
+	{
+		// Clear inventory when possessed by player as player start pawn is first possessed by AI and then possessed by player
+		Tank->GetItemInventory()->Clear();
+	}
+}
+
 #if ENABLE_VISUAL_LOG
 void ATankAIController::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
 {

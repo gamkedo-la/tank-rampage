@@ -26,6 +26,9 @@ public:
 	// Sets default values for this component's properties
 	UItemInventory();
 
+	UFUNCTION(BlueprintCallable)
+	void Clear();
+
 	/*
 	* Sets the active weapon with the given <code>Name</code>.
 	*/
@@ -97,9 +100,6 @@ public:
 	void DescribeSelfToVisLog(FVisualLogEntry* Snapshot) const;
 
 #endif
-
-protected:
-	virtual void BeginPlay() override;
 
 private:
 	bool RotateActiveWeapon(int32 Offset);
