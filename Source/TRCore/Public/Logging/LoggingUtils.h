@@ -9,7 +9,6 @@
 
 namespace LoggingUtils
 {
-
 	template<typename T>
 	concept UEnumConcept = std::is_enum_v<T> &&
 	requires(T Value)
