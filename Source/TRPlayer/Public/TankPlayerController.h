@@ -57,8 +57,8 @@ private:
 	void OnMove(const FInputActionValue& Value);
 
 	void OnSelectWeapon(const FInputActionInstance& InputActionInstance);
-	void OnNextWeapon();
-	void OnPreviousWeapon();
+	void OnNextWeapon(const FInputActionInstance& InputActionInstance);
+	void OnPreviousWeapon(const FInputActionInstance& InputActionInstance);
 
 	void SelectWeapon(int32 WeaponIndex) const;
 
@@ -68,6 +68,8 @@ private:
 
 	UFUNCTION()
 	void OnHealthChanged(UHealthComponent* HealthComponent, float PreviousHealthValue, AController* EventInstigator, AActor* ChangeCauser);
+
+	bool IsWeaponScrollSwitchTriggerable(const FInputActionInstance& InputActionInstance) const;
 
 private:
 
@@ -102,4 +104,9 @@ private:
 	FVector2D CrosshairPositionFraction{};
 
 	float MaxAimDistanceMeters{ 1000.0f };
+
+	UPROPERTY(EditDefaultsOnly, Category = Input, meta=(ClampMin = "0"))
+	float WeaponScrollRetriggerDelay{ 0.25f };
+
+	float WeaponScrollLastTriggerTime{ -1.0f };
 };

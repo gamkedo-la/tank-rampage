@@ -175,7 +175,7 @@ void ATankPlayerController::BindWeaponSelectActions(UEnhancedInputComponent& Enh
 
 	if (WeaponNextAction)
 	{
-		EnhancedInputComponent.BindAction(WeaponNextAction, ETriggerEvent::Completed, this, &ThisClass::OnNextWeapon);
+		EnhancedInputComponent.BindAction(WeaponNextAction, ETriggerEvent::Triggered, this, &ThisClass::OnNextWeapon);
 	}
 	else
 	{
@@ -184,7 +184,7 @@ void ATankPlayerController::BindWeaponSelectActions(UEnhancedInputComponent& Enh
 
 	if (WeaponPreviousAction)
 	{
-		EnhancedInputComponent.BindAction(WeaponPreviousAction, ETriggerEvent::Completed, this, &ThisClass::OnPreviousWeapon);
+		EnhancedInputComponent.BindAction(WeaponPreviousAction, ETriggerEvent::Triggered, this, &ThisClass::OnPreviousWeapon);
 	}
 	else
 	{
@@ -247,11 +247,16 @@ void ATankPlayerController::OnSelectWeapon(const FInputActionInstance& InputActi
 	}
 }
 
-void ATankPlayerController::OnNextWeapon()
+void ATankPlayerController::OnNextWeapon(const FInputActionInstance& InputActionInstance)
 {
 	UE_LOG(LogTRPlayer, Log, TEXT("%s: OnScrollWeapon - OnNextWeapon"),
 		*GetName());
 
+	if (!IsWeaponScrollSwitchTriggerable(InputActionInstance))
+	{
+		return;
+	}
+
 	auto ControlledTank = GetControlledTank();
 	if (!ControlledTank || !IsControlledTankAlive())
 	{
@@ -260,14 +265,23 @@ void ATankPlayerController::OnNextWeapon()
 
 	auto ItemInventory = ControlledTank->GetItemInventory();
 	check(ItemInventory);
+
+	auto World = GetWorld();
+	check(World);
+	WeaponScrollLastTriggerTime = World->GetTimeSeconds();
 
 	ItemInventory->SetNextWeaponActive();
 }
 
-void ATankPlayerController::OnPreviousWeapon()
+void ATankPlayerController::OnPreviousWeapon(const FInputActionInstance& InputActionInstance)
 {
 	UE_LOG(LogTRPlayer, Log, TEXT("%s: OnScrollWeapon - OnPreviousWeapon"),
 		*GetName());
+
+	if (!IsWeaponScrollSwitchTriggerable(InputActionInstance))
+	{
+		return;
+	}
 
 	auto ControlledTank = GetControlledTank();
 	if (!ControlledTank || !IsControlledTankAlive())
@@ -278,7 +292,17 @@ void ATankPlayerController::OnPreviousWeapon()
 	auto ItemInventory = ControlledTank->GetItemInventory();
 	check(ItemInventory);
 
+	auto World = GetWorld();
+	check(World);
+	WeaponScrollLastTriggerTime = World->GetTimeSeconds();
+
 	ItemInventory->SetPreviousWeaponActive();
+}
+
+
+bool ATankPlayerController::IsWeaponScrollSwitchTriggerable(const FInputActionInstance& InputActionInstance) const
+{
+	return InputActionInstance.GetLastTriggeredWorldTime() - WeaponScrollLastTriggerTime > WeaponScrollRetriggerDelay;
 }
 
 void ATankPlayerController::SelectWeapon(int32 WeaponIndex) const
