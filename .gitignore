@@ -59,8 +59,13 @@ SourceArt/**/*.png
 SourceArt/**/*.tga
 
 # Binary Files
-Binaries/*
+# Ignore exceptions don't work on subdirectories so need to list out the path fully
+Binaries/*/*
 Plugins/*/Binaries/*
+# allow editor development build files for faster onboarding
+!Binaries/*/UnrealEditor-*.dll
+!Binaries/*/*.target
+!Binaries/*/*.modules
 
 # Builds
 Build/*

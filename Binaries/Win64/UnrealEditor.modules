@@ -1,0 +1,12 @@
+{
+	"BuildId": "27405482",
+	"Modules": 
+	{
+		"TRAI": "UnrealEditor-TRAI.dll",
+		"TRCore": "UnrealEditor-TRCore.dll",
+		"TRItem": "UnrealEditor-TRItem.dll",
+		"TRPlayer": "UnrealEditor-TRPlayer.dll",
+		"TRTank": "UnrealEditor-TRTank.dll",
+		"TankRampage": "UnrealEditor-TankRampage.dll"
+	}
+}
