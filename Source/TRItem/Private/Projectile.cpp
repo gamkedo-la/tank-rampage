@@ -116,7 +116,7 @@ void AProjectile::PostInitializeComponents()
 void AProjectile::PlayFiringEffects()
 {
 	PlayFiringVfx();
-	PlayFiringSfx();
+	PlaySfxAtActorLocation(FiringSfx);
 }
 
 void AProjectile::PlayFiringVfx()
@@ -155,23 +155,22 @@ void AProjectile::SetNiagaraFireEffectParameters_Implementation(UNiagaraComponen
 	}
 }
 
-void AProjectile::PlayFiringSfx()
+void AProjectile::PlaySfxAtActorLocation(USoundBase* Sound) const
 {
-	if (!FiringSfx)
+	if (!ensure(Sound))
 	{
-		UE_VLOG_UELOG(this, LogTRItem, Warning, TEXT("%s: PlayFiringSfx is not set"), *GetName());
 		return;
 	}
 
 	// The owner of the audio component is derived from the world context object and this will control the sound concurrency
 	// We want to limit the number of times this plays when firing multiple shells so pass in the owner of the projectile
-	auto SpawnedAudioComponent = UGameplayStatics::SpawnSoundAtLocation(GetOwner(), FiringSfx, GetActorLocation(), GetActorRotation());
+	auto SpawnedAudioComponent = UGameplayStatics::SpawnSoundAtLocation(GetOwner(), Sound, GetActorLocation(), GetActorRotation());
 
 	if (!SpawnedAudioComponent)
 	{
 		UE_VLOG_UELOG(this, LogTRItem, Error,
-			TEXT("%s-%s: PlayFiringSfx - Unable to spawn audio component for sfx=%s"),
-			*GetName(), *LoggingUtils::GetName(GetOwner()), *FiringSfx->GetName());
+			TEXT("%s-%s: PlaySfxAtActorLocation - Unable to spawn audio component for sfx=%s"),
+			*GetName(), *LoggingUtils::GetName(GetOwner()), *Sound->GetName());
 		return;
 	}
 
@@ -191,6 +190,9 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, U
 	{
 		UE_VLOG_LOCATION(this, LogTRItem, Display, GetActorLocation(), ExplosionForce->Radius, FColor::Red, TEXT("Explosion"));
 		ExplosionForce->FireImpulse();
+
+		PlaySfxAtActorLocation(ExplosionSfx);
+
 		Destroy();
 	}
 	else if(OtherActor)

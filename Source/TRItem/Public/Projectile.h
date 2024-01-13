@@ -63,7 +63,7 @@ private:
 
 	void PlayFiringEffects();
 	void PlayFiringVfx();
-	void PlayFiringSfx();
+	void PlaySfxAtActorLocation(USoundBase* Sound) const;
 
 	FVector GetGroundLocation() const;
 
@@ -98,6 +98,9 @@ private:
 
 	UPROPERTY(Category = "Audio | Firing", EditDefaultsOnly)
 	TObjectPtr<USoundBase> FiringSfx{};
+
+	UPROPERTY(Category = "Audio | Hit", EditDefaultsOnly)
+	TObjectPtr<USoundBase> ExplosionSfx{};
 
 	UPROPERTY(EditDefaultsOnly)
 	float MaxLifetime{ 10.0f };
