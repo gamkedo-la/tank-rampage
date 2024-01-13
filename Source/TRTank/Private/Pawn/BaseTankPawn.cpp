@@ -27,6 +27,8 @@
 #include "AbilitySystem/TRAbilitySystemComponent.h" 
 #include "AbilitySystem/TRAttributeSet.h"
 
+#include "TRTags.h"
+
 namespace
 {
 	FBox GetBounds(const UStaticMeshComponent& Comp, const FName* SocketName = nullptr);
@@ -78,6 +80,8 @@ ABaseTankPawn::ABaseTankPawn()
 	AttributeSet = CreateDefaultSubobject<UTRAttributeSet>(TEXT("Attribute Set"));
 
 	ItemInventoryComponent = CreateDefaultSubobject<UItemInventory>(TEXT("Item Inventory"));
+
+	Tags.Add(TR::Tags::Tank);
 }
 
 // Called when the game starts or when spawned

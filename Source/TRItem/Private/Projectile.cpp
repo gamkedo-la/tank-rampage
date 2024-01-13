@@ -174,6 +174,10 @@ void AProjectile::PlaySfxAtActorLocation(USoundBase* Sound) const
 		return;
 	}
 
+	UE_VLOG_UELOG(this, LogTRItem, Log,
+		TEXT("%s-%s: PlaySfxAtActorLocation - Playing sfx=%s"),
+		*GetName(), *LoggingUtils::GetName(GetOwner()), *Sound->GetName());
+
 	SpawnedAudioComponent->bAutoDestroy = true;
 }
 
@@ -192,12 +196,26 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, U
 		ExplosionForce->FireImpulse();
 
 		PlaySfxAtActorLocation(ExplosionSfx);
+		PlayHitSfx(OtherActor);
 
 		Destroy();
 	}
 	else if(OtherActor)
 	{	
 		UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: Ignoring self hit with instigator=%s"), *GetName(), *OtherActor->GetName());
+	}
+}
+
+void AProjectile::PlayHitSfx(AActor* HitActor) const
+{
+	if (!HitActor)
+	{
+		return;
+	}
+
+	if (HitActor->ActorHasTag(TR::Tags::Tank))
+	{
+		PlaySfxAtActorLocation(TankHitSfx);
 	}
 }
 
