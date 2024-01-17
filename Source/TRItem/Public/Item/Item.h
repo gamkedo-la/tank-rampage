@@ -51,8 +51,7 @@ public:
 	FString GetDescription() const;
 
 protected:
-	virtual bool DoActivation(USceneComponent& ActivationReferenceComponent, const FName& ActivationSocketName)
-		PURE_VIRTUAL(UItem::DoActivation, return false;);
+	virtual bool DoActivation(USceneComponent& ActivationReferenceComponent, const FName& ActivationSocketName) PURE_VIRTUAL(UItem::DoActivation, return false;);
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void BlueprintInitialize(const FItemConfigData& ItemConfigData);

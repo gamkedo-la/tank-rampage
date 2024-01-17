@@ -6,6 +6,8 @@
 #include "Components/ActorComponent.h"
 #include "HealthComponent.generated.h"
 
+class UItem;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnHealthChanged, UHealthComponent*, HealthComponent, float, PreviousHealthValue, AController*, EventInstigator, AActor*, ChangeCauser);
 
 
@@ -45,6 +47,10 @@ protected:
 
 	UFUNCTION()
 	virtual void TakeDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser);
+
+private:
+	UFUNCTION()
+	void OnItemUpgraded(UItem* Item);
 		
 public:
 	UPROPERTY(Category = "Notification", Transient, BlueprintAssignable)
@@ -56,6 +62,9 @@ private:
 
 	UPROPERTY(Category = "Health", VisibleInstanceOnly)
 	float Health{};
+
+	UPROPERTY(Category = "Item", EditDefaultsOnly)
+	bool bRegisterItemUpgradeEvents{};
 };
 
 #pragma region Inline Definitions

@@ -4,11 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+
+#include <concepts>
+
 #include "ItemInventory.generated.h"
 
 class UWeapon;
-class UItem;
+class UPassiveEffect;
+class UActivatableEffect;
 class UItemDataAsset;
+struct FItemConfigData;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnInventoryItemAdded, const UItemInventory*, Inventory, const FName&, Name, int32, Index, const FItemConfigData&, ItemConfigData);
 
@@ -104,6 +109,9 @@ public:
 private:
 	bool RotateActiveWeapon(int32 Offset);
 
+	template<std::derived_from<UItem> T>
+	int32 AddToInventoryArray(const FName& Name, const FItemConfigData& ItemConfigRow, TArray<T*>& Array);
+
 private:
 
 	UPROPERTY(Category = "Weapon", EditDefaultsOnly)
@@ -111,6 +119,12 @@ private:
 
 	UPROPERTY(Transient)
 	TArray<UWeapon*> Weapons{};
+
+	UPROPERTY(Transient)
+	TArray<UPassiveEffect*> PassiveEffects{};
+
+	UPROPERTY(Transient)
+	TArray<UActivatableEffect*> ActivatableEffects{};
 
 	int32 ActiveWeaponIndex{};
 };

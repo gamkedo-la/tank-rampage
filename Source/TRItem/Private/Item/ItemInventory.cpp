@@ -11,6 +11,8 @@
 #include "Item/ItemConfigData.h"
 #include "Item/Item.h"
 #include "Item/Weapon.h"
+#include "Item/ActivatableEffect.h"
+#include "Item/PassiveEffect.h"
 
 UItemInventory::UItemInventory()
 {
@@ -132,23 +134,22 @@ int32 UItemInventory::AddItemByName(const FName& Name)
 		return INDEX_NONE;
 	}
 
-	if (ensure(ItemConfigRow->Class) && ItemConfigRow->Class->IsChildOf<UWeapon>())
+	if (!ensure(ItemConfigRow->Class))
 	{
-		auto Weapon = NewObject<UWeapon>(GetOwner(), ItemConfigRow->Class, Name);
-		if (Weapon)
-		{
-			Weapon->Initialize(Cast<APawn>(GetOwner()), *ItemConfigRow);
-			int32 AddedIndex = Weapons.Add(Weapon);
+		return INDEX_NONE;
+	}
 
-			OnInventoryItemAdded.Broadcast(this, Name, AddedIndex, *ItemConfigRow);
-
-			return AddedIndex;
-		}
-		else
-		{
-			UE_VLOG_UELOG(GetOwner(), LogTRItem, Error, TEXT("%s-%s: AddItemByName: Unable to create weapon with class=%s; Name=%s"),
-				*LoggingUtils::GetName(GetOwner()), *GetName(), *ItemConfigRow->Class, *Name.ToString());
-		}
+	if (ItemConfigRow->Class->IsChildOf<UWeapon>())
+	{
+		return AddToInventoryArray<UWeapon>(Name, *ItemConfigRow, Weapons);
+	}
+	else if (ItemConfigRow->Class->IsChildOf<UActivatableEffect>())
+	{
+		return AddToInventoryArray<UActivatableEffect>(Name, *ItemConfigRow, ActivatableEffects);
+	}
+	else if (ItemConfigRow->Class->IsChildOf<UPassiveEffect>())
+	{
+		return AddToInventoryArray<UPassiveEffect>(Name, *ItemConfigRow, PassiveEffects);
 	}
 	else
 	{
@@ -159,19 +160,37 @@ int32 UItemInventory::AddItemByName(const FName& Name)
 	return INDEX_NONE;
 }
 
+template<std::derived_from<UItem> T>
+int32 UItemInventory::AddToInventoryArray(const FName& Name, const FItemConfigData& ItemConfigRow, TArray<T*>& Array)
+{
+	auto Item = NewObject<T>(GetOwner(), ItemConfigRow.Class, Name);
+	if (Item)
+	{
+		Item->Initialize(Cast<APawn>(GetOwner()), ItemConfigRow);
+		int32 AddedIndex = Array.Add(Item);
+
+		OnInventoryItemAdded.Broadcast(this, Name, AddedIndex, ItemConfigRow);
+
+		return AddedIndex;
+	}
+	else
+	{
+		UE_VLOG_UELOG(GetOwner(), LogTRItem, Error, TEXT("%s-%s: AddItemByName: Unable to create item with class=%s; Name=%s"),
+			*LoggingUtils::GetName(GetOwner()), *GetName(), *ItemConfigRow.Class, *Name.ToString());
+	}
+
+	return INDEX_NONE;
+}
+
 TArray<UItem*> UItemInventory::GetCurrentItems() const
 {
 	TArray<UItem*> Items;
-	// Could do assignment here with Weapons but plan to add additional effects that will be in a separate array
-	Items.Reserve(Weapons.Num());
-	
-	for (auto Weapon : Weapons)
-	{
-		if (Weapon)
-		{
-			Items.Add(Weapon);
-		}
-	}
+
+	Items.Reserve(Weapons.Num() + ActivatableEffects.Num() + PassiveEffects.Num());
+
+	Items.Append(Weapons);
+	Items.Append(ActivatableEffects);
+	Items.Append(PassiveEffects);
 
 	return Items;
 }

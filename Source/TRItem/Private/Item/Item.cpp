@@ -6,8 +6,8 @@
 #include "Logging/LoggingUtils.h"
 #include "TRItemLogging.h"
 #include "VisualLogger/VisualLogger.h"
-
 #include "Item/ItemConfigData.h"
+#include "Item/ItemSubsystem.h"
 
 bool UItem::CanBeActivated() const
 {
@@ -101,5 +101,13 @@ void UItem::SetLevel(int32 Level)
 	if (PreviousLevel != ItemLevel)
 	{
 		OnLevelChanged(ItemLevel, PreviousLevel);
+
+		auto World = GetWorld();
+		check(World);
+
+		if (auto ItemSubsystem = World->GetSubsystem<UItemSubsystem>(); ensure(ItemSubsystem))
+		{
+			ItemSubsystem->OnItemUpgraded.Broadcast(this);
+		}
 	}
 }

@@ -46,10 +46,10 @@ void ULevelUnlocksComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	GiveLocalPlayerFirstWeapon();
+	GiveLocalPlayerFirstLevelUnlocks();
 }
 
-void ULevelUnlocksComponent::GiveLocalPlayerFirstWeapon() const
+void ULevelUnlocksComponent::GiveLocalPlayerFirstLevelUnlocks() const
 {
 	if (const auto& FirstLevelUnlockOpt = GetFirstLevelUnlockOptions(); FirstLevelUnlockOpt && FirstLevelUnlockOpt->Config)
 	{
@@ -58,7 +58,11 @@ void ULevelUnlocksComponent::GiveLocalPlayerFirstWeapon() const
 
 		World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this, FirstLevelUnlockOpt]
 		{
-			this->ApplyLevelUnlock(UGameplayStatics::GetPlayerPawn(this, 0), FirstLevelUnlockOpt->Config.AvailableUnlocks[0]);
+			APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+			for (const auto& LevelUnlock : FirstLevelUnlockOpt->Config.AvailableUnlocks)
+			{
+				this->ApplyLevelUnlock(PlayerPawn, LevelUnlock);
+			}
 		}));
 	}
 }
@@ -216,7 +220,7 @@ std::optional<FLevelUnlocksContext> ULevelUnlocksComponent::GetFirstLevelUnlockO
 		return std::nullopt;
 	}
 
-	return GetLevelUnlocksContext(1, LevelUnlocks[0].AvailableUnlocks, LevelUnlocks[0].MaxUnlockOptions);
+	return GetLevelUnlocksContext(1, LevelUnlocks[0].AvailableUnlocks, LevelUnlocks[0].AvailableUnlocks.Num());
 }
 
 FLevelUnlocksContext ULevelUnlocksComponent::GetLevelUnlocksContext(int32 NextLevel, const TArray<FLevelUnlock>& TotalOptions, int32 NumAvailableOptions) const

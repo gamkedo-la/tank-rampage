@@ -6,6 +6,9 @@
 #include "Subsystems/TankEventsSubsystem.h"
 
 #include "TRTags.h"
+#include "Item/PassiveEffect.h"
+#include "Item/ItemNames.h"
+#include "Item/ItemSubsystem.h"
 
 #include "TRTankLogging.h"
 #include "Logging/LoggingUtils.h"
@@ -15,7 +18,6 @@ UHealthComponent::UHealthComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 }
-
 
 void UHealthComponent::BeginPlay()
 {
@@ -27,6 +29,17 @@ void UHealthComponent::BeginPlay()
 	GetOwner()->Tags.Add(TR::Tags::Alive);
 
 	GetOwner()->OnTakeAnyDamage.AddUniqueDynamic(this, &ThisClass::TakeDamage);
+
+	auto World = GetWorld();
+	check(World);
+
+	if (auto ItemSubsystem = World->GetSubsystem<UItemSubsystem>(); bRegisterItemUpgradeEvents && ensure(ItemSubsystem))
+	{
+		UE_VLOG_UELOG(GetOwner(), LogTRTank, Log, TEXT("%s-%s: BeginPlay - Registering for item upgrade events"),
+			*LoggingUtils::GetName(GetOwner()), *GetName());
+
+		ItemSubsystem->OnItemUpgraded.AddUniqueDynamic(this, &ThisClass::OnItemUpgraded);
+	}
 }
 
 void UHealthComponent::TakeDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser)
@@ -53,6 +66,25 @@ void UHealthComponent::TakeDamage(AActor* DamagedActor, float Damage, const UDam
 	if (!FMath::IsNearlyEqual(Health, PreviousHealth))
 	{
 		OnHealthChanged.Broadcast(this, PreviousHealth, InstigatedBy, DamageCauser);
+	}
+}
+
+void UHealthComponent::OnItemUpgraded(UItem* Item)
+{
+	if (Item && Item->GetOwner() == GetOwner() && Item->GetName() == ItemNames::MaxHealth)
+	{
+		auto MaxHealthEffect = Cast<UPassiveEffect>(Item);
+		if (!ensureMsgf(MaxHealthEffect, TEXT("Item=%s is not a UPassiveEffect"), *Item->GetName()))
+		{
+			return;
+		}
+
+		const auto OrigMaxHealth = MaxHealth;
+		MaxHealth *= MaxHealthEffect->GetCurrentValue();
+		Health = MaxHealth;
+
+		UE_VLOG_UELOG(GetOwner(), LogTRTank, Display, TEXT("%s-%s: OnItemUpgraded - MaxHealth upgraded from %f to %f"),
+			*LoggingUtils::GetName(GetOwner()), *GetName(), OrigMaxHealth, MaxHealth);
 	}
 }
 

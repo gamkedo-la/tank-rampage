@@ -40,7 +40,7 @@ protected:
 
 private:
 
-	void GiveLocalPlayerFirstWeapon() const;
+	void GiveLocalPlayerFirstLevelUnlocks() const;
 	void DetermineAvailableOptionCounts(int32 NextLevel, int32& NumCurrent, int32& NumAvailableOptions) const;
 	TArray<FLevelUnlock> GetAvailableUnlocks(const int32 NextLevel, const UItemInventory* ItemInventory, int32& NumCurrent, const int32 NumAvailableOptions) const;
 
