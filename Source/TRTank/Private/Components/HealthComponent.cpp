@@ -81,10 +81,25 @@ void UHealthComponent::OnItemUpgraded(UItem* Item)
 
 		const auto OrigMaxHealth = MaxHealth;
 		MaxHealth *= MaxHealthEffect->GetCurrentValue();
-		Health = MaxHealth;
+		
+		const auto bHealthChanged = !FMath::IsNearlyEqual(OrigMaxHealth, MaxHealth);
 
-		UE_VLOG_UELOG(GetOwner(), LogTRTank, Display, TEXT("%s-%s: OnItemUpgraded - MaxHealth upgraded from %f to %f"),
-			*LoggingUtils::GetName(GetOwner()), *GetName(), OrigMaxHealth, MaxHealth);
+		if (bHealthChanged)
+		{
+			const auto PreviousHealth = Health;
+			Health = MaxHealth;
+
+			UE_VLOG_UELOG(GetOwner(), LogTRTank, Display, TEXT("%s-%s: OnItemUpgraded - MaxHealth upgraded from %f to %f"),
+				*LoggingUtils::GetName(GetOwner()), *GetName(), OrigMaxHealth, MaxHealth);
+
+			AController* Controller{};
+			if (auto Pawn = Cast<APawn>(GetOwner()); Pawn)
+			{
+				Controller = Pawn->GetController();
+			}
+
+			OnHealthChanged.Broadcast(this, PreviousHealth, Controller, GetOwner());
+		}
 	}
 }
 

@@ -22,6 +22,7 @@ UItemInventory::UItemInventory()
 void UItemInventory::Clear()
 {
 	Weapons.Reset();
+	ItemMap.Reset();
 }
 
 bool UItemInventory::RotateActiveWeapon(int32 Offset)
@@ -95,12 +96,9 @@ void UItemInventory::SetActiveWeapon(UWeapon* Weapon)
 
 UItem* UItemInventory::GetItemByName(const FName& Name) const
 {
-	auto WeaponResult = Weapons.FindByPredicate([&](auto Weapon)
-	{
-		return Name == Weapon->GetName();
-	});
+	auto ItemResult = ItemMap.Find(Name);
 
-	return WeaponResult ? *WeaponResult : nullptr;
+	return ItemResult ? *ItemResult : nullptr;
 }
 
 int32 UItemInventory::AddItemByName(const FName& Name)
@@ -167,7 +165,9 @@ int32 UItemInventory::AddToInventoryArray(const FName& Name, const FItemConfigDa
 	if (Item)
 	{
 		Item->Initialize(Cast<APawn>(GetOwner()), ItemConfigRow);
+
 		int32 AddedIndex = Array.Add(Item);
+		ItemMap.Add(Name, Item);
 
 		OnInventoryItemAdded.Broadcast(this, Name, AddedIndex, ItemConfigRow);
 
@@ -212,6 +212,22 @@ void UItemInventory::DescribeSelfToVisLog(FVisualLogEntry* Snapshot) const
 		Category.Add(TEXT("Fire Cooldown Remaining"), FString::Printf(TEXT("%.1fs"),
 			ActiveWeapon->GetCooldownTimeRemaining()));
 	}
+
+	FVisualLogStatusCategory Items;
+	Items.Category = TEXT("Items");
+
+	for (auto Item : GetCurrentItems())
+	{
+		if (!Item)
+		{
+			continue;
+		}
+
+		Items.Add(Item->GetName(), FString::Printf(TEXT("Level %d; CooldownTime=%.1fs"), Item->GetLevel(), Item->GetCooldownTimeRemaining()));
+	}
+
+	Category.AddChild(Items);
+
 
 	Snapshot->Status.Add(Category);
 }

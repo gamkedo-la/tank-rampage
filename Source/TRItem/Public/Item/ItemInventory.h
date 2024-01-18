@@ -126,6 +126,9 @@ private:
 	UPROPERTY(Transient)
 	TArray<UActivatableEffect*> ActivatableEffects{};
 
+	UPROPERTY(Transient)
+	TMap<FName, UItem*> ItemMap{};
+
 	int32 ActiveWeaponIndex{};
 };
 

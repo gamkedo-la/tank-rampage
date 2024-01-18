@@ -4,6 +4,11 @@
 
 #include "CoreMinimal.h"
 
+#include "Utils/StringUtils.h"
+
+#include <compare>
+#include <tuple>
+
 #include "LevelUnlocksContext.generated.h"
 
 class UItem;
@@ -23,8 +28,12 @@ struct FLevelUnlock
 	int32 Level{};
 };
 
-bool operator == (const FLevelUnlock& First, const FLevelUnlock& Second);
-bool operator != (const FLevelUnlock& First, const FLevelUnlock& Second);
+auto operator<=>(const FLevelUnlock& First, const FLevelUnlock& Second);
+bool operator==(const FLevelUnlock& First, const FLevelUnlock& Second);
+bool operator!=(const FLevelUnlock& First, const FLevelUnlock& Second);
+
+// For TSet, TMap
+int32 GetTypeHash(const FLevelUnlock& Key);
 
 USTRUCT(BlueprintType)
 struct FLevelUnlocksConfig
@@ -57,12 +66,17 @@ struct FLevelUnlocksContext
 
 
 #pragma region Inline Definitions
-inline bool operator == (const FLevelUnlock& First, const FLevelUnlock& Second)
+inline auto operator<=>(const FLevelUnlock& First, const FLevelUnlock& Second)
+{
+	return std::tie(First.Level, First.ItemName) <=> std::tie(Second.Level, Second.ItemName);
+}
+
+inline bool operator==(const FLevelUnlock& First, const FLevelUnlock& Second)
 {
 	return First.Level == Second.Level && First.ItemName == Second.ItemName;
 }
 
-inline bool operator != (const FLevelUnlock& First, const FLevelUnlock& Second)
+inline bool operator!=(const FLevelUnlock& First, const FLevelUnlock& Second)
 {
 	return !(First == Second);
 }
@@ -70,6 +84,11 @@ inline bool operator != (const FLevelUnlock& First, const FLevelUnlock& Second)
 inline FLevelUnlocksConfig::operator bool() const
 {
 	return !AvailableUnlocks.IsEmpty();
+}
+
+inline int32 GetTypeHash(const FLevelUnlock& Key)
+{
+	return HashCombine(GetTypeHash(Key.Level), GetTypeHash(Key.ItemName));
 }
 
 #pragma endregion Inline Definitions
