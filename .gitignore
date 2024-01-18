@@ -63,9 +63,10 @@ SourceArt/**/*.tga
 Binaries/*/*
 Plugins/*/Binaries/*
 # allow editor development build files for faster onboarding
-!Binaries/*/UnrealEditor-*.dll
-!Binaries/*/*.target
-!Binaries/*/*.modules
+# use a regex to avoid matching the Debug builds
+!Binaries/*/UnrealEditor-[\w].dll
+!Binaries/*/UnrealEditor-[\w].target
+!Binaries/*/UnrealEditor[\w].modules
 
 # Builds
 Build/*
