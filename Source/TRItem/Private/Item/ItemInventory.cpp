@@ -103,13 +103,6 @@ UItem* UItemInventory::GetItemByName(const FName& Name) const
 
 int32 UItemInventory::AddItemByName(const FName& Name)
 {
-	if (!ensureMsgf(ItemDataAsset, TEXT("ItemDataAsset is NULL"))
-		|| !ensureMsgf(ItemDataAsset->ItemConfigDataTable, TEXT("ItemDataAsset(%s)::ItemConfigDataTable is NULL"), *ItemDataAsset->GetName())
-	)
-	{
-		return INDEX_NONE;
-	}
-
 	if (GetItemByName(Name))
 	{
 		UE_VLOG_UELOG(this, LogTRItem, Warning, TEXT("%s-%s: AddItemByName: Inventory already contains Name=%s"),
@@ -118,17 +111,10 @@ int32 UItemInventory::AddItemByName(const FName& Name)
 		return INDEX_NONE;
 	}
 
-	auto ItemConfigDataTable = ItemDataAsset->ItemConfigDataTable;
-
-	const auto Context = FString::Printf(TEXT("%s-%s: AddItemByName: %s -> %s"),
-		*LoggingUtils::GetName(GetOwner()), *GetName(), *ItemConfigDataTable->GetName(), *Name.ToString());
-
-	auto ItemConfigRow = ItemConfigDataTable->FindRow<FItemConfigData>(Name, Context);
+	auto ItemConfigRow = GetItemConfigDataByName(Name);
 
 	if (!ItemConfigRow)
 	{
-		UE_VLOG_UELOG(this, LogTRItem, Error, TEXT("%s - Could not find item"),
-			*Context);
 		return INDEX_NONE;
 	}
 
@@ -157,6 +143,43 @@ int32 UItemInventory::AddItemByName(const FName& Name)
 
 	return INDEX_NONE;
 }
+
+FItemConfigData* UItemInventory::GetItemConfigDataByName(const FName& Name) const
+{
+	if (!ensureMsgf(ItemDataAsset, TEXT("ItemDataAsset is NULL"))
+		|| !ensureMsgf(ItemDataAsset->ItemConfigDataTable, TEXT("ItemDataAsset(%s)::ItemConfigDataTable is NULL"), *ItemDataAsset->GetName())
+	)
+	{
+		return nullptr;
+	}
+
+	auto ItemConfigDataTable = ItemDataAsset->ItemConfigDataTable;
+
+	const auto Context = FString::Printf(TEXT("%s-%s: GetItemConfigDataByName: %s -> %s"),
+		*LoggingUtils::GetName(GetOwner()), *GetName(), *ItemConfigDataTable->GetName(), *Name.ToString());
+
+	auto ItemConfigRow = ItemConfigDataTable->FindRow<FItemConfigData>(Name, Context);
+
+	if (!ItemConfigRow)
+	{
+		UE_VLOG_UELOG(this, LogTRItem, Error, TEXT("%s - Could not find item"),
+			*Context);
+	}
+
+	return ItemConfigRow;
+}
+
+bool UItemInventory::FindItemConfigDataByName(const FName& Name, FItemConfigData& OutItemConfigData) const
+{
+	if (auto ItemConfigDataPtr = GetItemConfigDataByName(Name); ItemConfigDataPtr)
+	{
+		OutItemConfigData = *ItemConfigDataPtr;
+		return true;
+	}
+
+	return false;
+}
+
 
 template<std::derived_from<UItem> T>
 int32 UItemInventory::AddToInventoryArray(const FName& Name, const FItemConfigData& ItemConfigRow, TArray<T*>& Array)

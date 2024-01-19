@@ -99,6 +99,11 @@ public:
 	UPROPERTY(Category = "Notification", Transient, BlueprintAssignable)
 	FOnInventoryItemAdded OnInventoryItemAdded{};
 
+	FItemConfigData* GetItemConfigDataByName(const FName& Name) const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure = false)
+	bool FindItemConfigDataByName(const FName& Name, FItemConfigData& OutItemConfigData) const;
+
 
 #if ENABLE_VISUAL_LOG
 
@@ -114,7 +119,7 @@ private:
 
 private:
 
-	UPROPERTY(Category = "Weapon", EditDefaultsOnly)
+	UPROPERTY(Category = "Data", EditDefaultsOnly)
 	TObjectPtr<UItemDataAsset> ItemDataAsset{};
 
 	UPROPERTY(Transient)

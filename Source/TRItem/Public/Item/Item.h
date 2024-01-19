@@ -6,8 +6,6 @@
 #include "UObject/NoExportTypes.h"
 #include "Item.generated.h"
 
-class UItemDataAsset;
-
 /**
  * Base class for both weapons and passive effects in the game.  
    NOTE: It is planned that this hierarchy will be replaced by classes using the Gameplay Ability System (GAS) in future.
