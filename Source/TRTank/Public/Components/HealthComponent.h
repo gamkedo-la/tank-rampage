@@ -60,6 +60,8 @@ private:
 	UPROPERTY(Category = "Health", EditDefaultsOnly)
 	float MaxHealth{ 100.0f };
 
+	float InitialMaxHealth{};
+
 	UPROPERTY(Category = "Health", VisibleInstanceOnly)
 	float Health{};
 

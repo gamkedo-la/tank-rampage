@@ -23,7 +23,7 @@ void UHealthComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	Health = MaxHealth;
+	Health = InitialMaxHealth = MaxHealth;
 
 	// TODO: Use gameplay tags
 	GetOwner()->Tags.Add(TR::Tags::Alive);
@@ -80,7 +80,7 @@ void UHealthComponent::OnItemUpgraded(UItem* Item)
 		}
 
 		const auto OrigMaxHealth = MaxHealth;
-		MaxHealth *= MaxHealthEffect->GetCurrentValue();
+		MaxHealth = InitialMaxHealth * MaxHealthEffect->GetCurrentValue();
 		
 		const auto bHealthChanged = !FMath::IsNearlyEqual(OrigMaxHealth, MaxHealth);
 
