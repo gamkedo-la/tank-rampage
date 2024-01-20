@@ -40,6 +40,7 @@ public class TRPlayer : ModuleRules
 
 		var enginePrivateDependencyModuleNames = new string[] 
 		{
+			"UMG",
 		};
 
 		PrivateDependencyModuleNames.AddRange(enginePrivateDependencyModuleNames);

@@ -9,6 +9,8 @@
 
 #include "BasePlayerController.generated.h"
 
+class UUserWidget;
+
 /**
  * 
  */
@@ -22,6 +24,20 @@ public:
 	virtual void GrabDebugSnapshot(FVisualLogEntry* Snapshot) const override;
 #endif
 
+	UFUNCTION(BlueprintCallable)
+	void SetInputModeUI(UUserWidget* FocusWidget = nullptr);
+
+	UFUNCTION(BlueprintCallable)
+	void SetInputModeGame();
+
+	virtual void RestartLevel() override;
+
+	UFUNCTION(BlueprintCallable)
+	virtual void PauseGame(UUserWidget* FocusWidget = nullptr);
+
+	UFUNCTION(BlueprintCallable)
+	virtual void ResumeGame();
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
@@ -29,6 +45,7 @@ protected:
 private:
 	void InitDebugDraw();
 	void DestroyDebugDraw();
+	void SetPaused(bool bPaused);
 	
 private:
 	#if ENABLE_VISUAL_LOG

@@ -5,6 +5,8 @@
 
 #include "Logging/LoggingUtils.h"
 #include "TRPlayerLogging.h"
+#include "Kismet/GameplayStatics.h"
+#include "Blueprint/UserWidget.h"
 
 void ABasePlayerController::BeginPlay()
 {
@@ -51,3 +53,51 @@ void ABasePlayerController::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
 }
 
 #endif
+
+void ABasePlayerController::SetInputModeUI(UUserWidget* FocusWidget)
+{
+	// TODO: Detect gamepad input and set to FInputGameModeOnly for that case
+
+	FInputModeUIOnly InputModeData;
+
+	if (FocusWidget)
+	{
+		InputModeData.SetWidgetToFocus(FocusWidget->TakeWidget());
+	}
+	InputModeData.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	SetInputMode(InputModeData);
+
+	SetShowMouseCursor(true);
+}
+
+void ABasePlayerController::SetInputModeGame()
+{
+	FInputModeGameOnly InputModeData;
+	SetInputMode(InputModeData);
+
+	SetShowMouseCursor(false);
+}
+
+void ABasePlayerController::RestartLevel()
+{
+	Super::RestartLevel();
+}
+
+void ABasePlayerController::PauseGame(UUserWidget* FocusWidget)
+{
+	SetInputModeUI(FocusWidget);
+
+	SetPaused(true);
+}
+
+void ABasePlayerController::ResumeGame()
+{
+	SetPaused(false);
+
+	SetInputModeGame();
+}
+
+void ABasePlayerController::SetPaused(bool bPaused)
+{
+	UGameplayStatics::SetGamePaused(GetWorld(), bPaused);
+}
