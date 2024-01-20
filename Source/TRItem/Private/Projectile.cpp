@@ -168,7 +168,8 @@ void AProjectile::PlaySfxAtActorLocation(USoundBase* Sound) const
 
 	if (!SpawnedAudioComponent)
 	{
-		UE_VLOG_UELOG(this, LogTRItem, Error,
+		// This is not an error condition as the component may not spawn if the sound is not audible, for example it attenuates below a threshold based on distance
+		UE_VLOG_UELOG(this, LogTRItem, Log,
 			TEXT("%s-%s: PlaySfxAtActorLocation - Unable to spawn audio component for sfx=%s"),
 			*GetName(), *LoggingUtils::GetName(GetOwner()), *Sound->GetName());
 		return;
