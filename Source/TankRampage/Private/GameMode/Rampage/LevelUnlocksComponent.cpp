@@ -33,7 +33,7 @@ namespace
 	IndexArray ShuffleIndices(Random& Rng, int32 Count);
 
 	template<typename Random>
-	void SelectRandomizedAvailableItems(Random& Rng, const TArray<FLevelUnlock>& PossibleUnlocks, TArray<FLevelUnlock>& OutAvailable, int32& Count);
+	void SelectRandomizedAvailableItems(Random& Rng, const TArray<FLevelUnlock>& PossibleUnlocks, TArray<FLevelUnlock>& OutAvailable, int32 Count);
 }
 
 // Initialize the random number generator with a seed from current time
@@ -125,42 +125,66 @@ void ULevelUnlocksComponent::DetermineAvailableOptionCounts(int32 NextLevel, int
 	}
 	else
 	{
-		NumAvailableOptions = GetNumUnlockOptions(LevelUnlocks[NextLevel]);
-		NumCurrent = NumAvailableOptions > 0 ? FMath::RandRange(1, NumAvailableOptions) : 0;
+		const auto& Config = LevelUnlocks[NextLevel];
+		NumAvailableOptions = GetNumUnlockOptions(Config);
+		NumCurrent = NumAvailableOptions > 0 ? FMath::Min(FMath::RandRange(1, NumAvailableOptions), Config.AvailableUnlocks.Num()) : 0;
 	}
 }
 
 TArray<FLevelUnlock> ULevelUnlocksComponent::GetAvailableUnlocks(const int32 NextLevel, const UItemInventory* ItemInventory, int32& NumCurrent, const int32 NumAvailableOptions) const
 {
-	TArray<FLevelUnlock> PossibleUnlocks;
-	TArray<FLevelUnlock> AvailableUnlocks;
-
-	PossibleUnlocks.Reserve(MaxOptions);
-	AvailableUnlocks.Reserve(NumAvailableOptions);
-
 	const auto& CurrentItems = ItemInventory->GetCurrentItems();
 
-	int32 NumPrevious = NumAvailableOptions - NumCurrent;
+	// Current selections wouldn't be available if none were configured for that level or we are already at the max levels
+	const bool bCurrentIsAvailable = NumCurrent > 0;
 
-	if (NumPrevious > 0)
+	TArray<FLevelUnlock> PossibleCurrentUnlocks;
+
+	if (bCurrentIsAvailable)
 	{
+		PossibleCurrentUnlocks.Reserve(MaxOptions);
+
+		PopulateViableUnlockOptions(CurrentItems, LevelUnlocks[NextLevel].AvailableUnlocks, PossibleCurrentUnlocks);
+
+		// Not all current unlocks will be viable if previous levels not earned
+		NumCurrent = FMath::Min(NumCurrent, PossibleCurrentUnlocks.Num());
+	}
+
+	TArray<FLevelUnlock> PossiblePreviousUnlocks;
+
+	if (NumCurrent < NumAvailableOptions)
+	{
+		PossiblePreviousUnlocks.Reserve(MaxOptions);
 		// Start at previous level and iterate backwards
 		for (int32 i = FMath::Min(NextLevel, LevelUnlocks.Num()) - 1; i >= 0; --i)
 		{
-			PopulateViableUnlockOptions(CurrentItems, LevelUnlocks[i].AvailableUnlocks, PossibleUnlocks);
+			PopulateViableUnlockOptions(CurrentItems, LevelUnlocks[i].AvailableUnlocks, PossiblePreviousUnlocks);
 		}
-
-		SelectRandomizedAvailableItems(Rng, PossibleUnlocks, AvailableUnlocks, NumPrevious);
 	}
+
+	int32 NumPrevious = FMath::Min(NumAvailableOptions - NumCurrent, PossiblePreviousUnlocks.Num());
+
+	// If there is a shortfall - apply more currents if possible
+	if (bCurrentIsAvailable && NumCurrent + NumPrevious < NumAvailableOptions)
+	{
+		NumCurrent = FMath::Min(PossibleCurrentUnlocks.Num(), NumAvailableOptions - NumPrevious);
+	}
+	// Take rest from previous
+	if (NumCurrent + NumPrevious < NumAvailableOptions)
+	{
+		NumPrevious = FMath::Min(NumAvailableOptions - NumCurrent, PossiblePreviousUnlocks.Num());
+	}
+
+	TArray<FLevelUnlock> AvailableUnlocks;
+	AvailableUnlocks.Reserve(NumAvailableOptions);
 
 	if (NumCurrent > 0)
 	{
-		PossibleUnlocks.Reset();
-		// if we didn't have enough previous to offer then increase NumCurrent
-		NumCurrent = NumAvailableOptions - NumPrevious;
-
-		PopulateViableUnlockOptions(CurrentItems, LevelUnlocks[NextLevel].AvailableUnlocks, PossibleUnlocks);
-		SelectRandomizedAvailableItems(Rng, PossibleUnlocks, AvailableUnlocks, NumCurrent);
+		SelectRandomizedAvailableItems(Rng, PossibleCurrentUnlocks, AvailableUnlocks, NumCurrent);
+	}
+	if (NumPrevious > 0)
+	{
+		SelectRandomizedAvailableItems(Rng, PossiblePreviousUnlocks, AvailableUnlocks, NumPrevious);
 	}
 
 	return AvailableUnlocks;
@@ -270,7 +294,7 @@ namespace
 	}
 
 	template<typename Random>
-	void SelectRandomizedAvailableItems(Random& Rng, const TArray<FLevelUnlock>& PossibleUnlocks, TArray<FLevelUnlock>& OutAvailable, int32& Count)
+	void SelectRandomizedAvailableItems(Random& Rng, const TArray<FLevelUnlock>& PossibleUnlocks, TArray<FLevelUnlock>& OutAvailable, int32 Count)
 	{
 		Count = FMath::Min(Count, PossibleUnlocks.Num());
 
