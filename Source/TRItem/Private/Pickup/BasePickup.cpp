@@ -27,7 +27,7 @@ void ABasePickup::RegisterOverlapEvent(UPrimitiveComponent* OverlapCheckComponen
 		return;
 	}
 
-	OverlapCheckComponent->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnOverlapBegin);
+	OverlapCheckComponent->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::OnOverlapBegin);
 }
 
 void ABasePickup::MarkForDestroy()

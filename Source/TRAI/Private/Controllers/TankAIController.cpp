@@ -226,6 +226,7 @@ void ATankAIController::OnUnPossess()
 	{
 		// Clear inventory when possessed by player as player start pawn is first possessed by AI and then possessed by player
 		Tank->GetItemInventory()->Clear();
+		Tank->GetHealthComponent()->OnHealthChanged.RemoveDynamic(this, &ThisClass::OnHealthChanged);
 	}
 }
 
