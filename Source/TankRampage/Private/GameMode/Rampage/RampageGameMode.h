@@ -11,6 +11,7 @@ class UXPSpawnerComponent;
 class AXPToken;
 class UXPCollectionComponent;
 class ULevelUnlocksComponent;
+class UEnemySpawnerComponent;
 
 class ABaseTank;
 
@@ -51,6 +52,9 @@ private:
 
 	UPROPERTY(Category = "Components", VisibleDefaultsOnly)
 	TObjectPtr<ULevelUnlocksComponent> LevelUnlocksComponent{};
+
+	UPROPERTY(Category = "Components", VisibleDefaultsOnly)
+	TObjectPtr<UEnemySpawnerComponent> EnemySpawnerComponent{};
 
 	UPROPERTY(Category = "XP", EditDefaultsOnly)
 	int32 TokenXPAmount{ 1 };

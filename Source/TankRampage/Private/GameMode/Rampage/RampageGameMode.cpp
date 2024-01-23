@@ -6,6 +6,7 @@
 #include "XPSpawnerComponent.h"
 #include "XPCollectionComponent.h"
 #include "LevelUnlocksComponent.h"
+#include "EnemySpawnerComponent.h"
 
 #include "RampageGameState.h"
 #include "Pawn/BaseTankPawn.h"
@@ -28,6 +29,7 @@ ARampageGameMode::ARampageGameMode()
 	XPSpawnerComponent = CreateDefaultSubobject<UXPSpawnerComponent>(TEXT("XP Spawner"));
 	XPCollectionComponent = CreateDefaultSubobject<UXPCollectionComponent>(TEXT("XP Collection"));
 	LevelUnlocksComponent = CreateDefaultSubobject<ULevelUnlocksComponent>(TEXT("Level Unlocks"));
+	EnemySpawnerComponent = CreateDefaultSubobject<UEnemySpawnerComponent>(TEXT("Enemy Spawner"));
 }
 
 void ARampageGameMode::OnTokenCollected(const AXPToken& Token, APawn* PlayerPawn)
