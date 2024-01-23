@@ -7,6 +7,8 @@
 #include "TRAILogging.h"
 #include "VisualLogger/VisualLogger.h"
 
+#include <limits>
+
 AEnemySpawner::AEnemySpawner()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -27,7 +29,31 @@ APawn* AEnemySpawner::Spawn()
 
 	FActorSpawnParameters Params;
 
-	return World->SpawnActor<APawn>(SpawnClass, GetActorLocation(), FRotator::ZeroRotator, Params);
+	auto Spawned = World->SpawnActor<APawn>(SpawnClass, GetActorLocation(), FRotator::ZeroRotator, Params);
+	if (Spawned)
+	{
+		UE_VLOG_UELOG(this, LogTRAI, Log, TEXT("%s: Spawn - Spawned %s -> %s"), *GetName(), *SpawnClass->GetName(), *Spawned->GetName());
+		UE_VLOG_LOCATION(this, LogTRAI, Log, GetActorLocation(), 50.0f, FColor::Green, TEXT("Spawn %s"), *SpawnClass->GetName());
+		LastSpawnTime = World->GetTimeSeconds();
+	}
+	else
+	{
+		UE_VLOG_UELOG(this, LogTRAI, Warning, TEXT("%s: Spawn - Failed to Spawn %s"), *GetName(), *SpawnClass->GetName());
+		UE_VLOG_LOCATION(this, LogTRAI, Warning, GetActorLocation(), 50.0f, FColor::Red, TEXT("Failed to spawn %s"), *SpawnClass->GetName());
+	}
+
+	return Spawned;
+}
+
+float AEnemySpawner::GetTimeSinceLastSpawn() const
+{
+	auto World = GetWorld();
+	if (!World || LastSpawnTime < 0)
+	{
+		return std::numeric_limits<float>::max();
+	}
+
+	return World->GetTimeSeconds() - LastSpawnTime;
 }
 
 void AEnemySpawner::BeginPlay()

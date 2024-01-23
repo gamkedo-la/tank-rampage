@@ -19,6 +19,9 @@ public:
 
 	APawn* Spawn();
 
+	float GetLastSpawnGameTime() const;
+	float GetTimeSinceLastSpawn() const;
+
 	FCanSpawnEnemy CanSpawnEnemy{};
 	FOnRelevancyChange OnRelevancyChange{};
 
@@ -50,4 +53,14 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Spawning")
 	TArray<TSubclassOf<APawn>> SpawningTypes;
+
+	float LastSpawnTime{ -1.f };
 };
+
+#pragma region Inline Definitions
+
+inline float AEnemySpawner::GetLastSpawnGameTime() const
+{
+	return LastSpawnTime;
+}
+#pragma endregion Inline Definitions
