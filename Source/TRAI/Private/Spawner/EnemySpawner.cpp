@@ -3,25 +3,73 @@
 
 #include "Spawner/EnemySpawner.h"
 
+#include "Spawner/SpawnLocationComponent.h"
+
 #include "Logging/LoggingUtils.h"
 #include "TRAILogging.h"
 #include "VisualLogger/VisualLogger.h"
 
-#include <limits>
+#include "Camera/CameraComponent.h"
 
+#include <limits>
+#include <optional>
+
+namespace
+{
+	std::optional<float> GetCameraFOVFor(const APawn& Pawn);
+	bool IsInFOV(const APawn& Pawn, const FVector& SpawnReferenceLocation);
+}
 AEnemySpawner::AEnemySpawner()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Spawn Point"));
+
+	FirstSpawnLocation = CreateDefaultSubobject<USpawnLocationComponent>(TEXT("Spawn Point 1"));
+	FirstSpawnLocation->SetupAttachment(GetRootComponent());
 }
 
-APawn* AEnemySpawner::Spawn()
+bool AEnemySpawner::CanSpawnAnyFor(const APawn& PlayerPawn) const
 {
+	if (SpawningTypes.IsEmpty() || SpawnLocations.IsEmpty())
+	{
+		return false;
+	}
+
+	const auto& PlayerLocation = GetActorLocation();
+	const auto& SpawnReferenceLocation = GetSpawnReferenceLocation();
+
+	const auto RefDistSq = FVector::DistSquared(PlayerLocation, SpawnReferenceLocation);
+
+	// out of spawn range
+	if (RefDistSq > FMath::Square(MaxDistance))
+	{
+		return false;
+	}
+
+	// Check min distance based on wheter in FOV of player
+	const float ReferenceMinDistance = IsInFOV(PlayerPawn, SpawnReferenceLocation) ? MinimumDistanceFOV : MinimumDistanceNotFOV;
+
+	if (RefDistSq < FMath::Square(ReferenceMinDistance))
+	{
+		return false;
+	}
+
+	if (NoSpawnZoneComponent && NoSpawnZoneComponent->IsOverlappingActor(&PlayerPawn))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+int32 AEnemySpawner::Spawn(int32 DesiredCount, TArray<APawn*>& OutSpawned)
+{
+	// TODO: Implement DesiredCount logic based on spawn points
 	const auto SpawnClass = SelectSpawnClass();
 	if (!SpawnClass)
 	{
-		return nullptr;
+		return 0;
 	}
 
 	auto World = GetWorld();
@@ -40,9 +88,12 @@ APawn* AEnemySpawner::Spawn()
 	{
 		UE_VLOG_UELOG(this, LogTRAI, Warning, TEXT("%s: Spawn - Failed to Spawn %s"), *GetName(), *SpawnClass->GetName());
 		UE_VLOG_LOCATION(this, LogTRAI, Warning, GetActorLocation(), 50.0f, FColor::Red, TEXT("Failed to spawn %s"), *SpawnClass->GetName());
+
+		OutSpawned.Add(Spawned);
+		return 0;
 	}
 
-	return Spawned;
+	return 1;
 }
 
 float AEnemySpawner::GetTimeSinceLastSpawn() const
@@ -58,53 +109,33 @@ float AEnemySpawner::GetTimeSinceLastSpawn() const
 
 void AEnemySpawner::BeginPlay()
 {
-	UE_VLOG_UELOG(this, LogTRAI, Log, TEXT("%s: BeginPlay"), *GetName());
-
 	Super::BeginPlay();
 
-	RegisterOverlaps();
+	UE_VLOG_UELOG(this, LogTRAI, Log, TEXT("%s: BeginPlay - %d spawn locations found"), *GetName(), SpawnLocations.Num());
+}
+
+void AEnemySpawner::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	GetComponents(SpawnLocations);
 }
 
 void AEnemySpawner::EndPlay(EEndPlayReason::Type EndPlayReason)
 {
 	Super::EndPlay(EndPlayReason);
-
-	DeregisterOverlaps();
 }
 
 void AEnemySpawner::Initialize(UPrimitiveComponent* InOverlapComponent)
 {
-	UE_VLOG_UELOG(this, LogTRAI, Log, TEXT("%s: Initialize - OverlapComponent=%s;SpawningArea=%s"), *GetName(), *LoggingUtils::GetName(InOverlapComponent));
+	UE_VLOG_UELOG(this, LogTRAI, Log, TEXT("%s: Initialize - NoSpawnZoneComponent=%s;SpawningArea=%s"), *GetName(), *LoggingUtils::GetName(InOverlapComponent));
 
 	if (!ensure(InOverlapComponent))
 	{
 		return;
 	}
 
-	OverlapComponent = InOverlapComponent;
-	RegisterOverlaps();
-}
-
-void AEnemySpawner::RegisterOverlaps()
-{
-	if (!OverlapComponent)
-	{
-		return;
-	}
-
-	OverlapComponent->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::OnOverlapBegin);
-	OverlapComponent->OnComponentEndOverlap.AddUniqueDynamic(this, &ThisClass::OnOverlapEnd);
-}
-
-void AEnemySpawner::DeregisterOverlaps()
-{
-	if (!OverlapComponent)
-	{
-		return;
-	}
-
-	OverlapComponent->OnComponentBeginOverlap.RemoveDynamic(this, &ThisClass::OnOverlapBegin);
-	OverlapComponent->OnComponentEndOverlap.RemoveDynamic(this, &ThisClass::OnOverlapEnd);
+	NoSpawnZoneComponent = InOverlapComponent;
 }
 
 UClass* AEnemySpawner::SelectSpawnClass() const
@@ -138,12 +169,56 @@ UClass* AEnemySpawner::SelectSpawnClass() const
 	return SpawningTypes[SelectedIndex];
 }
 
-void AEnemySpawner::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+FVector AEnemySpawner::GetSpawnReferenceLocation() const
 {
-	// TODO:
+	if (SpawnLocations.IsEmpty())
+	{
+		return GetActorLocation();
+	}
+
+	FVector AverageLocation{ EForceInit::ForceInitToZero };
+
+	for (auto SpawnLocation : SpawnLocations)
+	{
+		check(SpawnLocation);
+		AverageLocation += SpawnLocation->GetComponentLocation();
+	}
+
+	AverageLocation /= SpawnLocations.Num();
+
+	return AverageLocation;
 }
 
-void AEnemySpawner::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+namespace
 {
-	// TODO:
+	std::optional<float> GetCameraFOVFor(const APawn& Pawn)
+	{
+		auto CameraComponent = Pawn.FindComponentByClass<UCameraComponent>();
+		if (!CameraComponent)
+		{
+			return {};
+		}
+
+		return CameraComponent->FieldOfView;
+	}
+
+	bool IsInFOV(const APawn& Pawn, const FVector& SpawnReferenceLocation)
+	{
+		auto FOVOpt = GetCameraFOVFor(Pawn);
+		if (!FOVOpt)
+		{
+			return false;
+		}
+
+		const auto FOVHalfAngleRads = FMath::DegreesToRadians(*FOVOpt * 0.5f);
+
+		const auto& ActorForwardVector = Pawn.GetActorForwardVector();
+		const auto& ActorLocation = Pawn.GetActorLocation();
+
+		const auto ToSpawnDirection = (SpawnReferenceLocation - ActorLocation).GetSafeNormal();
+
+		const auto ToSpawnHalfAngleRads = FMath::Acos(ToSpawnDirection | ActorForwardVector);
+
+		return ToSpawnHalfAngleRads <= FOVHalfAngleRads;
+	}
 }

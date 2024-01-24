@@ -6,8 +6,9 @@
 #include "GameFramework/Actor.h"
 #include "EnemySpawner.generated.h"
 
+class USpawnLocationComponent;
+
 DECLARE_DELEGATE_RetVal_OneParam(bool, FCanSpawnEnemy, const TSubclassOf<APawn>& /*Enemy Type*/);
-DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnRelevancyChange, AEnemySpawner* /*Spawner*/, APawn* /*PlayerPawn*/, bool /*bIsrelevant*/);
 
 UCLASS(Abstract)
 class TRAI_API AEnemySpawner : public AActor
@@ -17,44 +18,54 @@ class TRAI_API AEnemySpawner : public AActor
 public:	
 	AEnemySpawner();
 
-	APawn* Spawn();
+	int32 Spawn(int32 DesiredCount, TArray<APawn*>& OutSpawned);
+	int32 GetMaxSpawnCount() const;
+	bool CanSpawnAnyFor(const APawn& PlayerPawn) const;
 
 	float GetLastSpawnGameTime() const;
 	float GetTimeSinceLastSpawn() const;
 
 	FCanSpawnEnemy CanSpawnEnemy{};
-	FOnRelevancyChange OnRelevancyChange{};
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void PostInitializeComponents() override;
+
 	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
 
 	UFUNCTION(BlueprintCallable)
 	void Initialize(UPrimitiveComponent* InOverlapComponent);
 
 private:
-	UFUNCTION()
-	void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
-	UFUNCTION()
-	void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-
-	void RegisterOverlaps();
-	void DeregisterOverlaps();
 
 	UClass* SelectSpawnClass() const;
 
+	FVector GetSpawnReferenceLocation() const;
+
 private:
 	UPROPERTY(Transient)
-	TObjectPtr<UPrimitiveComponent> OverlapComponent{};
+	TObjectPtr<UPrimitiveComponent> NoSpawnZoneComponent{};
 
-	UPROPERTY(EditDefaultsOnly, Category = "Components")
-	TObjectPtr<USceneComponent> SpawnPointComponent{};
+	UPROPERTY(Transient)
+	TArray<USpawnLocationComponent*> SpawnLocations{};
+
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<USpawnLocationComponent> FirstSpawnLocation{};
 
 	UPROPERTY(EditAnywhere, Category = "Spawning")
 	TArray<TSubclassOf<APawn>> SpawningTypes;
 
 	float LastSpawnTime{ -1.f };
+	bool bPlayerInSpawnZone{};
+
+	UPROPERTY(EditAnywhere, Category = "Spawning")
+	float MinimumDistanceFOV{};
+
+	UPROPERTY(EditAnywhere, Category = "Spawning")
+	float MinimumDistanceNotFOV{};
+
+	UPROPERTY(EditAnywhere, Category = "Spawning")
+	float MaxDistance{};
 };
 
 #pragma region Inline Definitions
@@ -62,5 +73,10 @@ private:
 inline float AEnemySpawner::GetLastSpawnGameTime() const
 {
 	return LastSpawnTime;
+}
+
+inline int32 AEnemySpawner::GetMaxSpawnCount() const
+{
+	return SpawnLocations.Num();
 }
 #pragma endregion Inline Definitions
