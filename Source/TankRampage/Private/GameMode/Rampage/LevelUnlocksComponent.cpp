@@ -10,12 +10,11 @@
 #include "Logging/LoggingUtils.h"
 #include "VisualLogger/VisualLogger.h"
 #include "TankRampageLogging.h"
+#include "Utils/RandUtils.h"
 
 #include "Kismet/GameplayStatics.h"
 
 #include <array>
-#include <chrono>
-#include <algorithm>
 #include <numeric>
 
 namespace
@@ -30,14 +29,11 @@ namespace
 	}
 
 	template<typename Random>
-	IndexArray ShuffleIndices(Random& Rng, int32 Count);
-
-	template<typename Random>
 	void SelectRandomizedAvailableItems(Random& Rng, const TArray<FLevelUnlock>& PossibleUnlocks, TArray<FLevelUnlock>& OutAvailable, int32 Count);
 }
 
 // Initialize the random number generator with a seed from current time
-ULevelUnlocksComponent::ULevelUnlocksComponent() : Rng(std::chrono::system_clock::now().time_since_epoch().count())
+ULevelUnlocksComponent::ULevelUnlocksComponent() : Rng(RandUtils::GenerateSeed())
 {
 	PrimaryComponentTick.bCanEverTick = false;
 }
@@ -279,26 +275,13 @@ void ULevelUnlocksComponent::PopulateViableUnlockOptions(const TArray<UItem*>& C
 namespace
 {
 	template<typename Random>
-	IndexArray ShuffleIndices(Random& Rng, int32 Count)
-	{
-		// Should be uninitialized as we initialize it in std::iota
-		IndexArray Indices;
-		const auto BeginIt = Indices.begin();
-		const auto EndIt = std::next(Indices.begin(), Count);
-
-		// 0, 1, 2, 3...
-		std::iota(BeginIt, EndIt, 0);
-		std::shuffle(BeginIt, EndIt, Rng);
-
-		return Indices;
-	}
-
-	template<typename Random>
 	void SelectRandomizedAvailableItems(Random& Rng, const TArray<FLevelUnlock>& PossibleUnlocks, TArray<FLevelUnlock>& OutAvailable, int32 Count)
 	{
 		Count = FMath::Min(Count, PossibleUnlocks.Num());
 
-		const IndexArray Indices = ShuffleIndices(Rng, Count);
+		// Should be uninitialized as we initialize it in ShuffleIndices
+		IndexArray Indices;
+		RandUtils::ShuffleIndices(Indices.begin(), Rng, Count);
 
 		for (int32 i = 0; i < Count; ++i)
 		{

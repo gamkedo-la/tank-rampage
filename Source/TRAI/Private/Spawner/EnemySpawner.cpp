@@ -8,18 +8,24 @@
 #include "Logging/LoggingUtils.h"
 #include "TRAILogging.h"
 #include "VisualLogger/VisualLogger.h"
+#include "Utils/RandUtils.h"
 
 #include "Camera/CameraComponent.h"
 
 #include <limits>
 #include <optional>
+#include <array>
+#include <chrono>
+#include <algorithm>
 
 namespace
 {
 	std::optional<float> GetCameraFOVFor(const APawn& Pawn);
 	bool IsInFOV(const APawn& Pawn, const FVector& SpawnReferenceLocation);
 }
-AEnemySpawner::AEnemySpawner()
+
+// Initialize the random number generator with a seed from current time
+AEnemySpawner::AEnemySpawner() : Rng(RandUtils::GenerateSeed())
 {
 	PrimaryActorTick.bCanEverTick = false;
 
@@ -29,7 +35,7 @@ AEnemySpawner::AEnemySpawner()
 	FirstSpawnLocation->SetupAttachment(GetRootComponent());
 }
 
-bool AEnemySpawner::CanSpawnAnyFor(const APawn& PlayerPawn) const
+bool AEnemySpawner::CanSpawnAnyFor(const APawn& PlayerPawn, float* OutScore) const
 {
 	if (SpawningTypes.IsEmpty() || SpawnLocations.IsEmpty())
 	{
@@ -48,7 +54,8 @@ bool AEnemySpawner::CanSpawnAnyFor(const APawn& PlayerPawn) const
 	}
 
 	// Check min distance based on wheter in FOV of player
-	const float ReferenceMinDistance = IsInFOV(PlayerPawn, SpawnReferenceLocation) ? MinimumDistanceFOV : MinimumDistanceNotFOV;
+	const bool bInFOV = IsInFOV(PlayerPawn, SpawnReferenceLocation);
+	const float ReferenceMinDistance = bInFOV ? MinimumDistanceFOV : MinimumDistanceNotFOV;
 
 	if (RefDistSq < FMath::Square(ReferenceMinDistance))
 	{
@@ -60,12 +67,23 @@ bool AEnemySpawner::CanSpawnAnyFor(const APawn& PlayerPawn) const
 		return false;
 	}
 
+	if (OutScore)
+	{
+		const auto Dist = FMath::Sqrt(RefDistSq);
+		float Score = (Dist - ReferenceMinDistance) * DistanceUnitMultiplier;
+		if (bInFOV)
+		{
+			Score *= FOVScoreMultiplier;
+		}
+
+		*OutScore = Score;
+	}
+
 	return true;
 }
 
-int32 AEnemySpawner::Spawn(int32 DesiredCount, TArray<APawn*>& OutSpawned)
+int32 AEnemySpawner::Spawn(int32 DesiredCount, TArray<APawn*>* OutSpawned)
 {
-	// TODO: Implement DesiredCount logic based on spawn points
 	const auto SpawnClass = SelectSpawnClass();
 	if (!SpawnClass)
 	{
@@ -75,25 +93,61 @@ int32 AEnemySpawner::Spawn(int32 DesiredCount, TArray<APawn*>& OutSpawned)
 	auto World = GetWorld();
 	check(World);
 
-	FActorSpawnParameters Params;
+	DesiredCount = FMath::Min(DesiredCount, SpawnLocations.Num());
 
-	auto Spawned = World->SpawnActor<APawn>(SpawnClass, GetActorLocation(), FRotator::ZeroRotator, Params);
-	if (Spawned)
+	if (DesiredCount == 0)
 	{
-		UE_VLOG_UELOG(this, LogTRAI, Log, TEXT("%s: Spawn - Spawned %s -> %s"), *GetName(), *SpawnClass->GetName(), *Spawned->GetName());
-		UE_VLOG_LOCATION(this, LogTRAI, Log, GetActorLocation(), 50.0f, FColor::Green, TEXT("Spawn %s"), *SpawnClass->GetName());
-		LastSpawnTime = World->GetTimeSeconds();
-	}
-	else
-	{
-		UE_VLOG_UELOG(this, LogTRAI, Warning, TEXT("%s: Spawn - Failed to Spawn %s"), *GetName(), *SpawnClass->GetName());
-		UE_VLOG_LOCATION(this, LogTRAI, Warning, GetActorLocation(), 50.0f, FColor::Red, TEXT("Failed to spawn %s"), *SpawnClass->GetName());
-
-		OutSpawned.Add(Spawned);
 		return 0;
 	}
 
-	return 1;
+	std::array<int32, 1024> Indices;
+	int32 LocationCount = SpawnLocations.Num();
+	if (!ensureAlwaysMsgf(Indices.max_size() <= SpawnLocations.Num(), TEXT("%s: SpawnLocations.Num()=%d > %d"),
+		*GetName(), SpawnLocations.Num(), Indices.max_size()))
+	{
+		LocationCount = Indices.max_size();
+	}
+
+	RandUtils::ShuffleIndices(Indices.begin(), Rng, LocationCount);
+	int32 SpawnedCount{};
+
+	for (int32 i = 0; i < LocationCount && SpawnedCount < DesiredCount; ++i)
+	{
+		FActorSpawnParameters Params;
+
+		auto SpawnLocationActor = SpawnLocations[Indices[i]];
+		if (!SpawnLocationActor)
+		{
+			continue;
+		}
+		const auto& SpawnLocation = SpawnLocationActor->GetComponentLocation();
+
+		auto Spawned = World->SpawnActor<APawn>(SpawnClass, SpawnLocation, SpawnLocationActor->GetComponentRotation(), Params);
+		if (Spawned)
+		{
+			UE_VLOG_UELOG(this, LogTRAI, Log, TEXT("%s: Spawn - Spawned %s -> %s"), *GetName(), *SpawnClass->GetName(), *Spawned->GetName());
+			UE_VLOG_LOCATION(this, LogTRAI, Log, SpawnLocation, 50.0f, FColor::Green, TEXT("Spawn %s"), *SpawnClass->GetName());
+
+			++SpawnedCount;
+
+			if (OutSpawned)
+			{
+				OutSpawned->Add(Spawned);
+			}
+		}
+		else
+		{
+			UE_VLOG_UELOG(this, LogTRAI, Warning, TEXT("%s: Spawn - Failed to Spawn %s"), *GetName(), *SpawnClass->GetName());
+			UE_VLOG_LOCATION(this, LogTRAI, Warning, SpawnLocation, 50.0f, FColor::Red, TEXT("Failed to spawn %s"), *SpawnClass->GetName());
+		}
+	}
+
+	if (SpawnedCount > 0)
+	{
+		LastSpawnTime = World->GetTimeSeconds();
+	}
+
+	return SpawnedCount;
 }
 
 float AEnemySpawner::GetTimeSinceLastSpawn() const

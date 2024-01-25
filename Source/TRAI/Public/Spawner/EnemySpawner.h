@@ -4,6 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+
+#include <random>
+
 #include "EnemySpawner.generated.h"
 
 class USpawnLocationComponent;
@@ -18,9 +21,9 @@ class TRAI_API AEnemySpawner : public AActor
 public:	
 	AEnemySpawner();
 
-	int32 Spawn(int32 DesiredCount, TArray<APawn*>& OutSpawned);
+	int32 Spawn(int32 DesiredCount, TArray<APawn*>* OutSpawned = nullptr);
 	int32 GetMaxSpawnCount() const;
-	bool CanSpawnAnyFor(const APawn& PlayerPawn) const;
+	bool CanSpawnAnyFor(const APawn& PlayerPawn, float* OutScore = nullptr) const;
 
 	float GetLastSpawnGameTime() const;
 	float GetTimeSinceLastSpawn() const;
@@ -66,6 +69,14 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Spawning")
 	float MaxDistance{};
+
+	UPROPERTY(EditAnywhere, Category = "Spawning | Score")
+	float FOVScoreMultiplier{ 2.0f};
+
+	UPROPERTY(EditAnywhere, Category = "Spawning | Score")
+	float DistanceUnitMultiplier{ 0.005f };
+
+	std::default_random_engine Rng;
 };
 
 #pragma region Inline Definitions
