@@ -320,7 +320,7 @@ float UEnemySpawnerComponent::CalculateSpawnIntervalTime() const
 
 	const float SpawnCycles = FMath::CeilToFloat(TotalSpawnCount / DesiredClusterSize);
 
-	return FMath::Max(MinSpawnInterval, 1 / SpawnCycles);
+	return FMath::Max(MinSpawnInterval, 60.0f / SpawnCycles);
 }
 
 std::optional<FEnemySpawnerData> UEnemySpawnerComponent::GetCurrentSpawnerData() const
