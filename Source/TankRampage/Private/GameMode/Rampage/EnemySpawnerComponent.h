@@ -34,6 +34,7 @@ private:
 	void ClearAllTimers();
 	void DoSpawnTimeSlice();
 	bool IsSpawnerStateValid() const;
+	bool TryRefreshSpawnersAndRescheduleIfInvalid();
 
 	void CalculateEligibleSpawners(const APawn& PlayerPawn);
 	float CalculateSpawnIntervalTime() const;
@@ -50,6 +51,12 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Spawning")
 	float MinSpawnInterval{ 1 / 30.0f };
+
+	/**
+	* Set to value > 0 to refresh the spawner array for example if the spawners are spatially loaded.
+	*/
+	UPROPERTY(EditDefaultsOnly, Category = "Spawning")
+	int32 SpawnerRefreshMinutes{ -1 };
 
 	UPROPERTY(Transient)
 	TArray<AEnemySpawner*> Spawners;
@@ -68,8 +75,11 @@ private:
 	{
 		FEnemySpawnerData SpawnerData{};
 		int32 EligibleSpawnersIndex{};
+		int32 TotalSpawned{};
 
 		void Reset();
+		int32 SpawnsRemaining() const;
+		bool HasSpawnsRemaining() const;
 	};
 
 	FCurrentSpawnerState CurrentSpawnerState{};
@@ -79,6 +89,7 @@ private:
 
 	TArray<FEnemySpawnerData> SpawnerDataByMinute;
 	float SpawningOffsetTime{ -1.0f };
+	int32 SpawnerRefreshTicks{};
 
 	FTimerHandle SpawnLoopTimer{};
 	FTimerHandle SpawningTimer{};

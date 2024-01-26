@@ -51,7 +51,8 @@ void UEnemySpawnerComponent::InitSpawners()
 		Spawners.Add(*It);
 	}
 
-	EligibleSpawners.Reserve(Spawners.Num());
+	CurrentSpawnerState.Reset();
+	EligibleSpawners.Reset(Spawners.Num());
 }
 
 void UEnemySpawnerComponent::InitData()
@@ -107,7 +108,7 @@ void UEnemySpawnerComponent::ScheduleSpawning()
 			*LoggingUtils::GetName(GetOwner()), *GetName());
 		
 		// Check spawning config is now also invalid
-		if (!IsSpawnerStateValid())
+		if (!TryRefreshSpawnersAndRescheduleIfInvalid())
 		{
 			UE_VLOG_UELOG(GetOwner(), LogTankRampage, Warning, TEXT("%s-%s: ScheduleSpawning - Spawning state became invalid - no additional spawning will occur!"),
 				*LoggingUtils::GetName(GetOwner()), *GetName());
@@ -116,11 +117,11 @@ void UEnemySpawnerComponent::ScheduleSpawning()
 		return;
 	}
 
-	UE_VLOG_UELOG(GetOwner(), LogTankRampage, Log, TEXT("%s-%s: ScheduleSpawning - Interval=%fs; TotalSpawns=%d; DesiredClusterSize=%d"),
+	UE_VLOG_UELOG(GetOwner(), LogTankRampage, Log, TEXT("%s-%s: ScheduleSpawning - Interval=%fs; TotalSliceSpawns=%d; DesiredClusterSize=%d"),
 		*LoggingUtils::GetName(GetOwner()), *GetName(), Interval, CurrentSpawnerState.SpawnerData.SpawnCount, CurrentSpawnerState.SpawnerData.SpawnClusterSize
 	);
 
-	TimerManager.SetTimer(SpawningTimer, this, &ThisClass::DoSpawnTimeSlice, Interval, 0);
+	TimerManager.SetTimer(SpawningTimer, this, &ThisClass::DoSpawnTimeSlice, Interval, true, 0.0f);
 }
 
 float UEnemySpawnerComponent::CalculateSpawningLoop()
@@ -172,9 +173,20 @@ void UEnemySpawnerComponent::DoSpawnTimeSlice()
 		*LoggingUtils::GetName(GetOwner()), *GetName());
 
 	int32& SpawnerIndex = CurrentSpawnerState.EligibleSpawnersIndex;
-	int32 IterationCount{}, SpawnCountCurrentLoop{}, TotalSpawns{};
-	const int32 DesiredCount = CurrentSpawnerState.SpawnerData.SpawnClusterSize;
+	int32& TotalOverallSpawns = CurrentSpawnerState.TotalSpawned;
+	int32 IterationCount{}, SpawnCountCurrentLoop{}, TotalSliceSpawns{};
+	const int32 DesiredCount = FMath::Min(CurrentSpawnerState.SpawnerData.SpawnClusterSize, CurrentSpawnerState.SpawnsRemaining());
 
+	// Should happen at end of previous loop
+	if (!ensureMsgf(DesiredCount > 0, TEXT("DesiredCount <= 0 : SpawnClusterSize=%d; TotalSpawnCount=%d; TotalSpawnsRequested=%d"),
+		DesiredCount, CurrentSpawnerState.SpawnerData.SpawnClusterSize, CurrentSpawnerState.TotalSpawned, CurrentSpawnerState.SpawnerData.SpawnCount))
+	{
+		if (auto World = GetWorld(); World)
+		{
+			World->GetTimerManager().ClearTimer(SpawningTimer);
+			return;
+		}
+	}
 	auto IncrementSpawner = [&, this]()
 	{
 		++IterationCount;
@@ -198,30 +210,62 @@ void UEnemySpawnerComponent::DoSpawnTimeSlice()
 			continue;
 		}
 
-		const int32 RequestedSpawns = FMath::Min(DesiredCount - TotalSpawns, EnemySpawner->GetMaxSpawnCount());
+		const int32 RequestedSpawns = FMath::Min(DesiredCount - TotalSliceSpawns, EnemySpawner->GetMaxSpawnCount());
+		checkf(RequestedSpawns >= 0, TEXT("RequestedSpawns=%d; DesiredCount=%d; TotalSliceSpawns=%d; MaxSpawnCount=%d"),
+			RequestedSpawns, DesiredCount, TotalSliceSpawns, EnemySpawner->GetMaxSpawnCount());
 
 		const int32 ActualSpawned = EnemySpawner->Spawn(RequestedSpawns);
 		++SpawnerState.VisitCount;
 		SpawnerState.SpawnCount += ActualSpawned;
 
 		SpawnCountCurrentLoop += ActualSpawned;
-		TotalSpawns += ActualSpawned;
+		TotalSliceSpawns += ActualSpawned;
+		TotalOverallSpawns += ActualSpawned;
 
 		IncrementSpawner();
 
-		if (TotalSpawns == DesiredCount)
+		if (TotalSliceSpawns == DesiredCount)
 		{
 			break;
 		}
 	}
 
-	UE_VLOG_UELOG(GetOwner(), LogTankRampage, Log, TEXT("%s-%s: DoSpawnTimeSlice - Spawned %d/%d in %d spawners"),
-		*LoggingUtils::GetName(GetOwner()), *GetName(), TotalSpawns, DesiredCount, IterationCount);
+	UE_VLOG_UELOG(GetOwner(), LogTankRampage, Log, TEXT("%s-%s: DoSpawnTimeSlice - Spawned %d/%d in %d spawners : %d/%d of current loop complete"),
+		*LoggingUtils::GetName(GetOwner()), *GetName(), TotalSliceSpawns, DesiredCount, IterationCount, TotalOverallSpawns, CurrentSpawnerState.SpawnerData.SpawnCount);
+
+	if (!CurrentSpawnerState.HasSpawnsRemaining())
+	{
+		UE_VLOG_UELOG(GetOwner(), LogTankRampage, Log, TEXT("%s-%s: DoSpawnTimeSlice - Current loop complete. Canceling future spawn schedules"),
+			*LoggingUtils::GetName(GetOwner()), *GetName());
+
+		auto World = GetWorld();
+		check(World);
+
+		World->GetTimerManager().ClearTimer(SpawningTimer);
+	}
 }
 
 bool UEnemySpawnerComponent::IsSpawnerStateValid() const
 {
 	return !Spawners.IsEmpty() && !SpawnerDataByMinute.IsEmpty();
+}
+
+bool UEnemySpawnerComponent::TryRefreshSpawnersAndRescheduleIfInvalid()
+{
+	if (IsSpawnerStateValid())
+	{
+		return true;
+	}
+
+	InitSpawners();
+
+	if (IsSpawnerStateValid())
+	{
+		ScheduleSpawning();
+		return true;
+	}
+
+	return false;
 }
 
 void UEnemySpawnerComponent::CalculateEligibleSpawners(const APawn& PlayerPawn)
@@ -231,7 +275,7 @@ void UEnemySpawnerComponent::CalculateEligibleSpawners(const APawn& PlayerPawn)
 	for (auto SpawnerIt = Spawners.CreateIterator(); SpawnerIt; ++SpawnerIt)
 	{
 		auto Spawner = *SpawnerIt;
-		if (!Spawner)
+		if (!IsValid(Spawner))
 		{
 			UE_VLOG_UELOG(GetOwner(), LogTankRampage, Log, TEXT("%s-%s: CalculateSpawningLoop - Removed de-allocated spawner"),
 				*LoggingUtils::GetName(GetOwner()), *GetName());
@@ -242,8 +286,8 @@ void UEnemySpawnerComponent::CalculateEligibleSpawners(const APawn& PlayerPawn)
 		float SpawnerScore;
 		if (!Spawner->CanSpawnAnyFor(PlayerPawn, &SpawnerScore))
 		{
-			UE_VLOG_UELOG(GetOwner(), LogTankRampage, Log, TEXT("%s-%s: CalculateSpawningLoop - Removed de-allocated spawner"),
-				*LoggingUtils::GetName(GetOwner()), *GetName());
+			UE_VLOG_UELOG(GetOwner(), LogTankRampage, Verbose, TEXT("%s-%s: CalculateSpawningLoop - Spawner %s cannot spawn any"),
+				*LoggingUtils::GetName(GetOwner()), *GetName(), *Spawner->GetName());
 			continue;
 		}
 
@@ -306,4 +350,14 @@ std::optional<FEnemySpawnerData> UEnemySpawnerComponent::GetCurrentSpawnerData()
 void UEnemySpawnerComponent::FCurrentSpawnerState::Reset()
 {
 	*this = FCurrentSpawnerState{};
+}
+
+int32 UEnemySpawnerComponent::FCurrentSpawnerState::SpawnsRemaining() const
+{
+	return SpawnerData.SpawnCount - TotalSpawned;
+}
+
+bool UEnemySpawnerComponent::FCurrentSpawnerState::HasSpawnsRemaining() const
+{
+	return SpawnsRemaining() > 0;
 }

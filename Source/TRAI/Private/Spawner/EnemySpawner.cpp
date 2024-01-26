@@ -9,7 +9,7 @@
 #include "TRAILogging.h"
 #include "VisualLogger/VisualLogger.h"
 #include "Utils/RandUtils.h"
-
+#include "Kismet/GameplayStatics.h"
 #include "Camera/CameraComponent.h"
 
 #include <limits>
@@ -42,7 +42,7 @@ bool AEnemySpawner::CanSpawnAnyFor(const APawn& PlayerPawn, float* OutScore) con
 		return false;
 	}
 
-	const auto& PlayerLocation = GetActorLocation();
+	const auto& PlayerLocation = PlayerPawn.GetActorLocation();
 	const auto& SpawnReferenceLocation = GetSpawnReferenceLocation();
 
 	const auto RefDistSq = FVector::DistSquared(PlayerLocation, SpawnReferenceLocation);
@@ -50,6 +50,8 @@ bool AEnemySpawner::CanSpawnAnyFor(const APawn& PlayerPawn, float* OutScore) con
 	// out of spawn range
 	if (RefDistSq > FMath::Square(MaxDistance))
 	{
+		UE_VLOG_LOCATION(this, LogTRAI, Verbose, SpawnReferenceLocation, 50.0f, FColor::Orange, TEXT("No Spawn - Out of Range: Dist=%fm > MaxDist=%fm"),
+			FMath::Sqrt(RefDistSq) / 100, MaxDistance / 100);
 		return false;
 	}
 
@@ -59,11 +61,15 @@ bool AEnemySpawner::CanSpawnAnyFor(const APawn& PlayerPawn, float* OutScore) con
 
 	if (RefDistSq < FMath::Square(ReferenceMinDistance))
 	{
+		UE_VLOG_LOCATION(this, LogTRAI, Verbose, SpawnReferenceLocation, 50.0f, FColor::Orange, TEXT("No Spawn - bInFov=%s; Dist=%fm < MinDist=%fm"),
+			LoggingUtils::GetBoolString(bInFOV), FMath::Sqrt(RefDistSq) / 100, ReferenceMinDistance / 100);
 		return false;
 	}
 
 	if (NoSpawnZoneComponent && NoSpawnZoneComponent->IsOverlappingActor(&PlayerPawn))
 	{
+		UE_VLOG_LOCATION(this, LogTRAI, Verbose, SpawnReferenceLocation, 50.0f, FColor::Orange, TEXT("No Spawn - Overlapping no spawn zone"));
+
 		return false;
 	}
 
@@ -73,11 +79,14 @@ bool AEnemySpawner::CanSpawnAnyFor(const APawn& PlayerPawn, float* OutScore) con
 		float Score = (Dist - ReferenceMinDistance) * DistanceUnitMultiplier;
 		if (bInFOV)
 		{
-			Score *= FOVScoreMultiplier;
+			// Lower score is better so divide by the multiplier which is >= 1
+			Score /= FOVScoreMultiplier;
 		}
 
 		*OutScore = Score;
 	}
+
+	UE_VLOG_LOCATION(this, LogTRAI, Verbose, SpawnReferenceLocation, 50.0f, FColor::Green, TEXT("Spawn Eligible"));
 
 	return true;
 }
@@ -95,14 +104,14 @@ int32 AEnemySpawner::Spawn(int32 DesiredCount, TArray<APawn*>* OutSpawned)
 
 	DesiredCount = FMath::Min(DesiredCount, SpawnLocations.Num());
 
-	if (DesiredCount == 0)
+	if (DesiredCount <= 0)
 	{
 		return 0;
 	}
 
 	std::array<int32, 1024> Indices;
 	int32 LocationCount = SpawnLocations.Num();
-	if (!ensureAlwaysMsgf(Indices.max_size() <= SpawnLocations.Num(), TEXT("%s: SpawnLocations.Num()=%d > %d"),
+	if (!ensureAlwaysMsgf(SpawnLocations.Num() <= Indices.max_size(), TEXT("%s: SpawnLocations.Num()=%d > %d"),
 		*GetName(), SpawnLocations.Num(), Indices.max_size()))
 	{
 		LocationCount = Indices.max_size();
@@ -113,20 +122,26 @@ int32 AEnemySpawner::Spawn(int32 DesiredCount, TArray<APawn*>* OutSpawned)
 
 	for (int32 i = 0; i < LocationCount && SpawnedCount < DesiredCount; ++i)
 	{
-		FActorSpawnParameters Params;
-
 		auto SpawnLocationActor = SpawnLocations[Indices[i]];
 		if (!SpawnLocationActor)
 		{
 			continue;
 		}
-		const auto& SpawnLocation = SpawnLocationActor->GetComponentLocation();
 
-		auto Spawned = World->SpawnActor<APawn>(SpawnClass, SpawnLocation, SpawnLocationActor->GetComponentRotation(), Params);
+		const FTransform SpawnTransform(
+			SpawnLocationActor->GetComponentRotation(),
+			SpawnLocationActor->GetComponentLocation()
+		);
+
+		auto Spawned = World->SpawnActorDeferred<APawn>(SpawnClass, SpawnTransform, this, nullptr, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding);
 		if (Spawned)
 		{
+			// Spawned enemies should not be spatially loaded
+			Spawned->SetIsSpatiallyLoaded(false);
+			UGameplayStatics::FinishSpawningActor(Spawned, SpawnTransform);
+
 			UE_VLOG_UELOG(this, LogTRAI, Log, TEXT("%s: Spawn - Spawned %s -> %s"), *GetName(), *SpawnClass->GetName(), *Spawned->GetName());
-			UE_VLOG_LOCATION(this, LogTRAI, Log, SpawnLocation, 50.0f, FColor::Green, TEXT("Spawn %s"), *SpawnClass->GetName());
+			UE_VLOG_LOCATION(this, LogTRAI, Log, SpawnTransform.GetLocation(), 50.0f, FColor::Green, TEXT("Spawn %s"), *SpawnClass->GetName());
 
 			++SpawnedCount;
 
@@ -138,7 +153,7 @@ int32 AEnemySpawner::Spawn(int32 DesiredCount, TArray<APawn*>* OutSpawned)
 		else
 		{
 			UE_VLOG_UELOG(this, LogTRAI, Warning, TEXT("%s: Spawn - Failed to Spawn %s"), *GetName(), *SpawnClass->GetName());
-			UE_VLOG_LOCATION(this, LogTRAI, Warning, SpawnLocation, 50.0f, FColor::Red, TEXT("Failed to spawn %s"), *SpawnClass->GetName());
+			UE_VLOG_LOCATION(this, LogTRAI, Warning, SpawnTransform.GetLocation(), 50.0f, FColor::Red, TEXT("Failed to spawn %s"), *SpawnClass->GetName());
 		}
 	}
 
@@ -166,6 +181,17 @@ void AEnemySpawner::BeginPlay()
 	Super::BeginPlay();
 
 	UE_VLOG_UELOG(this, LogTRAI, Log, TEXT("%s: BeginPlay - %d spawn locations found"), *GetName(), SpawnLocations.Num());
+
+#if ENABLE_VISUAL_LOG
+	if (FVisualLogger::IsRecording() && UE_LOG_ACTIVE(LogTRAI,Verbose))
+	{
+		for (auto SpawnLocation : SpawnLocations)
+		{
+			UE_VLOG_LOCATION(this, LogTRAI, Verbose, SpawnLocation->GetComponentLocation(), 50.0f, FColor::Blue, TEXT("Spawn Location"));
+		}
+	}
+
+#endif
 }
 
 void AEnemySpawner::PostInitializeComponents()
@@ -182,7 +208,7 @@ void AEnemySpawner::EndPlay(EEndPlayReason::Type EndPlayReason)
 
 void AEnemySpawner::Initialize(UPrimitiveComponent* InOverlapComponent)
 {
-	UE_VLOG_UELOG(this, LogTRAI, Log, TEXT("%s: Initialize - NoSpawnZoneComponent=%s;SpawningArea=%s"), *GetName(), *LoggingUtils::GetName(InOverlapComponent));
+	UE_VLOG_UELOG(this, LogTRAI, Log, TEXT("%s: Initialize - NoSpawnZoneComponent=%s"), *GetName(), *LoggingUtils::GetName(InOverlapComponent));
 
 	if (!ensure(InOverlapComponent))
 	{
