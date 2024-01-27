@@ -19,6 +19,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/TankAimingComponent.h"
+#include "UI/TRHUD.h"
 
 ATankPlayerController::ATankPlayerController()
 {
@@ -34,6 +35,11 @@ void ATankPlayerController::GameHasEnded(AActor* EndGameFocus, bool bIsWinner)
 
 	// TODO: This is placeholder logic - for now just pause for three seconds and then restart the level
 	// We will want a message to show on the HUD and transition to end game stats
+	auto hud = Cast<ATRHUD>(GetHUD());
+	if (ensure(hud))
+	{
+		hud->OnGameOver();
+	}
 
 	FTimerHandle _;
 	GetWorldTimerManager().SetTimer(_, FTimerDelegate::CreateWeakLambda(this, [this]()

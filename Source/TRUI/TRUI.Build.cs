@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class TRPlayer : ModuleRules
+public class TRUI : ModuleRules
 {
-	public TRPlayer(ReadOnlyTargetRules Target) : base(Target)
+	public TRUI(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
@@ -21,9 +21,7 @@ public class TRPlayer : ModuleRules
 			"Core",
 			"CoreUObject",
 			"Engine",
-			"InputCore",
-            "EnhancedInput",
-        };
+		};
 
 		PublicDependencyModuleNames.AddRange(enginePublicDependencyModuleNames);
 		PublicDependencyModuleNames.AddRange(modulePublicDependencyModuleNames);
@@ -36,7 +34,6 @@ public class TRPlayer : ModuleRules
 			"TRCore",
 			"TRTank",
 			"TRItem",
-			"TRUI",
 		};
 
 		var enginePrivateDependencyModuleNames = new string[] 

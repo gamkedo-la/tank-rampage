@@ -54,6 +54,14 @@
 				"GameplayAbilities",
 				"CoreUObject"
 			]
+		},
+		{
+			"Name": "TRUI",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine"
+			]
 		}
 	],
 	"Plugins": [

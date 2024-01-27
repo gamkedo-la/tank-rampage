@@ -7,6 +7,7 @@
 		"TRItem": "UnrealEditor-TRItem.dll",
 		"TRPlayer": "UnrealEditor-TRPlayer.dll",
 		"TRTank": "UnrealEditor-TRTank.dll",
+		"TRUI": "UnrealEditor-TRUI.dll",
 		"TankRampage": "UnrealEditor-TankRampage.dll"
 	}
 }

@@ -64,9 +64,12 @@ Binaries/*/*
 Plugins/*/Binaries/*
 # allow editor development build files for faster onboarding
 # use a regex to avoid matching the Debug builds
-!Binaries/*/UnrealEditor-[\w].dll
-!Binaries/*/UnrealEditor-[\w].target
-!Binaries/*/UnrealEditor[\w].modules
+# git actually using linux fnmatch: https://www.man7.org/linux/man-pages/man3/fnmatch.3.html which does not support the full regex character set
+# See also https://git-scm.com/docs/gitignore#_pattern_format
+!Binaries/*/UnrealEditor-TankRampage.dll
+!Binaries/*/UnrealEditor-TR[a-zA-Z]*[^Debug].dll
+!Binaries/*/TankRampageEditor.target
+!Binaries/*/UnrealEditor.modules
 
 # Builds
 Build/*
