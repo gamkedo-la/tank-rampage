@@ -43,6 +43,7 @@ private:
 	{
 		ABaseTankPawn& MyTank;
 		ABaseTankPawn& PlayerTank;
+		bool bAllowFiringWhileAiming;
 	};
 
 	ABaseTankPawn* GetPlayerTank() const;
@@ -50,7 +51,7 @@ private:
 	void AimAtPlayerTank(const FTankAIContext& AIContext);
 	void Fire(const FTankAIContext& AIContext);
 
-	void MoveTowardPlayer(const FTankAIContext& AIContext);
+	bool MoveTowardPlayer(const FTankAIContext& AIContext);
 	bool IsPlayerInRange(const FTankAIContext& AIContext) const;
 
 	void InitTargetingError(const FTankAIContext& AIContext);

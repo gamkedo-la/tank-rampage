@@ -52,7 +52,8 @@ void ATankAIController::Tick(float DeltaTime)
 	FTankAIContext AIContext
 	{
 		.MyTank = *ControlledTank,
-		.PlayerTank = *PlayerTank
+		.PlayerTank = *PlayerTank,
+		.bAllowFiringWhileAiming = false
 	};
 
 	if (!IsPlayerInRange(AIContext))
@@ -76,10 +77,14 @@ void ATankAIController::Tick(float DeltaTime)
 		TargetingErrorLastTime = NowSeconds;
 	}
 
+	// AI Tanks have trouble getting an aim lock while close, so allow firing while "aiming" when close up
+	if (!MoveTowardPlayer(AIContext))
+	{
+		AIContext.bAllowFiringWhileAiming = true;
+	}
+
 	AimAtPlayerTank(AIContext);
 	Fire(AIContext);
-
-	MoveTowardPlayer(AIContext);
 }
 
 void ATankAIController::BeginPlay()
@@ -102,9 +107,10 @@ void ATankAIController::Fire(const FTankAIContext& AIContext)
 
 	auto TankAimingComponent = MyTank.GetTankAimingComponent();
 
-	if (TankAimingComponent->GetTankFiringStatus() == ETankFiringStatus::Locked)
+	const auto FiringStatus = TankAimingComponent->GetTankFiringStatus();
+	if (FiringStatus == ETankFiringStatus::Locked || (AIContext.bAllowFiringWhileAiming && FiringStatus == ETankFiringStatus::Aiming))
 	{
-		AIContext.MyTank.Fire();
+		MyTank.Fire();
 	}
 }
 
@@ -134,7 +140,7 @@ void ATankAIController::AimAtPlayerTank(const FTankAIContext& AIContext)
 	AIContext.MyTank.AimAt(AimingData);
 }
 
-void ATankAIController::MoveTowardPlayer(const FTankAIContext& AIContext)
+bool ATankAIController::MoveTowardPlayer(const FTankAIContext& AIContext)
 {
 	const auto MinMoveDistance = MinMoveDistanceMeters * 100;
 
@@ -147,10 +153,12 @@ void ATankAIController::MoveTowardPlayer(const FTankAIContext& AIContext)
 
 	if (!bShouldMove)
 	{
-		return;
+		return false;
 	}
 
 	MoveToLocation(TargetLocation, MinMoveDistanceMeters * 100);
+
+	return true;
 }
 
 bool ATankAIController::IsPlayerInRange(const FTankAIContext& AIContext) const
