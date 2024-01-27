@@ -45,7 +45,10 @@ void UTankAimingComponent::InitializeComponent()
 	Super::InitializeComponent();
 
 	UE_LOG(LogTRTank, Log, TEXT("%s-%s: InitializeComponent"), *LoggingUtils::GetName(GetOwner()), *GetName());
+
+	CurrentAimingMode = DefaultAimingMode;
 }
+
 void UTankAimingComponent::AimAt(const FAimingData& AimingData, float LaunchSpeed)
 {
 	check(Barrel && Turret);

@@ -107,9 +107,12 @@ private:
 	UPROPERTY(Category = Setup, EditDefaultsOnly)
 	float AimTolerance{ 0.01f };
 
+	UPROPERTY(Category = Setup, EditDefaultsOnly)
+	EAimingMode DefaultAimingMode{ EAimingMode::AssistedAim };
+
 	ETankFiringStatus FiringStatus{ ETankFiringStatus::NoTarget };
 
-	EAimingMode CurrentAimingMode{ EAimingMode::AssistedAim };
+	EAimingMode CurrentAimingMode{ DefaultAimingMode };
 
 	UPROPERTY(EditDefaultsOnly, Category="Tank Aiming")
 	float ZeroingDistance = 5000.f;
