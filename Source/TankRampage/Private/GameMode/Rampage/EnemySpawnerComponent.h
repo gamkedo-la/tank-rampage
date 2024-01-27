@@ -77,6 +77,8 @@ private:
 		int32 EligibleSpawnersIndex{};
 		int32 TotalSpawned{};
 
+		TWeakObjectPtr<const AActor> LookAtActor{};
+
 		void Reset();
 		int32 SpawnsRemaining() const;
 		bool HasSpawnsRemaining() const;

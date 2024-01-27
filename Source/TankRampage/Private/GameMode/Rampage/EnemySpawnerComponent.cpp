@@ -144,6 +144,7 @@ float UEnemySpawnerComponent::CalculateSpawningLoop()
 	}
 
 	CurrentSpawnerState.SpawnerData = *SpawnConfig;
+	CurrentSpawnerState.LookAtActor = PlayerPawn;
 
 	CalculateEligibleSpawners(*PlayerPawn);
 
@@ -176,6 +177,7 @@ void UEnemySpawnerComponent::DoSpawnTimeSlice()
 	int32& TotalOverallSpawns = CurrentSpawnerState.TotalSpawned;
 	int32 IterationCount{}, SpawnCountCurrentLoop{}, TotalSliceSpawns{};
 	const int32 DesiredCount = FMath::Min(CurrentSpawnerState.SpawnerData.SpawnClusterSize, CurrentSpawnerState.SpawnsRemaining());
+	const AActor* LookAtActor = CurrentSpawnerState.LookAtActor.Get();
 
 	// Should happen at end of previous loop
 	if (!ensureMsgf(DesiredCount > 0, TEXT("DesiredCount <= 0 : SpawnClusterSize=%d; TotalSpawnCount=%d; TotalSpawnsRequested=%d"),
@@ -214,7 +216,7 @@ void UEnemySpawnerComponent::DoSpawnTimeSlice()
 		checkf(RequestedSpawns >= 0, TEXT("RequestedSpawns=%d; DesiredCount=%d; TotalSliceSpawns=%d; MaxSpawnCount=%d"),
 			RequestedSpawns, DesiredCount, TotalSliceSpawns, EnemySpawner->GetMaxSpawnCount());
 
-		const int32 ActualSpawned = EnemySpawner->Spawn(RequestedSpawns);
+		const int32 ActualSpawned = EnemySpawner->Spawn(RequestedSpawns, LookAtActor);
 		++SpawnerState.VisitCount;
 		SpawnerState.SpawnCount += ActualSpawned;
 

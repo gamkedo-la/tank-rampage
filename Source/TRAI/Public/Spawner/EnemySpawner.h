@@ -21,7 +21,7 @@ class TRAI_API AEnemySpawner : public AActor
 public:	
 	AEnemySpawner();
 
-	int32 Spawn(int32 DesiredCount, TArray<APawn*>* OutSpawned = nullptr);
+	int32 Spawn(int32 DesiredCount, const AActor* LookAtActor = nullptr, TArray<APawn*>* OutSpawned = nullptr);
 	int32 GetMaxSpawnCount() const;
 	bool CanSpawnAnyFor(const APawn& PlayerPawn, float* OutScore = nullptr) const;
 
@@ -45,6 +45,8 @@ private:
 
 	FVector GetSpawnReferenceLocation() const;
 
+	float CalculateSpawningScore(float DistanceFromPlayer, float MinDistance, bool bInFOV) const;
+
 private:
 	UPROPERTY(Transient)
 	TObjectPtr<UPrimitiveComponent> NoSpawnZoneComponent{};
@@ -66,6 +68,12 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Spawning")
 	float MinimumDistanceNotFOV{};
+
+	/*
+	* Ideal distance from player between min and max for spawning.
+	*/
+	UPROPERTY(EditAnywhere, Category = "Spawning")
+	float IdealSpawnDistanceRatio{ 0.5f };
 
 	UPROPERTY(EditAnywhere, Category = "Spawning")
 	float MaxDistance{};

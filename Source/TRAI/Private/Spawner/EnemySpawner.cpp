@@ -22,6 +22,8 @@ namespace
 {
 	std::optional<float> GetCameraFOVFor(const APawn& Pawn);
 	bool IsInFOV(const APawn& Pawn, const FVector& SpawnReferenceLocation);
+
+	FRotator GetSpawnActorRotation(const USceneComponent& SpawnLocationComponent, const AActor* LookAtActor);
 }
 
 // Initialize the random number generator with a seed from current time
@@ -75,15 +77,7 @@ bool AEnemySpawner::CanSpawnAnyFor(const APawn& PlayerPawn, float* OutScore) con
 
 	if (OutScore)
 	{
-		const auto Dist = FMath::Sqrt(RefDistSq);
-		float Score = (Dist - ReferenceMinDistance) * DistanceUnitMultiplier;
-		if (bInFOV)
-		{
-			// Lower score is better so divide by the multiplier which is >= 1
-			Score /= FOVScoreMultiplier;
-		}
-
-		*OutScore = Score;
+		*OutScore = CalculateSpawningScore(FMath::Sqrt(RefDistSq), ReferenceMinDistance, bInFOV);
 	}
 
 	UE_VLOG_LOCATION(this, LogTRAI, Verbose, SpawnReferenceLocation, 50.0f, FColor::Green, TEXT("Spawn Eligible"));
@@ -91,8 +85,27 @@ bool AEnemySpawner::CanSpawnAnyFor(const APawn& PlayerPawn, float* OutScore) con
 	return true;
 }
 
-int32 AEnemySpawner::Spawn(int32 DesiredCount, TArray<APawn*>* OutSpawned)
+float AEnemySpawner::CalculateSpawningScore(float DistanceFromPlayer, float MinDistance, bool bInFOV) const
 {
+	const float IdealDistance = FMath::Lerp(MinDistance, MaxDistance, IdealSpawnDistanceRatio);
+
+	const float DistanceDeviation = FMath::Abs(DistanceFromPlayer - IdealDistance);
+	float Score = DistanceDeviation * DistanceUnitMultiplier;
+
+	if (bInFOV)
+	{
+		// Lower score is better so divide by the multiplier which is >= 1
+		Score /= FOVScoreMultiplier;
+	}
+
+	return Score;
+}
+
+int32 AEnemySpawner::Spawn(int32 InDesiredCount, const AActor* LookAtActor, TArray<APawn*>* OutSpawned)
+{
+	UE_VLOG_UELOG(this, LogTRAI, Log, TEXT("%s: Spawn - DesiredCount=%d; LookAtActor=%s; OutSpawned=[%s]; PossibleSpawnLocations=%d"),
+		*GetName(), InDesiredCount, *LoggingUtils::GetName(LookAtActor), OutSpawned ? TEXT("NOT NULL") : TEXT("NULL"), SpawnLocations.Num());
+
 	const auto SpawnClass = SelectSpawnClass();
 	if (!SpawnClass)
 	{
@@ -102,10 +115,13 @@ int32 AEnemySpawner::Spawn(int32 DesiredCount, TArray<APawn*>* OutSpawned)
 	auto World = GetWorld();
 	check(World);
 
-	DesiredCount = FMath::Min(DesiredCount, SpawnLocations.Num());
+	const int32 DesiredCount = FMath::Min(InDesiredCount, SpawnLocations.Num());
 
 	if (DesiredCount <= 0)
 	{
+		UE_VLOG_UELOG(this, LogTRAI, Warning, TEXT("%s: Spawn - Failed to spawn as Min(DesiredCount=%d, SpawnLocationsNum=%d) = %d"),
+			*GetName(), InDesiredCount, SpawnLocations.Num(), DesiredCount);
+
 		return 0;
 	}
 
@@ -129,7 +145,7 @@ int32 AEnemySpawner::Spawn(int32 DesiredCount, TArray<APawn*>* OutSpawned)
 		}
 
 		const FTransform SpawnTransform(
-			SpawnLocationActor->GetComponentRotation(),
+			GetSpawnActorRotation(*SpawnLocationActor, LookAtActor),
 			SpawnLocationActor->GetComponentLocation()
 		);
 
@@ -300,5 +316,21 @@ namespace
 		const auto ToSpawnHalfAngleRads = FMath::Acos(ToSpawnDirection | ActorForwardVector);
 
 		return ToSpawnHalfAngleRads <= FOVHalfAngleRads;
+	}
+
+	FRotator GetSpawnActorRotation(const USceneComponent& SpawnLocationComponent, const AActor* LookAtActor)
+	{
+		const FRotator& SpawnLocationRotation = SpawnLocationComponent.GetComponentRotation();
+
+		if (!LookAtActor)
+		{
+			return SpawnLocationRotation;
+		}
+
+		const FVector LookAtDirection = LookAtActor->GetActorLocation() - SpawnLocationComponent.GetComponentLocation();
+		const FRotator LookAtRotator = LookAtDirection.Rotation();
+
+		// Only use the Yaw from the look-at rotator
+		return FRotator(SpawnLocationRotation.Pitch, LookAtRotator.Yaw, SpawnLocationRotation.Roll);
 	}
 }
