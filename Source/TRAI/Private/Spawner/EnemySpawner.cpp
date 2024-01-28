@@ -20,7 +20,13 @@
 
 namespace
 {
-	std::optional<float> GetCameraFOVFor(const APawn& Pawn);
+	struct FCameraFOVResult
+	{
+		FVector Location;
+		float FOV;
+	};
+
+	std::optional<FCameraFOVResult> GetCameraFOVFor(const APawn& Pawn);
 	bool IsInFOV(const APawn& Pawn, const FVector& SpawnReferenceLocation);
 
 	FRotator GetSpawnActorRotation(const USceneComponent& SpawnLocationComponent, const AActor* LookAtActor);
@@ -57,7 +63,15 @@ bool AEnemySpawner::CanSpawnAnyFor(const APawn& PlayerPawn, float* OutScore) con
 		return false;
 	}
 
-	// Check min distance based on wheter in FOV of player
+	// Check if we are already inside the no-spawn zone and quickly return false if so
+	if (NoSpawnZoneComponent && NoSpawnZoneComponent->IsOverlappingActor(&PlayerPawn))
+	{
+		UE_VLOG_LOCATION(this, LogTRAI, Verbose, SpawnReferenceLocation, 50.0f, FColor::Orange, TEXT("No Spawn - Overlapping no spawn zone"));
+
+		return false;
+	}
+
+	// Check min distance based on whether in FOV of player
 	const bool bInFOV = IsInFOV(PlayerPawn, SpawnReferenceLocation);
 	const float ReferenceMinDistance = bInFOV ? MinimumDistanceFOV : MinimumDistanceNotFOV;
 
@@ -65,13 +79,6 @@ bool AEnemySpawner::CanSpawnAnyFor(const APawn& PlayerPawn, float* OutScore) con
 	{
 		UE_VLOG_LOCATION(this, LogTRAI, Verbose, SpawnReferenceLocation, 50.0f, FColor::Orange, TEXT("No Spawn - bInFov=%s; Dist=%fm < MinDist=%fm"),
 			LoggingUtils::GetBoolString(bInFOV), FMath::Sqrt(RefDistSq) / 100, ReferenceMinDistance / 100);
-		return false;
-	}
-
-	if (NoSpawnZoneComponent && NoSpawnZoneComponent->IsOverlappingActor(&PlayerPawn))
-	{
-		UE_VLOG_LOCATION(this, LogTRAI, Verbose, SpawnReferenceLocation, 50.0f, FColor::Orange, TEXT("No Spawn - Overlapping no spawn zone"));
-
 		return false;
 	}
 
@@ -287,7 +294,7 @@ FVector AEnemySpawner::GetSpawnReferenceLocation() const
 
 namespace
 {
-	std::optional<float> GetCameraFOVFor(const APawn& Pawn)
+	std::optional<FCameraFOVResult> GetCameraFOVFor(const APawn& Pawn)
 	{
 		auto CameraComponent = Pawn.FindComponentByClass<UCameraComponent>();
 		if (!CameraComponent)
@@ -295,7 +302,7 @@ namespace
 			return {};
 		}
 
-		return CameraComponent->FieldOfView;
+		return FCameraFOVResult { CameraComponent->GetComponentLocation(), CameraComponent->FieldOfView };
 	}
 
 	bool IsInFOV(const APawn& Pawn, const FVector& SpawnReferenceLocation)
@@ -306,7 +313,7 @@ namespace
 			return false;
 		}
 
-		const auto FOVHalfAngleRads = FMath::DegreesToRadians(*FOVOpt * 0.5f);
+		const auto FOVHalfAngleRads = FMath::DegreesToRadians(FOVOpt->FOV * 0.5f);
 
 		const auto& ActorForwardVector = Pawn.GetActorForwardVector();
 		const auto& ActorLocation = Pawn.GetActorLocation();
@@ -315,7 +322,26 @@ namespace
 
 		const auto ToSpawnHalfAngleRads = FMath::Acos(ToSpawnDirection | ActorForwardVector);
 
-		return ToSpawnHalfAngleRads <= FOVHalfAngleRads;
+		if (ToSpawnHalfAngleRads > FOVHalfAngleRads)
+		{
+			return false;
+		}
+
+		// Line test against camera to location to see if player can see the given spawn reference location
+
+		auto World = Pawn.GetWorld();
+		check(World);
+
+		FCollisionQueryParams QueryParams;
+		QueryParams.AddIgnoredActor(&Pawn);
+		QueryParams.bIgnoreTouches = true;
+		QueryParams.bFindInitialOverlaps = false;
+		QueryParams.bIgnoreBlocks = false;
+		// Only look for hits with environment art
+		QueryParams.MobilityType = EQueryMobilityType::Static;
+
+		// LineTraceTestByChannel returns whether a blocking hit was found, so return true if no blocking hit found
+		return !World->LineTraceTestByChannel(FOVOpt->Location, SpawnReferenceLocation, ECollisionChannel::ECC_Visibility, QueryParams);
 	}
 
 	FRotator GetSpawnActorRotation(const USceneComponent& SpawnLocationComponent, const AActor* LookAtActor)
