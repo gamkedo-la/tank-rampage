@@ -66,6 +66,14 @@ void UTankAimingComponent::AimAt(const FAimingData& AimingData, float LaunchSpee
 		break;
 	}
 }
+void UTankAimingComponent::AimAtWithNoLaunchSpeed(const FAimingData& AimingData)
+{
+	check(Barrel && Turret);
+
+	// Don't account for launch speed as there is none
+	DirectAimAt(AimingData);
+}
+
 void UTankAimingComponent::AssistedAimAt(const FAimingData& AimingData, float LaunchSpeed)
 {
 	if (!AimingData.bHitResult)

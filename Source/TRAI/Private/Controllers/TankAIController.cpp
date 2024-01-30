@@ -15,6 +15,7 @@
 #include "Subsystems/TankEventsSubsystem.h"
 #include "Item/ItemInventory.h"
 #include "Item/ItemNames.h"
+#include "Item/Weapon.h"
 
 #include "Curves/CurveFloat.h"
 
@@ -117,27 +118,37 @@ void ATankAIController::Fire(const FTankAIContext& AIContext)
 void ATankAIController::AimAtPlayerTank(const FTankAIContext& AIContext)
 {
 	const auto& PlayerTank = AIContext.PlayerTank;
+	auto& AITank = AIContext.MyTank;
 
 	auto PlayerVelocity = PlayerTank.GetVelocity();
 
+	auto ItemInventory = AITank.GetItemInventory();
+	check(ItemInventory);
+
+	auto ActiveWeapon = ItemInventory->GetActiveWeapon();
+	if (!ActiveWeapon)
+	{
+		return;
+	}
+
 	FVector PredictiveOffset{ EForceInit::ForceInitToZero };
-	if (PlayerVelocity.SizeSquared() > FMath::Square(PlayerVelocityPredictiveThreshold))
+	if (ActiveWeapon->IsLaunchable() && PlayerVelocity.SizeSquared() > FMath::Square(PlayerVelocityPredictiveThreshold))
 	{
 		// Assuming only the "X" direction ignoring gravity
 		const float PlayerDistanceMeters = AIContext.MyTank.GetDistanceTo(&PlayerTank);
-		const float InterceptTime = PlayerDistanceMeters / AIContext.MyTank.GetCurrentWeaponExitSpeed();
+		const float InterceptTime = PlayerDistanceMeters / ActiveWeapon->GetLaunchSpeed();
 
 		PredictiveOffset = PlayerVelocity * InterceptTime;
 	}
 
-	const auto PredictedPosition = AIContext.PlayerTank.GetActorLocation() + PredictiveOffset;
+	const auto PredictedPosition = PlayerTank.GetActorLocation() + PredictiveOffset;
 	const auto& AimTarget = PredictedPosition + TargetingError;
 
 	FAimingData AimingData;
 	AimingData.bHitResult = true;
 	AimingData.HitLocation = AimTarget;
 	
-	AIContext.MyTank.AimAt(AimingData);
+	AITank.AimAt(AimingData);
 }
 
 bool ATankAIController::MoveTowardPlayer(const FTankAIContext& AIContext)

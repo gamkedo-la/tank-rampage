@@ -67,6 +67,8 @@ public:
 
 	
 	void AimAt(const FAimingData& AimingData, float LaunchSpeed);
+
+	void AimAtWithNoLaunchSpeed(const FAimingData& AimingData);
 	
 	UFUNCTION(BlueprintPure)
 	ETankFiringStatus GetTankFiringStatus() const { return FiringStatus; }

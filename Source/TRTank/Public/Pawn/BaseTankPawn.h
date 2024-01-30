@@ -68,8 +68,6 @@ public:
 	UTankAimingComponent* GetTankAimingComponent() const;
 	virtual UHealthComponent* GetHealthComponent() const override;
 
-	float GetCurrentWeaponExitSpeed() const;
-
 	// Inherited via IAbilitySystemInterface
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 

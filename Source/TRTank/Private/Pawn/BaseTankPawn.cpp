@@ -207,21 +207,22 @@ float ABaseTankPawn::GetFireCooldownProgressPercentage() const
 	return ActiveWeapon->GetCooldownProgressPercentage();
 }
 
-float ABaseTankPawn::GetCurrentWeaponExitSpeed() const
-{
-	auto ActiveWeapon = ItemInventoryComponent->GetActiveWeapon();
-
-	if (!ActiveWeapon)
-	{
-		return 0;
-	}
-
-	return ActiveWeapon->GetLaunchSpeed();
-}
-
 void ABaseTankPawn::AimAt(const FAimingData& AimingData)
 {
-	TankAimingComponent->AimAt(AimingData, GetCurrentWeaponExitSpeed());
+	auto ActiveWeapon = ItemInventoryComponent->GetActiveWeapon();
+	if (!ActiveWeapon)
+	{
+		return;
+	}
+
+	if (ActiveWeapon->IsLaunchable())
+	{
+		TankAimingComponent->AimAt(AimingData, ActiveWeapon->GetLaunchSpeed());
+	}
+	else
+	{
+		TankAimingComponent->AimAtWithNoLaunchSpeed(AimingData);
+	}
 }
 
 void ABaseTankPawn::Fire()
