@@ -38,6 +38,9 @@ protected:
 	virtual void RequestDirectMove(const FVector& MoveVelocity, bool bForceMaxSpeed) override;
 
 private:
+	bool IsMovementAllowed() const;
+
+private:
 	UPROPERTY(Transient)
 	TObjectPtr<UTankTrackComponent> LeftTrack{};
 

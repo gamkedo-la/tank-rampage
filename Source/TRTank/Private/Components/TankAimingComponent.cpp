@@ -8,6 +8,8 @@
 #include "Components/TankBarrelComponent.h"
 #include "Interfaces/ArmedActor.h"
 
+#include "AbilitySystem/TRGameplayTags.h"
+
 #include "TRTankLogging.h"
 #include "Logging/LoggingUtils.h"
 #include "VisualLogger/VisualLogger.h"
@@ -53,6 +55,11 @@ void UTankAimingComponent::AimAt(const FAimingData& AimingData, float LaunchSpee
 {
 	check(Barrel && Turret);
 
+	if (!IsAimingAllowed())
+	{
+		return;
+	}
+
 	switch (CurrentAimingMode)
 	{
 	case EAimingMode::AssistedAim:
@@ -69,6 +76,11 @@ void UTankAimingComponent::AimAt(const FAimingData& AimingData, float LaunchSpee
 void UTankAimingComponent::AimAtWithNoLaunchSpeed(const FAimingData& AimingData)
 {
 	check(Barrel && Turret);
+
+	if (!IsAimingAllowed())
+	{
+		return;
+	}
 
 	// Don't account for launch speed as there is none
 	DirectAimAt(AimingData);
@@ -156,6 +168,20 @@ void UTankAimingComponent::MoveBarrelTowards(const FVector& AimDirection)
 bool UTankAimingComponent::IsBarrelAlreadyAtTarget(const FVector& AimDirection) const
 {
 	return AimDirection.Equals(Barrel->GetForwardVector(), AimTolerance);
+}
+
+bool UTankAimingComponent::IsAimingAllowed() const
+{
+	// Check if owning actor has a debuff to block aiming
+	if (TR::GameplayTags::HasExactTag(GetOwner(), TR::GameplayTags::AimBlocked))
+	{
+		UE_VLOG_UELOG(GetOwner(), LogTRTank, Verbose, TEXT("%s-%s: IsAimingAllowed: FALSE - By GameplayTag=%s"),
+			*LoggingUtils::GetName(GetOwner()), *GetName(), *TR::GameplayTags::AimBlocked.ToString());
+
+		return false;
+	}
+
+	return true;
 }
 
 void UTankAimingComponent::SetTankAimingMode(EAimingMode NewAimingMode)

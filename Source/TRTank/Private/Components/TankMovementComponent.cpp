@@ -5,6 +5,8 @@
 
 #include "Components/TankTrackComponent.h"
 
+#include "AbilitySystem/TRGameplayTags.h"
+
 #include "Logging/LoggingUtils.h"
 #include "TRTankLogging.h"
 #include "VisualLogger/VisualLogger.h"
@@ -32,6 +34,11 @@ void UTankMovementComponent::MoveForward(float Throw)
 		return;
 	}
 
+	if (!IsMovementAllowed())
+	{
+		return;
+	}
+
 	LeftTrack->SetThrottle(Throw);
 	RightTrack->SetThrottle(Throw);
 }
@@ -45,12 +52,22 @@ void UTankMovementComponent::TurnRight(float Throw)
 		return;
 	}
 
+	if (!IsMovementAllowed())
+	{
+		return;
+	}
+
 	LeftTrack->SetThrottle(Throw);
 	RightTrack->SetThrottle(-Throw);
 }
 
 void UTankMovementComponent::RequestDirectMove(const FVector& MoveVelocity, bool bForceMaxSpeed)
 {
+	if (!IsMovementAllowed())
+	{
+		return;
+	}
+
 	const auto MoveDirection = MoveVelocity.GetSafeNormal();
 	const auto& ForwardVector = GetOwner()->GetActorForwardVector();
 
@@ -60,6 +77,20 @@ void UTankMovementComponent::RequestDirectMove(const FVector& MoveVelocity, bool
 
 	const auto RightThrow = (ForwardVector ^ MoveDirection).Z;
 	TurnRight(RightThrow);
+}
+
+bool UTankMovementComponent::IsMovementAllowed() const
+{
+	// Check if owning actor has a debuff to block movement
+	if (TR::GameplayTags::HasExactTag(GetOwner(), TR::GameplayTags::MovementBlocked))
+	{
+		UE_VLOG_UELOG(GetOwner(), LogTRTank, Verbose, TEXT("%s-%s: IsMovementAllowed: FALSE - By GameplayTag=%s"),
+			*LoggingUtils::GetName(GetOwner()), *GetName(), *TR::GameplayTags::MovementBlocked.ToString());
+
+		return false;
+	}
+
+	return true;
 }
 
 FString UTankMovementComponent::FInitParams::ToString() const

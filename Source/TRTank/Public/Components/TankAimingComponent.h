@@ -65,7 +65,6 @@ public:
 
 	void SetTankComponents(const FTankComponents& TankComponents);
 
-	
 	void AimAt(const FAimingData& AimingData, float LaunchSpeed);
 
 	void AimAtWithNoLaunchSpeed(const FAimingData& AimingData);
@@ -98,6 +97,8 @@ private:
 	void MoveBarrelTowards(const FVector& AimDirection);
 
 	bool IsBarrelAlreadyAtTarget(const FVector& AimDirection) const;
+
+	bool IsAimingAllowed() const;
 
 private:
 	UPROPERTY(Transient)

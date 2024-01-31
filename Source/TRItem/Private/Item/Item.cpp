@@ -9,10 +9,21 @@
 #include "Item/ItemConfigData.h"
 #include "Item/ItemSubsystem.h"
 
+#include "AbilitySystem/TRGameplayTags.h"
+
 bool UItem::CanBeActivated() const
 {
 	auto World = GetWorld();
 	check(World);
+
+	// Check if owning actor has a debuff to block item activations
+	if (TR::GameplayTags::HasExactTag(GetOwner(), TR::GameplayTags::ItemBlocked))
+	{
+		UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s-%s: CanBeActivated: Item usage blocked by GameplayTag=%s"),
+			*LoggingUtils::GetName(GetOuter()), *GetName(), *TR::GameplayTags::ItemBlocked.ToString());
+
+		return false;
+	}
 
 	if (LastActivationTimeSeconds < 0)
 	{

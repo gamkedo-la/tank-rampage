@@ -26,14 +26,17 @@ protected:
 
 private:
 	void CheckRemoveStunTag();
+	void ScheduleStunRemoval(float DeltaTime);
 
-private:
+protected:
 
-	UPROPERTY(EditDefaultsOnly, Category = "Effect")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effect")
 	float InfluenceRadius{ 5000.0f };
 
-	UPROPERTY(EditDefaultsOnly, Category = "Effect")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effect")
 	float EffectDuration{ 5.0f };
+
+private:
 
 	UPROPERTY(Transient)
 	TMap<UAbilitySystemComponent*, float> AffectedActors;

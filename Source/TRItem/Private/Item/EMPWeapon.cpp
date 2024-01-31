@@ -42,14 +42,11 @@ bool UEMPWeapon::DoActivation(USceneComponent& ActivationReferenceComponent, con
 		ASC->AddLooseGameplayTags(DebuffTagsContainer);
 
 		AffectedActors.Add(ASC, EffectEndGameTime);
-
-		// TODO: The stun tag will be checked in the movement comp, aim comp, and weapon activation 
-		// In future this can function as a "blocked tag" for gameplay abilities
 	}
 
 	if (!TagExpirationHandle.IsValid())
 	{
-		World->GetTimerManager().SetTimer(TagExpirationHandle, EffectDuration, false);
+		ScheduleStunRemoval(EffectDuration);
 
 		return true;
 	}
@@ -75,29 +72,21 @@ TArray<APawn*> UEMPWeapon::SweepForAffectedEnemies() const
 {
 	auto World = GetWorld();
 	check(World);
-
-	TArray<FHitResult> HitResults;
-
 	const auto SweepLocation = GetOwner()->GetActorLocation();
 
 	const FCollisionShape Shape = FCollisionShape::MakeSphere(InfluenceRadius);
 
-	DrawDebugSphere(GetWorld(), SweepLocation, Shape.GetSphereRadius(), 128, FColor::Red, true, EffectDuration);
+	DrawDebugSphere(GetWorld(), SweepLocation, Shape.GetSphereRadius(), 64, FColor::Blue, false, EffectDuration);
 
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(GetOwner());
-	Params.bIgnoreBlocks = true;
-	Params.bFindInitialOverlaps = false;
-	Params.bIgnoreTouches = false;
 
-	if (!World->SweepMultiByChannel(HitResults, SweepLocation, SweepLocation + FVector{ 1 },
-		FQuat::Identity, ECollisionChannel::ECC_Pawn, Shape, Params))
-	{
-		return {};
-	}
+	TArray<FHitResult> HitResults;
+
+	World->SweepMultiByChannel(HitResults, SweepLocation, SweepLocation + FVector{ 1 },
+		FQuat::Identity, ECollisionChannel::ECC_Pawn, Shape, Params);
 
 	TArray<APawn*> SelectedPawns;
-	SelectedPawns.Reserve(HitResults.Num());
 
 	for (const auto& HitResult : HitResults)
 	{
@@ -107,7 +96,7 @@ TArray<APawn*> UEMPWeapon::SweepForAffectedEnemies() const
 			continue;
 		}
 
-		SelectedPawns.Add(Pawn);
+		SelectedPawns.AddUnique(Pawn);
 	}
 
 	return SelectedPawns;
@@ -147,21 +136,36 @@ void UEMPWeapon::CheckRemoveStunTag()
 	}
 
 	// if there are still some not expired, schedule for nearest expiration
-	if (!AffectedActors.IsEmpty())
+	if (AffectedActors.IsEmpty())
 	{
-		float MinTime = std::numeric_limits<float>::max();
-		for(auto [_, Time] : AffectedActors)
-		{
-			if (Time < MinTime)
-			{
-				MinTime = Time;
-			}
-		}
-
-		const auto MinDeltaTime = MinTime - CurrentTimeSeconds;
-		checkf(MinDeltaTime > 0, TEXT("MinDeltaTime <= 0: MinTime=%f; CurrentTimeSeconds=%f"),
-			MinTime, CurrentTimeSeconds);
-
-		World->GetTimerManager().SetTimer(TagExpirationHandle, MinDeltaTime, false);
+		TagExpirationHandle.Invalidate();
+		return;
 	}
+
+	float MinTime = std::numeric_limits<float>::max();
+	for(auto [_, Time] : AffectedActors)
+	{
+		if (Time < MinTime)
+		{
+			MinTime = Time;
+		}
+	}
+
+	const auto MinDeltaTime = MinTime - CurrentTimeSeconds;
+	checkf(MinDeltaTime > 0, TEXT("MinDeltaTime <= 0: MinTime=%f; CurrentTimeSeconds=%f"),
+		MinTime, CurrentTimeSeconds);
+
+	ScheduleStunRemoval(MinDeltaTime);
+}
+
+void UEMPWeapon::ScheduleStunRemoval(float DeltaTime)
+{
+	auto World = GetWorld();
+	check(World);
+
+	UE_VLOG_UELOG(GetOwner(), LogTRItem, Log, TEXT("%s-%s: ScheduleStunRemoval: DeltaTime=%fs; AffectedActors=%d"),
+		*LoggingUtils::GetName(GetOwner()), *GetName(),
+		DeltaTime, AffectedActors.Num());
+
+	World->GetTimerManager().SetTimer(TagExpirationHandle, this, &ThisClass::CheckRemoveStunTag, DeltaTime, false);
 }
