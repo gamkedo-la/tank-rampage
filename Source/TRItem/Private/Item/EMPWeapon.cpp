@@ -78,19 +78,19 @@ TArray<APawn*> UEMPWeapon::SweepForAffectedEnemies() const
 
 	DrawDebugSphere(GetWorld(), SweepLocation, Shape.GetSphereRadius(), 64, FColor::Blue, false, EffectDuration);
 
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(GetOwner());
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(GetOwner());
 
-	TArray<FHitResult> HitResults;
+	TArray<FOverlapResult> Overlaps;
 
-	World->SweepMultiByChannel(HitResults, SweepLocation, SweepLocation + FVector{ 1 },
-		FQuat::Identity, ECollisionChannel::ECC_Pawn, Shape, Params);
+	World->OverlapMultiByObjectType(Overlaps, SweepLocation,
+		FQuat::Identity, ECollisionChannel::ECC_Pawn, Shape, QueryParams);
 
 	TArray<APawn*> SelectedPawns;
 
-	for (const auto& HitResult : HitResults)
+	for (const auto& OverlapResult : Overlaps)
 	{
-		auto Pawn = Cast<APawn>(HitResult.GetActor());
+		auto Pawn = Cast<APawn>(OverlapResult.GetActor());
 		if (!UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Pawn))
 		{
 			continue;
