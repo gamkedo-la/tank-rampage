@@ -27,24 +27,99 @@ void UItemInventory::Clear()
 
 bool UItemInventory::RotateActiveWeapon(int32 Offset)
 {
-	if (Weapons.IsEmpty())
+	if (Weapons.IsEmpty() || Offset == 0)
 	{
 		return false;
 	}
 
-	int32 NewIndex = ActiveWeaponIndex + Offset;
-	if (NewIndex < 0)
-	{
-		NewIndex += Weapons.Num();
-	}
-	else
-	{
-		NewIndex %= Weapons.Num();
-	}
+	const int32 NewIndex = GetRotatedIndex(Offset);
 
 	if (NewIndex == ActiveWeaponIndex)
 	{
 		return false;
+	}
+
+	SetActiveWeaponByIndex(NewIndex);
+	return true;
+}
+
+int32 UItemInventory::GetRotatedIndex(int32 Offset) const
+{
+	if (Offset == 0)
+	{
+		return ActiveWeaponIndex;
+	}
+
+	ClampOffset(Offset);
+
+	int32 NewIndex = ActiveWeaponIndex + Offset;
+	ClampIndexInternal(NewIndex);
+
+	return NewIndex;
+}
+
+void UItemInventory::ClampOffset(int32& Offset) const
+{
+	check(!Weapons.IsEmpty());
+
+	// Pair offset down to one cycle
+	if (Offset >= 0)
+	{
+		Offset %= Weapons.Num();
+	}
+	else
+	{
+		Offset = -(-Offset % Weapons.Num());
+	}
+}
+
+void UItemInventory::ClampIndexInternal(int32& Index) const
+{
+	if (Index < 0)
+	{
+		Index += Weapons.Num();
+	}
+	else
+	{
+		Index %= Weapons.Num();
+	}
+}
+
+bool UItemInventory::RotateActiveWeaponSkipCooldowns(int32 Offset)
+{
+	if (Weapons.IsEmpty() || Offset == 0)
+	{
+		return false;
+	}
+
+	int32 NewIndex = GetRotatedIndex(Offset);
+
+	if (NewIndex == ActiveWeaponIndex)
+	{
+		return false;
+	}
+
+	if (!Weapons[NewIndex]->CanBeActivated())
+	{
+		bool bFound = false;
+
+		for (int32 i = 0, Inc = FMath::Sign(Offset), Count = Weapons.Num() - 1; i < Count; ++i)
+		{
+			NewIndex += Inc;
+
+			ClampIndexInternal(NewIndex);
+
+			if (Weapons[NewIndex]->CanBeActivated())
+			{
+				bFound = true;
+				break;
+			}
+		}
+
+		if (!bFound || NewIndex == ActiveWeaponIndex)
+		{
+			return false;
+		}
 	}
 
 	SetActiveWeaponByIndex(NewIndex);

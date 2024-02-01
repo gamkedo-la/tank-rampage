@@ -276,7 +276,7 @@ void ATankPlayerController::OnNextWeapon(const FInputActionInstance& InputAction
 	check(World);
 	WeaponScrollLastTriggerTime = World->GetTimeSeconds();
 
-	ItemInventory->SetNextWeaponActive();
+	ItemInventory->SetNextWeaponActive(true);
 }
 
 void ATankPlayerController::OnPreviousWeapon(const FInputActionInstance& InputActionInstance)
@@ -302,7 +302,7 @@ void ATankPlayerController::OnPreviousWeapon(const FInputActionInstance& InputAc
 	check(World);
 	WeaponScrollLastTriggerTime = World->GetTimeSeconds();
 
-	ItemInventory->SetPreviousWeaponActive();
+	ItemInventory->SetPreviousWeaponActive(true);
 }
 
 bool ATankPlayerController::IsWeaponScrollSwitchTriggerable(const FInputActionInstance& InputActionInstance) const

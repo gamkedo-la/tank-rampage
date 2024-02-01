@@ -60,10 +60,10 @@ public:
 	bool HasAnyActiveWeapon() const;
 
 	UFUNCTION(BlueprintCallable)
-	bool SetNextWeaponActive();
+	bool SetNextWeaponActive(bool bAvailableOnly = false);
 
 	UFUNCTION(BlueprintCallable)
-	bool SetPreviousWeaponActive();
+	bool SetPreviousWeaponActive(bool bAvailableOnly = false);
 
 	UFUNCTION(BlueprintPure)
 	int32 GetNumWeapons() const;
@@ -113,6 +113,10 @@ public:
 
 private:
 	bool RotateActiveWeapon(int32 Offset);
+	bool RotateActiveWeaponSkipCooldowns(int32 Offset);
+	void ClampOffset(int32& Offset) const;
+	void ClampIndexInternal(int32& Index) const;
+	int32 GetRotatedIndex(int32 Offset) const;
 
 	template<std::derived_from<UItem> T>
 	int32 AddToInventoryArray(const FName& Name, const FItemConfigData& ItemConfigRow, TArray<T*>& Array);
@@ -144,14 +148,14 @@ inline bool UItemInventory::HasAnyActiveWeapon() const
 	return ActiveWeaponIndex < GetNumWeapons();
 }
 
-inline bool UItemInventory::SetNextWeaponActive()
+inline bool UItemInventory::SetNextWeaponActive(bool bAvailableOnly)
 {
-	return RotateActiveWeapon(1);
+	return bAvailableOnly ? RotateActiveWeaponSkipCooldowns(1) : RotateActiveWeapon(1);
 }
 
-inline bool UItemInventory::SetPreviousWeaponActive()
+inline bool UItemInventory::SetPreviousWeaponActive(bool bAvailableOnly)
 {
-	return RotateActiveWeapon(-1);
+	return bAvailableOnly ? RotateActiveWeaponSkipCooldowns(-1) : RotateActiveWeapon(-1);
 }
 
 inline UWeapon* UItemInventory::GetActiveWeapon() const
