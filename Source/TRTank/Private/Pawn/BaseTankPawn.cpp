@@ -42,24 +42,31 @@ ABaseTankPawn::ABaseTankPawn()
 	RootComponent = TankBody = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TankBody"));
 	TankBody->SetSimulatePhysics(true);
 	TankBody->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	TankBody->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
 
 	TankTurret = CreateDefaultSubobject<UTankTurretComponent>(TEXT("TankTurret"));
 	TankTurret->SetupAttachment(TankBody, TankSockets::TurretAttach);
+	TankTurret->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
 
 	TankBarrel = CreateDefaultSubobject<UTankBarrelComponent>(TEXT("TankBarrel"));
 	TankBarrel->SetupAttachment(TankTurret, TankSockets::GunAttach);
+	TankBarrel->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
 
 	TankTreadRight = CreateDefaultSubobject<UTankTrackComponent>(TEXT("TankTreadRight"));
 	TankTreadRight->SetupAttachment(TankBody, TankSockets::TreadRightAttach);
+	TankTreadRight->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
 
 	TankTreadLeft = CreateDefaultSubobject<UTankTrackComponent>(TEXT("TankTreadLeft"));
 	TankTreadLeft->SetupAttachment(TankBody, TankSockets::TreadLeftAttach);
+	TankTreadLeft->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
 
 	TankTreadSideRight = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TankTreadSideRight"));
 	TankTreadSideRight->SetupAttachment(TankBody, TankSockets::SideRightAttach);
+	TankTreadSideRight->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
 
 	TankTreadSideLeft = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TankTreadSideLeft"));
 	TankTreadSideLeft->SetupAttachment(TankBody, TankSockets::SideLeftAttach);
+	TankTreadSideLeft->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
 
 	CameraSpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraSpringArm"));
 	CameraSpringArm->SetupAttachment(TankBody);
