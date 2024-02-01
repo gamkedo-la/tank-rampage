@@ -28,6 +28,14 @@ AProjectile::AProjectile()
 	PrimaryActorTick.bCanEverTick = false;
 
 	RootComponent = ProjectileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ProjectileMesh"));
+
+	ProjectileMesh->SetMobility(EComponentMobility::Movable);
+	ProjectileMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
+	ProjectileMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
+	// Pawns like the tank need to overlap so they are not launched unrealistically in response to the collision
+	ProjectileMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	ProjectileMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Vehicle, ECollisionResponse::ECR_Overlap);
+	ProjectileMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	
 	ProjectileMovementComponent = CreateDefaultSubobject<UFiredWeaponMovementComponent>(TEXT("ProjectileMovement"));
 	ProjectileMovementComponent->bAutoRegister = true;
@@ -84,6 +92,7 @@ void AProjectile::BeginPlay()
 	if (ensure(ProjectileMesh))
 	{
 		ProjectileMesh->OnComponentHit.AddDynamic(this, &AProjectile::OnHit);
+		ProjectileMesh->OnComponentBeginOverlap.AddDynamic(this, &AProjectile::OnOverlapBegin);
 	}
 	
 	InitDebugDraw();
@@ -184,6 +193,16 @@ void AProjectile::PlaySfxAtActorLocation(USoundBase* Sound) const
 
 void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
 {
+	OnCollision(HitComponent, OtherActor, OtherComponent, Hit);
+}
+
+void AProjectile::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	OnCollision(OverlappedComponent, OtherActor, OtherComponent, SweepResult);
+}
+
+void AProjectile::OnCollision(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, const FHitResult& Hit)
+{
 	bool bDestroy = true;
 
 	if (OtherActor)
@@ -201,8 +220,8 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, U
 
 		Destroy();
 	}
-	else if(OtherActor)
-	{	
+	else if (OtherActor)
+	{
 		UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: Ignoring self hit with instigator=%s"), *GetName(), *OtherActor->GetName());
 	}
 }
