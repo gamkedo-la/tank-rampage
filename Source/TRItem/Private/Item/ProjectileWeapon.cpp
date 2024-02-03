@@ -61,15 +61,13 @@ void UProjectileWeapon::LaunchProjectile(USceneComponent& ActivationReferenceCom
 	const FVector SpawnLocation = ActivationReferenceComponent.GetSocketLocation(ActivationSocketName);
 	const FRotator SpawnRotation = ActivationReferenceComponent.GetSocketRotation(ActivationSocketName);
 
-	FActorSpawnParameters SpawnParameters;
-	SpawnParameters.Instigator = GetOwner();
-	SpawnParameters.Owner = GetOwner();
+	const FTransform SpawnTransform(SpawnRotation, SpawnLocation);
 
 	auto World = GetWorld();
 	check(World);
 
 	auto ChosenWeaponProjectileClass = ChooseProjectileClass();
-	auto SpawnedProjectile = World->SpawnActor<AProjectile>(ChosenWeaponProjectileClass, SpawnLocation, SpawnRotation, SpawnParameters);
+	auto SpawnedProjectile = World->SpawnActorDeferred<AProjectile>(ChosenWeaponProjectileClass, SpawnTransform, GetOwner(), GetOwner());
 
 	if (!SpawnedProjectile)
 	{
@@ -107,6 +105,8 @@ void UProjectileWeapon::LaunchProjectile(USceneComponent& ActivationReferenceCom
 	}
 
 	SpawnedProjectile->Initialize(ActivationReferenceComponent, ActivationSocketName, ProjectileDamageParams, OptHomingParams);
+	SpawnedProjectile->FinishSpawning(SpawnTransform);
+
 	SpawnedProjectile->Launch(ProjectileLaunchSpeed);
 }
 

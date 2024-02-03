@@ -163,8 +163,6 @@ void AProjectile::PlayHitVfx()
 
 	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: PlayHitVfx: %s playing at %s"), *GetName(), *HitVfx.GetName(), *GetActorLocation().ToCompactString());
 
-	check(AttachComponent);
-
 	UNiagaraComponent* NiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, HitVfx, GetActorLocation());
 
 	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: PlayHitVfx: %s playing NiagaraComponent=%s"), *GetName(), *HitVfx.GetName(), *LoggingUtils::GetName(NiagaraComp));
@@ -253,10 +251,7 @@ void AProjectile::OnCollision(UPrimitiveComponent* HitComponent, AActor* OtherAc
 		PlayHitSfx(OtherActor);
 		PlayHitVfx();
 
-		GetWorldTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
-		{
-			Destroy();
-		}));
+		Destroy();
 	}
 	else if (OtherActor)
 	{
