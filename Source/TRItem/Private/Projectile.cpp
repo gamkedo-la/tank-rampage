@@ -132,18 +132,18 @@ void AProjectile::PlayFiringVfx()
 {
 	if (!FiringVfx)
 	{
-		UE_VLOG_UELOG(this, LogTRItem, Warning, TEXT("%s: FiringVfx is not set"), *GetName());
+		UE_VLOG_UELOG(this, LogTRItem, Warning, TEXT("%s: PlayFiringVfx - FiringVfx is not set"), *GetName());
 		return;
 	}
 
-	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: FiringVfx: %s playing at %s"), *GetName(), *FiringVfx.GetName(), *GetActorLocation().ToCompactString());
+	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: PlayFiringVfx: %s playing at %s"), *GetName(), *FiringVfx.GetName(), *GetActorLocation().ToCompactString());
 
 	check(AttachComponent);
 
 	UNiagaraComponent* NiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAttached(FiringVfx, AttachComponent, AttachSocketName, FVector::ZeroVector, FRotator::ZeroRotator,
 		EAttachLocation::Type::KeepRelativeOffset, true);
 
-	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: FiringVfx: %s playing NiagaraComponent=%s"), *GetName(), *FiringVfx.GetName(), *LoggingUtils::GetName(NiagaraComp));
+	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: PlayFiringVfx: %s playing NiagaraComponent=%s"), *GetName(), *FiringVfx.GetName(), *LoggingUtils::GetName(NiagaraComp));
 
 	if (!NiagaraComp)
 	{
@@ -151,6 +151,23 @@ void AProjectile::PlayFiringVfx()
 	}
 
 	SetNiagaraFireEffectParameters(NiagaraComp);
+}
+
+void AProjectile::PlayHitVfx()
+{
+	if (!HitVfx)
+	{
+		UE_VLOG_UELOG(this, LogTRItem, Warning, TEXT("%s: PlayHitVfx - HitVfx is not set"), *GetName());
+		return;
+	}
+
+	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: PlayHitVfx: %s playing at %s"), *GetName(), *HitVfx.GetName(), *GetActorLocation().ToCompactString());
+
+	check(AttachComponent);
+
+	UNiagaraComponent* NiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, HitVfx, GetActorLocation());
+
+	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: PlayHitVfx: %s playing NiagaraComponent=%s"), *GetName(), *HitVfx.GetName(), *LoggingUtils::GetName(NiagaraComp));
 }
 
 void AProjectile::SetNiagaraFireEffectParameters_Implementation(UNiagaraComponent* NiagaraComponent)
@@ -217,6 +234,7 @@ void AProjectile::OnCollision(UPrimitiveComponent* HitComponent, AActor* OtherAc
 
 		PlaySfxAtActorLocation(ExplosionSfx);
 		PlayHitSfx(OtherActor);
+		PlayHitVfx();
 
 		Destroy();
 	}

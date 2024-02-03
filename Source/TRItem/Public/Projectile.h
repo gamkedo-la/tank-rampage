@@ -63,6 +63,8 @@ private:
 
 	void PlayFiringEffects();
 	void PlayFiringVfx();
+	void PlayHitVfx();
+
 	void PlaySfxAtActorLocation(USoundBase* Sound) const;
 
 	void PlayHitSfx(AActor* HitActor) const;
@@ -112,6 +114,9 @@ private:
 
 	UPROPERTY(Category = "Audio | Hit", EditDefaultsOnly)
 	TObjectPtr<USoundBase> TankHitSfx{};
+
+	UPROPERTY(Category = "Effects | Hit", EditDefaultsOnly)
+	TObjectPtr<UNiagaraSystem> HitVfx{};
 
 	UPROPERTY(EditDefaultsOnly)
 	float MaxLifetime{ 10.0f };
