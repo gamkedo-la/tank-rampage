@@ -168,6 +168,13 @@ void AProjectile::PlayHitVfx()
 	UNiagaraComponent* NiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, HitVfx, GetActorLocation());
 
 	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: PlayHitVfx: %s playing NiagaraComponent=%s"), *GetName(), *HitVfx.GetName(), *LoggingUtils::GetName(NiagaraComp));
+
+	if (!NiagaraComp)
+	{
+		return;
+	}
+
+	SetNiagaraHitEffectParameters(NiagaraComp);
 }
 
 void AProjectile::SetNiagaraFireEffectParameters_Implementation(UNiagaraComponent* NiagaraComponent)
@@ -178,6 +185,16 @@ void AProjectile::SetNiagaraFireEffectParameters_Implementation(UNiagaraComponen
 	{
 		const auto& Direction = GetActorRotation().Vector(); // Muzzle socket rotation on tank barrel
 		NiagaraComponent->SetVectorParameter(DirectionParameter, Direction);
+	}
+}
+
+void AProjectile::SetNiagaraHitEffectParameters_Implementation(UNiagaraComponent* NiagaraComponent)
+{
+	check(NiagaraComponent);
+
+	if (!HitVfxScaleParameterName.IsNone())
+	{
+		NiagaraComponent->SetFloatParameter(HitVfxScaleParameterName, HitVfxScaleParameterValue);
 	}
 }
 
@@ -236,7 +253,10 @@ void AProjectile::OnCollision(UPrimitiveComponent* HitComponent, AActor* OtherAc
 		PlayHitSfx(OtherActor);
 		PlayHitVfx();
 
-		Destroy();
+		GetWorldTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			Destroy();
+		}));
 	}
 	else if (OtherActor)
 	{

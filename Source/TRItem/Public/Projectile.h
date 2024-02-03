@@ -57,6 +57,9 @@ protected:
 	UFUNCTION(BlueprintNativeEvent)
 	void SetNiagaraFireEffectParameters(UNiagaraComponent* NiagaraComponent);
 
+	UFUNCTION(BlueprintNativeEvent)
+	void SetNiagaraHitEffectParameters(UNiagaraComponent* NiagaraComponent);
+
 private:
 	void InitDebugDraw();
 	void DestroyDebugDraw();
@@ -117,6 +120,12 @@ private:
 
 	UPROPERTY(Category = "Effects | Hit", EditDefaultsOnly)
 	TObjectPtr<UNiagaraSystem> HitVfx{};
+
+	UPROPERTY(Category = "Effects | Hit", EditDefaultsOnly)
+	FName HitVfxScaleParameterName{};
+
+	UPROPERTY(Category = "Effects | Hit", EditDefaultsOnly)
+	float HitVfxScaleParameterValue{ 1.0f };
 
 	UPROPERTY(EditDefaultsOnly)
 	float MaxLifetime{ 10.0f };
