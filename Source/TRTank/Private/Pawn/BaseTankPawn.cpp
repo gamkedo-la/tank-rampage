@@ -129,6 +129,27 @@ void ABaseTankPawn::NotifyControllerChanged()
 	UpdateGameplayAbilitySystemAfterPossession(GetController());
 }
 
+float ABaseTankPawn::InternalTakePointDamage(float Damage, FPointDamageEvent const& PointDamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	float ActualDamage = Super::InternalTakePointDamage(Damage, PointDamageEvent, EventInstigator, DamageCauser);
+
+	return AdjustDamage(ActualDamage, EventInstigator, DamageCauser);
+}
+
+float ABaseTankPawn::InternalTakeRadialDamage(float Damage, FRadialDamageEvent const& RadialDamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	float ActualDamage = Super::InternalTakeRadialDamage(Damage, RadialDamageEvent, EventInstigator, DamageCauser);
+
+	return AdjustDamage(ActualDamage, EventInstigator, DamageCauser);
+}
+
+float ABaseTankPawn::AdjustDamage(float Damage, AController* EventInstigator, AActor* DamageCauser) const
+{
+	OnDamageAdjustment.Broadcast(Damage, this, EventInstigator, DamageCauser);
+
+	return Damage;
+}
+
 void ABaseTankPawn::UpdateSpringArmTickEnabled()
 {
 	const bool bIsLocalPlayerController = IsPlayerControlled() && IsLocallyControlled();

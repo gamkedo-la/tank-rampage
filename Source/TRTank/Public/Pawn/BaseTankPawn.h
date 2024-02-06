@@ -8,6 +8,7 @@
 #include "VisualLogger/VisualLoggerDebugSnapshotInterface.h"
 #include "AbilitySystemInterface.h"
 #include "Interfaces/Damageable.h"
+#include "Damage/DamageAdjustmentOwner.h"
 
 #include "BaseTankPawn.generated.h"
 
@@ -28,7 +29,7 @@ class UGameplayEffect;
 
 
 UCLASS()
-class TRTANK_API ABaseTankPawn : public APawn, public IVisualLoggerDebugSnapshotInterface, public IArmedActor, public IAbilitySystemInterface, public IDamageable
+class TRTANK_API ABaseTankPawn : public APawn, public IVisualLoggerDebugSnapshotInterface, public IArmedActor, public IAbilitySystemInterface, public IDamageable, public IDamageAdjustmentOwner
 {
 	GENERATED_BODY()
 
@@ -75,6 +76,9 @@ public:
 
 	UItemInventory* GetItemInventory() const;
 
+	// Inherited via IDamageAdjustmentOwner
+	FOnDamageAdjustment& GetOnDamageAdjustment() override { return OnDamageAdjustment;  }
+
 
 #if ENABLE_VISUAL_LOG
 	virtual void GrabDebugSnapshot(FVisualLogEntry* Snapshot) const override;
@@ -86,12 +90,17 @@ protected:
 
 	virtual void NotifyControllerChanged() override;
 
+	virtual float InternalTakePointDamage(float Damage, FPointDamageEvent const& PointDamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
+	virtual float InternalTakeRadialDamage(float Damage, struct FRadialDamageEvent const& RadialDamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+
 private:
 	void UpdateSpringArmTickEnabled();
 
 	void UpdateGameplayAbilitySystemAfterPossession(AController* NewController);
 
 	void InitializeAttributes();
+
+	float AdjustDamage(float Damage, AController* EventInstigator, AActor* DamageCauser) const;
 
 protected:
 
@@ -143,6 +152,8 @@ private:
 
 	UPROPERTY(Category = "Camera", VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> Camera{};
+
+	FOnDamageAdjustment OnDamageAdjustment{};
 };
 
 

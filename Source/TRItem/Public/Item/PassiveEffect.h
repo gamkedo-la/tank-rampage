@@ -30,6 +30,6 @@ protected:
 	UPROPERTY(BlueprintReadWrite)
 	float CurrentValue{};
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(Category = "Config", EditDefaultsOnly, BlueprintReadWrite)
 	float MaxValue{};
 };

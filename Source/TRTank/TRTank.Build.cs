@@ -14,7 +14,8 @@ public class TRTank : ModuleRules
 		// that dependency in their module file if they use it explicitly (no transitivity in linking).
 		var modulePublicDependencyModuleNames = new string[]
 		{
-		};
+			"TRCore",
+        };
 
 		var enginePublicDependencyModuleNames = new string[] 
 		{ 
@@ -34,7 +35,6 @@ public class TRTank : ModuleRules
 		// Private dependencies do not create transitive header dependencies.
 		var modulePrivateDependencyModuleNames = new string[]
 		{
-			"TRCore",
 			"TRItem",
 		};
 

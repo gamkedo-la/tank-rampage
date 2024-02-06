@@ -10,4 +10,5 @@ namespace ItemNames
 	inline const FName MissilesName = "Missiles";
 	inline const FName MaxHealth = "MaxHealth";
 	inline const FName EMP = "EMP";
+	inline const FName Shield = "Shield";
 }
