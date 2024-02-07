@@ -23,8 +23,11 @@ struct TRITEM_API FItemConfigData : public FTableRowBase
 	UPROPERTY(Category = "Item", EditAnywhere, BlueprintReadOnly)
 	TSubclassOf<UItem> Class{};
 
-	UPROPERTY(Category = "Item", EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(Category = "Item | UI", EditAnywhere, BlueprintReadOnly)
 	TObjectPtr<UMaterialInterface> UIMaterial{};
+
+	UPROPERTY(Category = "Item | UI", EditAnywhere, BlueprintReadOnly)
+	bool bShowInHUDItemSlots{ true };
 
 	FString ToString() const;
 };
