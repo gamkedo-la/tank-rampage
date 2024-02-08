@@ -31,15 +31,20 @@ private:
 	void InitSpawningSchedule();
 	void ScheduleSpawning();
 	float CalculateSpawningLoop();
+
 	void ClearAllTimers();
+	void ClearSpawningTimer();
+
 	void DoSpawnTimeSlice();
 	bool IsSpawnerStateValid() const;
 	bool TryRefreshSpawnersAndRescheduleIfInvalid();
 
 	void CalculateEligibleSpawners(const APawn& PlayerPawn);
-	float CalculateSpawnIntervalTime() const;
+	std::pair<float,int32> CalculateSpawnIntervalTimeAndCycles() const;
 
 	std::optional<FEnemySpawnerData> GetCurrentSpawnerData() const;
+
+	bool TryReserveAdditionalAvailableSpawner();
 
 private:
 
@@ -70,18 +75,22 @@ private:
 	};
 
 	TArray<FSpawnerMetadata> EligibleSpawners;
+	TSet<int32> AvailableSpawnerIndices;
 
 	struct FCurrentSpawnerState
 	{
 		FEnemySpawnerData SpawnerData{};
 		int32 EligibleSpawnersIndex{};
 		int32 TotalSpawned{};
+		int32 IntervalsRemaining{};
+		int32 NumSpawners{};
 
 		TWeakObjectPtr<const AActor> LookAtActor{};
 
 		void Reset();
 		int32 SpawnsRemaining() const;
 		bool HasSpawnsRemaining() const;
+		int32 GetDesiredSpawnCount() const;
 	};
 
 	FCurrentSpawnerState CurrentSpawnerState{};
