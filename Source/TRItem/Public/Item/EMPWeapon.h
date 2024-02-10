@@ -9,6 +9,20 @@
 #include "EMPWeapon.generated.h"
 
 class UAbilitySystemComponent;
+class UNiagaraSystem;
+class UNiagaraComponent;
+
+
+USTRUCT()
+struct FEMPAffectedActorData
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(Transient)
+	UNiagaraComponent* Vfx{};
+
+	float EndGameTimeSeconds{};
+};
 
 /**
  * 
@@ -28,6 +42,12 @@ private:
 	void CheckRemoveStunTag();
 	void ScheduleStunRemoval(float DeltaTime);
 
+	void PlayActivationVfx();
+
+	void ApplyEffectToEnemy(AActor* Enemy, float EffectEndGameTimeSeconds, const FGameplayTagContainer& DebuffTagsContainer);
+
+	UNiagaraComponent* PlayAffectedEnemyVfx(AActor* Enemy);
+
 protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effect")
@@ -39,10 +59,25 @@ protected:
 private:
 
 	UPROPERTY(Transient)
-	TMap<UAbilitySystemComponent*, float> AffectedActors;
+	TMap<UAbilitySystemComponent*, FEMPAffectedActorData> AffectedActors;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Effect")
 	TArray<FGameplayTag> DebuffTags;
 
 	FTimerHandle TagExpirationHandle;
+
+	UPROPERTY(Category = "Effects | Activation", EditDefaultsOnly)
+	TObjectPtr<UNiagaraSystem> ActivationVfx{};
+
+	UPROPERTY(Category = "Effects | Activation", EditDefaultsOnly)
+	FName EffectRadiusName{ TEXT("Radius") };
+
+	UPROPERTY(Category = "Effects | Activation", EditDefaultsOnly)
+	FName OwnerRelativeVelocityName{ TEXT("Relative Velocity") };
+
+	UPROPERTY(Category = "Effects | Enemy", EditDefaultsOnly)
+	TObjectPtr<UNiagaraSystem> AffectedEnemyVfx{};
+
+	UPROPERTY(Category = "Effects | Enemy", EditDefaultsOnly)
+	FName EnemyRadiusName{ TEXT("Radius") };
 };
