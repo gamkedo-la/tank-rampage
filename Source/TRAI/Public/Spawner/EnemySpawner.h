@@ -25,6 +25,13 @@ public:
 	int32 GetMaxSpawnCount() const;
 	bool CanSpawnAnyFor(const APawn& PlayerPawn, float* OutScore = nullptr) const;
 
+	/*
+	* First-level quick check based on max distance
+	*/
+	bool ShouldBeConsideredForSpawning(const APawn& PlayerPawn, float ConsiderationRadiusSq) const;
+
+	bool IsCoolingDown() const;
+
 	float GetLastSpawnGameTime() const;
 	float GetTimeSinceLastSpawn() const;
 
@@ -46,6 +53,7 @@ private:
 	FVector GetSpawnReferenceLocation() const;
 
 	float CalculateSpawningScore(float DistanceFromPlayer, float MinDistance, bool bInFOV) const;
+
 
 private:
 	UPROPERTY(Transient)
@@ -78,6 +86,10 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Spawning")
 	float MaxDistance{};
 
+	UPROPERTY(EditAnywhere, Category = "Spawning")
+	float CooldownTime{ 10.0f };
+
+
 	UPROPERTY(EditAnywhere, Category = "Spawning | Score")
 	float FOVScoreMultiplier{ 2.0f};
 
@@ -98,4 +110,10 @@ inline int32 AEnemySpawner::GetMaxSpawnCount() const
 {
 	return SpawnLocations.Num();
 }
+
+inline bool AEnemySpawner::IsCoolingDown() const
+{
+	return LastSpawnTime >= 0 && GetTimeSinceLastSpawn() <= CooldownTime;
+}
+
 #pragma endregion Inline Definitions

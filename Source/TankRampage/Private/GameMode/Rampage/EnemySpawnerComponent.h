@@ -40,11 +40,13 @@ private:
 	bool TryRefreshSpawnersAndRescheduleIfInvalid();
 
 	void CalculateEligibleSpawners(const APawn& PlayerPawn);
+	void CalculatePossibleSpawners(const APawn& PlayerPawn);
+
 	std::pair<float,int32> CalculateSpawnIntervalTimeAndCycles() const;
 
 	std::optional<FEnemySpawnerData> GetCurrentSpawnerData() const;
 
-	bool TryReserveAdditionalAvailableSpawner();
+	bool CalculateEligibleSpawnersAsNeeded(const APawn& PlayerPawn);
 
 private:
 
@@ -57,11 +59,24 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Spawning")
 	float MinSpawnInterval{ 1 / 30.0f };
 
+	/*
+	* Amount of elapsed time between spawner re-priotization in each interval.
+	*/
+	UPROPERTY(EditDefaultsOnly, Category = "Spawning")
+	float MinRecalculationTimeSeconds{ 10.0f };
+
+	/*
+	* Max player speed for spawning consideration when determining how far player can travel in given spawning interval.
+	*/
+	UPROPERTY(EditDefaultsOnly, Category = "Player")
+	float PlayerMaxSpeed{ 1800.0f };
+
 	/**
 	* Set to value > 0 to refresh the spawner array for example if the spawners are spatially loaded.
 	*/
 	UPROPERTY(EditDefaultsOnly, Category = "Spawning")
 	int32 SpawnerRefreshMinutes{ -1 };
+
 
 	UPROPERTY(Transient)
 	TArray<AEnemySpawner*> Spawners;
@@ -75,7 +90,7 @@ private:
 	};
 
 	TArray<FSpawnerMetadata> EligibleSpawners;
-	TSet<int32> AvailableSpawnerIndices;
+	TArray<int32> AvailableSpawnerIndices;
 
 	struct FCurrentSpawnerState
 	{
@@ -90,6 +105,7 @@ private:
 		void Reset();
 		int32 SpawnsRemaining() const;
 		bool HasSpawnsRemaining() const;
+		bool AnySpawnersAreAvailable() const;
 		int32 GetDesiredSpawnCount() const;
 	};
 
@@ -100,7 +116,7 @@ private:
 
 	TArray<FEnemySpawnerData> SpawnerDataByMinute;
 	float SpawningOffsetTime{ -1.0f };
-	int32 SpawnerRefreshTicks{};
+	float LastEligibleSpawnersSortTime{ -1.0f };
 
 	FTimerHandle SpawnLoopTimer{};
 	FTimerHandle SpawningTimer{};

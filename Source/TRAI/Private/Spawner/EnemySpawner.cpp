@@ -43,9 +43,25 @@ AEnemySpawner::AEnemySpawner() : Rng(RandUtils::GenerateSeed())
 	FirstSpawnLocation->SetupAttachment(GetRootComponent());
 }
 
+bool AEnemySpawner::ShouldBeConsideredForSpawning(const APawn& PlayerPawn, float ConsiderationRadiusSq) const
+{
+	// ignore cooldown 
+	if (SpawningTypes.IsEmpty() || SpawnLocations.IsEmpty())
+	{
+		return false;
+	}
+
+	const auto& PlayerLocation = PlayerPawn.GetActorLocation();
+	const auto& SpawnReferenceLocation = GetActorLocation();
+
+	const auto RefDistSq = FVector::DistSquared(PlayerLocation, SpawnReferenceLocation);
+
+	return RefDistSq <= ConsiderationRadiusSq + FMath::Square(MaxDistance);
+}
+
 bool AEnemySpawner::CanSpawnAnyFor(const APawn& PlayerPawn, float* OutScore) const
 {
-	if (SpawningTypes.IsEmpty() || SpawnLocations.IsEmpty())
+	if (SpawningTypes.IsEmpty() || SpawnLocations.IsEmpty() || IsCoolingDown())
 	{
 		return false;
 	}
