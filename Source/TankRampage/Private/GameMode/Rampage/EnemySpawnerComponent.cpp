@@ -324,7 +324,7 @@ void UEnemySpawnerComponent::CalculateEligibleSpawners(const APawn& PlayerPawn)
 	const auto DesiredClusterSize = CurrentSpawnerState.SpawnerData.SpawnClusterSize;
 
 	UE_VLOG_UELOG(GetOwner(), LogTankRampage, Log, TEXT("%s-%s: CalculateEligibleSpawners - AvailableSpawnerIndices = %d / %d; DesiredClusterSize=%d"),
-		*LoggingUtils::GetName(GetOwner()), *GetName(), AvailableSpawnerIndices.Num() / Spawners.Num(), DesiredClusterSize);
+		*LoggingUtils::GetName(GetOwner()), *GetName(), AvailableSpawnerIndices.Num(), Spawners.Num(), DesiredClusterSize);
 
 	for (auto SpawnerIndexIt = AvailableSpawnerIndices.CreateIterator(); SpawnerIndexIt; ++SpawnerIndexIt)
 	{
