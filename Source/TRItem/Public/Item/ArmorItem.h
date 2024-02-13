@@ -26,4 +26,7 @@ private:
 
 	UPROPERTY(Category = "Config", EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
 	float ArmorDecayRateOnDamage{ 0.25f };
+
+	UPROPERTY(Category = "Config", EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
+	float ArmorDecayZeroThreshold{ 10.0f };
 };

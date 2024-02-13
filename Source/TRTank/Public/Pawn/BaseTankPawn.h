@@ -76,9 +76,6 @@ public:
 
 	UItemInventory* GetItemInventory() const;
 
-	// Inherited via IDamageAdjustmentOwner
-	FOnDamageAdjustment& GetOnDamageAdjustment() override { return OnDamageAdjustment;  }
-
 
 #if ENABLE_VISUAL_LOG
 	virtual void GrabDebugSnapshot(FVisualLogEntry* Snapshot) const override;
@@ -101,6 +98,9 @@ private:
 	void InitializeAttributes();
 
 	float AdjustDamage(float Damage, AController* EventInstigator, AActor* DamageCauser) const;
+
+	// Inherited via IDamageAdjustmentOwner
+	FOnDamageAdjustment& GetOnDamageAdjustment() override { return OnDamageAdjustment; }
 
 protected:
 

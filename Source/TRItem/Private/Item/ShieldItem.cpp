@@ -27,7 +27,10 @@ void UShieldItem::NativeInitialize(const FItemConfigData& ItemConfigData)
 
 	UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s: NativeInitialize: MaxValue=%f"), *GetName(), MaxValue);
 
-	DamageAdjustmentOwner->GetOnDamageAdjustment().AddDynamic(this, &ThisClass::OnCalculateDamage);
+	DamageAdjustmentOwner->RegisterDamageAdjustment(this, [this](auto& Delegate)
+	{
+		Delegate.AddUniqueDynamic(this, &ThisClass::OnCalculateDamage);
+	}, 0);
 }
 
 bool UShieldItem::DoActivation(USceneComponent& ActivationReferenceComponent, const FName& ActivationSocketName)

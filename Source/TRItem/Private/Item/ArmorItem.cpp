@@ -22,12 +22,10 @@ void UArmorItem::NativeInitialize(const FItemConfigData& ItemConfigData)
 
 	UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s: NativeInitialize: MaxValue=%f"), *GetName(), MaxValue);
 
-	// FIXME: Shield needs to adjust first before armor!  Need some way of doing registration order
-	// A simple way to account for this for now is to specify shield first in data table so that it registers before armor
-	// and delegates are stored in a list in registration order so they will then fire in correct sequence
-	// This doesn't work as the shield is earned but you start out with armor so order will be wrong
-	// Need to handle this somehow in the damage adjustment owner and have it reflected in a parameter
-	DamageAdjustmentOwner->GetOnDamageAdjustment().AddDynamic(this, &ThisClass::OnCalculateDamage);
+	DamageAdjustmentOwner->RegisterDamageAdjustment(this, [this](auto& Delegate)
+	{
+		Delegate.AddUniqueDynamic(this, &ThisClass::OnCalculateDamage);
+	}, 100);
 }
 
 void UArmorItem::OnCalculateDamage(float& Damage, const AActor* DamagedActor, const AController* InstigatedBy, const AActor* DamageCauser)
@@ -43,15 +41,15 @@ void UArmorItem::OnCalculateDamage(float& Damage, const AActor* DamagedActor, co
 
 	if (FMath::IsNearlyZero(CurrentValue))
 	{
-		UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s: OnCalculateDamage: Skipping since armor is depleted"), *GetName(), Damage);
+		UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s: OnCalculateDamage: Skipping since armor is depleted"), *GetName());
 		return;
 	}
 
 	const float AbsorbAmount = FMath::Min(CurrentValue, Damage);
 	float DecayAmount = AbsorbAmount * ArmorDecayRateOnDamage;
 
-	// If armor decays to below 1 HP then just clamp to 0
-	if (CurrentValue - DecayAmount < 1.0f)
+	// If armor decays to below the configured HP then just clamp to 0
+	if (CurrentValue - DecayAmount < ArmorDecayZeroThreshold)
 	{
 		DecayAmount = CurrentValue;
 	}
