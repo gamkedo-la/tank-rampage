@@ -4,7 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "Item/Item.h"
+#include "Interfaces/Percentage.h"
+
 #include "PassiveEffect.generated.h"
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnItemValueChanged, const class UPassiveEffect*, Item, float, CurrentValue, float, PreviousValue);
+
 
 /**
  * An item that is a passive effect such as health, armor, and shields.  
@@ -13,18 +18,35 @@
  * Passive effects are not activated, but rather persist after initialization.
  */
 UCLASS(Abstract)
-class TRITEM_API UPassiveEffect : public UItem
+class TRITEM_API UPassiveEffect : public UItem, public IPercentage
 {
 	GENERATED_BODY()
 
 public:
 	virtual bool CanBeActivated() const override { return false; }
 
-	UFUNCTION(BlueprintPure)
-	float GetCurrentValue() { return CurrentValue; }
+	virtual float GetCurrentValue() const override { return CurrentValue; }
 
-	UFUNCTION(BlueprintPure)
-	float GetMaxValue() { return MaxValue; }
+	virtual float GetMaxValue() const override { return MaxValue; }
+
+public:
+	UPROPERTY(Transient, Category = "Notification", BlueprintAssignable)
+	FOnItemValueChanged OnItemValueChanged{};
+
+protected:
+	class FCurrentValueChangedWatcher
+	{
+	public:
+		explicit FCurrentValueChangedWatcher(const UPassiveEffect& Effect);
+		~FCurrentValueChangedWatcher();
+
+		FCurrentValueChangedWatcher(const FCurrentValueChangedWatcher&) = delete;
+		FCurrentValueChangedWatcher& operator=(const FCurrentValueChangedWatcher&) = delete;
+
+	private:
+		const UPassiveEffect* Effect;
+		float SnapshotValue;
+	};
 
 protected:
 	UPROPERTY(BlueprintReadWrite)

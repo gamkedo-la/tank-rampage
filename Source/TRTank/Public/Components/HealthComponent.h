@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Interfaces/Percentage.h"
+
 #include "HealthComponent.generated.h"
 
 class UItem;
@@ -14,7 +16,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnHealthChanged, UHealthComponent
 // TODO: Move health and max health into AttributeSet as part of GAS
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class TRTANK_API UHealthComponent : public UActorComponent
+class TRTANK_API UHealthComponent : public UActorComponent, public IPercentage
 {
 	GENERATED_BODY()
 
@@ -51,6 +53,13 @@ protected:
 private:
 	UFUNCTION()
 	void OnItemUpgraded(UItem* Item);
+
+	// Inherited via IPercentage - mostly redundant with GetHealth, GetMaxHealth, GethealthPercent
+	// When accessing through UHealthComponent explicitly hide these members
+	virtual float GetCurrentValue() const override;
+	virtual float GetMaxValue() const override;
+
+	using IPercentage::GetValuePercent;
 		
 public:
 	UPROPERTY(Category = "Notification", Transient, BlueprintAssignable)
@@ -67,6 +76,7 @@ private:
 
 	UPROPERTY(Category = "Item", EditDefaultsOnly)
 	bool bRegisterItemUpgradeEvents{};
+
 };
 
 #pragma region Inline Definitions
@@ -94,6 +104,17 @@ inline float UHealthComponent::GetHealth() const
 inline float UHealthComponent::GetMaxHealth() const
 {
 	return MaxHealth;
+}
+
+
+inline float UHealthComponent::GetCurrentValue() const
+{
+	return GetHealth();
+}
+
+inline float UHealthComponent::GetMaxValue() const
+{
+	return GetMaxHealth();
 }
 
 #pragma endregion Inline Definitions

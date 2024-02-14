@@ -62,6 +62,8 @@ void UShieldItem::OnCalculateDamage(float& Damage, const AActor* DamagedActor, c
 		return;
 	}
 
+	FCurrentValueChangedWatcher ChangeWatcher(*this);
+
 	float AbsorbAmount = FMath::Min(CurrentValue, Damage);
 
 	UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s: OnCalculateDamage: DamageReduction=%f/%f; Shields=%f/%f"),

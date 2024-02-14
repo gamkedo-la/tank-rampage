@@ -45,6 +45,8 @@ void UArmorItem::OnCalculateDamage(float& Damage, const AActor* DamagedActor, co
 		return;
 	}
 
+	FCurrentValueChangedWatcher ChangeWatcher(*this);
+
 	const float AbsorbAmount = FMath::Min(CurrentValue, Damage);
 	float DecayAmount = AbsorbAmount * ArmorDecayRateOnDamage;
 
