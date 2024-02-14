@@ -281,7 +281,7 @@ namespace
 
 		// Should be uninitialized as we initialize it in ShuffleIndices
 		IndexArray Indices;
-		RandUtils::ShuffleIndices(Indices.begin(), Rng, Count);
+		RandUtils::ShuffleIndices(Indices.begin(), Rng, PossibleUnlocks.Num());
 
 		for (int32 i = 0; i < Count; ++i)
 		{
