@@ -67,6 +67,15 @@ protected:
 	*/
 	virtual void OnLevelChanged_Implementation(int32 NewLevel, int32 PreviousLevel) {}
 
+	/*
+	* Called before a level change event before the OnLevelChanged function is called.
+	*/
+	virtual void BeforeOnLevelChanged(int32 NewLevel, int32 PreviousLevel) {};
+	/*
+	* Called after a level change event before the OnLevelChanged function is called.
+	*/
+	virtual void AfterOnLevelChanged(int32 NewLevel, int32 PreviousLevel) {};
+
 protected:
 
 	UPROPERTY(Category = "Cooldown", BlueprintReadWrite)

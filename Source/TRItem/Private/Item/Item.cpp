@@ -111,6 +111,8 @@ void UItem::SetLevel(int32 Level)
 
 	if (PreviousLevel != ItemLevel)
 	{
+		BeforeOnLevelChanged(ItemLevel, PreviousLevel);
+
 		OnLevelChanged(ItemLevel, PreviousLevel);
 
 		auto World = GetWorld();
@@ -120,5 +122,7 @@ void UItem::SetLevel(int32 Level)
 		{
 			ItemSubsystem->OnItemUpgraded.Broadcast(this);
 		}
+
+		AfterOnLevelChanged(ItemLevel, PreviousLevel);
 	}
 }
