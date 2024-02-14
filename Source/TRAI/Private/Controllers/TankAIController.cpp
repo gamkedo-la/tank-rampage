@@ -17,6 +17,8 @@
 #include "Item/ItemNames.h"
 #include "Item/Weapon.h"
 
+#include "Navigation/PathFollowingComponent.h"
+
 #include "Curves/CurveFloat.h"
 
 
@@ -167,9 +169,8 @@ bool ATankAIController::MoveTowardPlayer(const FTankAIContext& AIContext)
 		return false;
 	}
 
-	MoveToLocation(TargetLocation, MinMoveDistanceMeters * 100);
-
-	return true;
+	// If Failed or Already at goal then no move occurs and this is equivalent to "bShouldMove"
+	return MoveToLocation(TargetLocation, MinMoveDistanceMeters * 100) == EPathFollowingRequestResult::RequestSuccessful;
 }
 
 bool ATankAIController::IsPlayerInRange(const FTankAIContext& AIContext) const
