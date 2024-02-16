@@ -99,9 +99,6 @@ private:
 
 	float AdjustDamage(float Damage, AController* EventInstigator, AActor* DamageCauser) const;
 
-	// Inherited via IDamageAdjustmentOwner
-	FOnDamageAdjustment& GetOnDamageAdjustment() override { return OnDamageAdjustment; }
-
 protected:
 
 	UPROPERTY(Category = "Components", VisibleDefaultsOnly, BlueprintReadOnly)
@@ -152,8 +149,6 @@ private:
 
 	UPROPERTY(Category = "Camera", VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> Camera{};
-
-	FOnDamageAdjustment OnDamageAdjustment{};
 };
 
 

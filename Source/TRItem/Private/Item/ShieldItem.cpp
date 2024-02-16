@@ -27,9 +27,9 @@ void UShieldItem::NativeInitialize(const FItemConfigData& ItemConfigData)
 
 	UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s: NativeInitialize: MaxValue=%f"), *GetName(), MaxValue);
 
-	DamageAdjustmentOwner->RegisterDamageAdjustment(this, [this](auto& Delegate)
+	DamageAdjustmentOwner->RegisterDamageAdjustment(this, [this](float Damage, const AActor* DamagedActor, const AController* InstigatedBy, const AActor* DamageCauser)
 	{
-		Delegate.AddUniqueDynamic(this, &ThisClass::OnCalculateDamage);
+		return OnCalculateDamage(Damage, DamagedActor, InstigatedBy, DamageCauser);
 	}, 0);
 }
 
@@ -45,7 +45,7 @@ bool UShieldItem::DoActivation(USceneComponent& ActivationReferenceComponent, co
 	return true;
 }
 
-void UShieldItem::OnCalculateDamage(float& Damage, const AActor* DamagedActor, const AController* InstigatedBy, const AActor* DamageCauser)
+float UShieldItem::OnCalculateDamage(float Damage, const AActor* DamagedActor, const AController* InstigatedBy, const AActor* DamageCauser)
 {
 	UE_VLOG_UELOG(GetOuter(), LogTRItem, Verbose, TEXT("%s: OnCalculateDamage: Damage=%f; DamagedActor=%s; InstigatedBy=%s; DamageCauser=%s"),
 		*GetName(), Damage, *LoggingUtils::GetName(DamagedActor), *LoggingUtils::GetName(InstigatedBy), *LoggingUtils::GetName(DamageCauser));
@@ -53,13 +53,13 @@ void UShieldItem::OnCalculateDamage(float& Damage, const AActor* DamagedActor, c
 	if (Damage <= 0)
 	{
 		UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s: OnCalculateDamage: Skipping zero or negative damage=%f"), *GetName(), Damage);
-		return;
+		return Damage;
 	}
 
 	if (!CanBeActivated())
 	{
 		UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s: OnCalculateDamage: Shield in cooldown: %fs remaining"), *GetName(), GetCooldownTimeRemaining());
-		return;
+		return Damage;
 	}
 
 	FCurrentValueChangedWatcher ChangeWatcher(*this);
@@ -76,6 +76,8 @@ void UShieldItem::OnCalculateDamage(float& Damage, const AActor* DamagedActor, c
 	{
 		Recharge();
 	}
+
+	return Damage;
 }
 
 void UShieldItem::Recharge()

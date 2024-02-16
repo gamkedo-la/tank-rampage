@@ -22,9 +22,9 @@ void UArmorItem::NativeInitialize(const FItemConfigData& ItemConfigData)
 
 	UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s: NativeInitialize: MaxValue=%f"), *GetName(), MaxValue);
 
-	DamageAdjustmentOwner->RegisterDamageAdjustment(this, [this](auto& Delegate)
+	DamageAdjustmentOwner->RegisterDamageAdjustment(this, [this](float Damage, const AActor* DamagedActor, const AController* InstigatedBy, const AActor* DamageCauser)
 	{
-		Delegate.AddUniqueDynamic(this, &ThisClass::OnCalculateDamage);
+		return OnCalculateDamage(Damage, DamagedActor, InstigatedBy, DamageCauser);
 	}, 100);
 }
 
@@ -48,7 +48,7 @@ void UArmorItem::AfterOnLevelChanged(int32 NewLevel, int32 PreviousLevel)
 	OnItemValueChanged.Broadcast(this, CurrentValue, CurrentValueBeforeLevelChange);
 }
 
-void UArmorItem::OnCalculateDamage(float& Damage, const AActor* DamagedActor, const AController* InstigatedBy, const AActor* DamageCauser)
+float UArmorItem::OnCalculateDamage(float Damage, const AActor* DamagedActor, const AController* InstigatedBy, const AActor* DamageCauser)
 {
 	UE_VLOG_UELOG(GetOuter(), LogTRItem, Verbose, TEXT("%s: OnCalculateDamage: Damage=%f; DamagedActor=%s; InstigatedBy=%s; DamageCauser=%s"),
 		*GetName(), Damage, *LoggingUtils::GetName(DamagedActor), *LoggingUtils::GetName(InstigatedBy), *LoggingUtils::GetName(DamageCauser));
@@ -56,13 +56,13 @@ void UArmorItem::OnCalculateDamage(float& Damage, const AActor* DamagedActor, co
 	if (Damage <= 0)
 	{
 		UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s: OnCalculateDamage: Skipping zero or negative damage=%f"), *GetName(), Damage);
-		return;
+		return Damage;
 	}
 
 	if (FMath::IsNearlyZero(CurrentValue))
 	{
 		UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s: OnCalculateDamage: Skipping since armor is depleted"), *GetName());
-		return;
+		return Damage;
 	}
 
 	FCurrentValueChangedWatcher ChangeWatcher(*this);
@@ -81,4 +81,6 @@ void UArmorItem::OnCalculateDamage(float& Damage, const AActor* DamagedActor, co
 
 	Damage -= AbsorbAmount;
 	CurrentValue -= DecayAmount;
+
+	return Damage;
 }

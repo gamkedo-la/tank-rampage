@@ -19,10 +19,9 @@ protected:
 
 	virtual void BeforeOnLevelChanged(int32 NewLevel, int32 PreviousLevel) override;
 	virtual void AfterOnLevelChanged(int32 NewLevel, int32 PreviousLevel) override;
-private:
 
-	UFUNCTION()
-	void OnCalculateDamage(float& Damage, const AActor* DamagedActor, const AController* InstigatedBy, const AActor* DamageCauser);
+private:
+	float OnCalculateDamage(float Damage, const AActor* DamagedActor, const AController* InstigatedBy, const AActor* DamageCauser);
 	
 private:
 

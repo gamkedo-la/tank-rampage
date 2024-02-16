@@ -145,9 +145,7 @@ float ABaseTankPawn::InternalTakeRadialDamage(float Damage, FRadialDamageEvent c
 
 float ABaseTankPawn::AdjustDamage(float Damage, AController* EventInstigator, AActor* DamageCauser) const
 {
-	OnDamageAdjustment.Broadcast(Damage, this, EventInstigator, DamageCauser);
-
-	return Damage;
+	return CalculateAdjustedDamage(Damage, this, EventInstigator, DamageCauser);
 }
 
 void ABaseTankPawn::UpdateSpringArmTickEnabled()

@@ -11,7 +11,10 @@
 
 #include "DamageAdjustmentOwner.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnDamageAdjustment, float&, Damage, const AActor*, DamagedActor, const AController*, InstigatedBy, const AActor*, DamageCauser);
+namespace TR
+{
+	using DamageAdjustmentFunc = TFunction<float(float /* Damage*/, const AActor* /*DamagedActor*/, const AController* /*InstigatedBy*/, const AActor* /*DamageCauser*/)>;
+}
 
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI, NotBlueprintable)
@@ -31,59 +34,40 @@ public:
 
 	static IDamageAdjustmentOwner* GetFromActor(AActor* Actor);
 
-	template<std::invocable<FOnDamageAdjustment&> RegistrationFunc>
-	void RegisterDamageAdjustment(UObject* Object, RegistrationFunc Func, int32 RegistrationOrdinal = std::numeric_limits<int32>::max());
+	void RegisterDamageAdjustment(const UObject* AdjustmentOwner, const TR::DamageAdjustmentFunc& AdjustmentFunc, int32 RegistrationOrdinal = std::numeric_limits<int32>::max());
 
 protected:
-
-	virtual FOnDamageAdjustment& GetOnDamageAdjustment() = 0;
+	float CalculateAdjustedDamage(float Damage, const AActor* DamagedActor, const AController* InstigatedBy, const AActor* DamageCauser) const;
 
 private:
 	
 	struct FDelegateMapKey
 	{
-		TFunction<void(FOnDamageAdjustment&)> Func;
-		void* Object;
+		TR::DamageAdjustmentFunc Func;
+		// Prevent dangling lambda UObject "this" captures
+		TWeakObjectPtr<const UObject> Object;
+		const void* Tiebreaker;
 		int32 Priority;
 
-		bool operator<(const FDelegateMapKey& Other) const { return std::tie(Priority, Object) < std::tie(Other.Priority, Other.Object); }
-		bool operator==(const FDelegateMapKey& Other) const { return std::tie(Priority, Object) == std::tie(Other.Priority, Other.Object); }
+		bool operator<(const FDelegateMapKey& Other) const;
+		bool operator==(const FDelegateMapKey& Other) const;
 	};
 
-	TSortedMap<FDelegateMapKey, uint8> DamageAdjustmentDelegateOrderSet;
+	// Needs to be mutable in order to lazily remove expired objects when CalculateAdjustedDamage is called
+	mutable TSortedMap<FDelegateMapKey, uint8> DamageAdjustmentDelegateOrderSet;
 };
 
-#pragma region Template Definitions
+#pragma region Inline Definitions
 
-template<std::invocable<FOnDamageAdjustment&> RegistrationFunc>
-void IDamageAdjustmentOwner::RegisterDamageAdjustment(UObject* Object, RegistrationFunc Func, int32 RegistrationOrdinal)
+
+inline bool IDamageAdjustmentOwner::FDelegateMapKey::operator<(const IDamageAdjustmentOwner::FDelegateMapKey& Other) const
 {
-	DamageAdjustmentDelegateOrderSet.FindOrAdd(FDelegateMapKey{
-		.Func = Func,
-		.Object = Object,
-		.Priority = RegistrationOrdinal
-	});
-
-	FOnDamageAdjustment& DamageAdjuster = GetOnDamageAdjustment();
-
-	// Register in correct order
-	const auto ExistingRegistrations = DamageAdjuster.GetAllObjects();
-	DamageAdjuster.Clear();
-
-	for (auto It = DamageAdjustmentDelegateOrderSet.CreateIterator(); It; ++It)
-	{
-		auto& Entry = It->Key;
-
-		if (Entry.Object == Object || ExistingRegistrations.Contains(Entry.Object))
-		{
-			Entry.Func(DamageAdjuster);
-		}
-		else
-		{
-			// was deregistered or deallocated
-			It.RemoveCurrent();
-		}
-	}
+	return std::tie(Priority, Tiebreaker) < std::tie(Other.Priority, Other.Tiebreaker);
 }
 
-#pragma endregion Template Definitions
+inline bool IDamageAdjustmentOwner::FDelegateMapKey::operator==(const IDamageAdjustmentOwner::FDelegateMapKey& Other) const
+{ 
+	return std::tie(Priority, Tiebreaker) == std::tie(Other.Priority, Other.Tiebreaker);
+}
+
+#pragma endregion Inline Definitions

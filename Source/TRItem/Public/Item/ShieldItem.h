@@ -23,8 +23,7 @@ protected:
 
 private:
 
-	UFUNCTION()
-	void OnCalculateDamage(float& Damage, const AActor* DamagedActor, const AController* InstigatedBy, const AActor* DamageCauser);
+	float OnCalculateDamage(float Damage, const AActor* DamagedActor, const AController* InstigatedBy, const AActor* DamageCauser);
 
 	void Recharge();
 
