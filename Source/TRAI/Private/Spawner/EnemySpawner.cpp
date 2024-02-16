@@ -175,8 +175,6 @@ int32 AEnemySpawner::Spawn(int32 InDesiredCount, const AActor* LookAtActor, TArr
 		auto Spawned = World->SpawnActorDeferred<APawn>(SpawnClass, SpawnTransform, this, nullptr, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding);
 		if (Spawned)
 		{
-			// Spawned enemies should not be spatially loaded
-			Spawned->SetIsSpatiallyLoaded(false);
 			UGameplayStatics::FinishSpawningActor(Spawned, SpawnTransform);
 
 			UE_VLOG_UELOG(this, LogTRAI, Log, TEXT("%s: Spawn - Spawned %s -> %s"), *GetName(), *SpawnClass->GetName(), *Spawned->GetName());
