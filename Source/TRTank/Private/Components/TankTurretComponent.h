@@ -21,7 +21,7 @@ public:
 	*
 	* @param RelativeSpeed -1 is max downward movement and 1 is max upward movement
 	*/
-	void Rotate(float RelativeSpeed);
+	bool Rotate(float RelativeSpeed);
 
 private:
 	UPROPERTY(EditDefaultsOnly, Category = Setup)

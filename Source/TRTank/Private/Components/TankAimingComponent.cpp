@@ -49,6 +49,8 @@ void UTankAimingComponent::InitializeComponent()
 	UE_LOG(LogTRTank, Log, TEXT("%s-%s: InitializeComponent"), *LoggingUtils::GetName(GetOwner()), *GetName());
 
 	CurrentAimingMode = DefaultAimingMode;
+
+	AimToleranceCosine = FMath::Cos(FMath::DegreesToRadians(AimToleranceDegrees));
 }
 
 void UTankAimingComponent::AimAt(const FAimingData& AimingData, float LaunchSpeed)
@@ -114,7 +116,7 @@ void UTankAimingComponent::AssistedAimAt(const FAimingData& AimingData, float La
 
 	const auto AimDirection = OutProjectileVelocity.GetSafeNormal();
 
-	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: AimAt - %s: Location=%s from barrelLocation=%s at LaunchSpeed=%f m/s with AimDirection=%AimDirection"),
+	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: AimAt - %s: Location=%s from barrelLocation=%s at LaunchSpeed=%f m/s with AimDirection=%s"),
 	              *LoggingUtils::GetName(GetOwner()), *GetName(),
 	              LoggingUtils::GetBoolString(bSolutionFound),
 	              *AimingData.AimingWorldDirection.ToCompactString(), *Barrel->GetComponentLocation().ToCompactString(), LaunchSpeed / 100, *AimDirection.ToCompactString());
@@ -132,8 +134,8 @@ void UTankAimingComponent::AssistedAimAt(const FAimingData& AimingData, float La
 void UTankAimingComponent::DirectAimAt(const FAimingData& AimingData)
 {
 	const FVector FireOriginLocation = Barrel->GetSocketLocation(TankSockets::GunFire);
-	const FVector TargetLocation = AimingData.AimingOriginWorldLocation + AimingData.AimingWorldDirection*ZeroingDistance;
-	const FVector AimDirection = TargetLocation - FireOriginLocation; 
+	const FVector TargetLocation = AimingData.AimingOriginWorldLocation + AimingData.AimingWorldDirection * ZeroingDistance;
+	const FVector AimDirection = (TargetLocation - FireOriginLocation).GetSafeNormal();
 	MoveBarrelTowards(AimDirection);
 }
 
@@ -152,10 +154,14 @@ void UTankAimingComponent::MoveBarrelTowards(const FVector& AimDirection)
 
 	const auto DesiredRotator = TargetRotation - Barrel->GetForwardVector().Rotation();
 
-	Barrel->Elevate(DesiredRotator.Pitch);
-	Turret->Rotate(ClampDeltaYaw(DesiredRotator.Yaw));
+	bool bMoved = Barrel->Elevate(DesiredRotator.Pitch);
+	bMoved |= Turret->Rotate(ClampDeltaYaw(DesiredRotator.Yaw));
 
-	if(auto ArmedOwner = Cast<IArmedActor>(GetOwner()); ArmedOwner && ArmedOwner->CanFire())
+	if (!bMoved)
+	{
+		FiringStatus = ETankFiringStatus::Locked;
+	}
+	else if(auto ArmedOwner = Cast<IArmedActor>(GetOwner()); ArmedOwner && ArmedOwner->CanFire())
 	{
 		FiringStatus = ETankFiringStatus::Aiming;
 	}
@@ -167,7 +173,19 @@ void UTankAimingComponent::MoveBarrelTowards(const FVector& AimDirection)
 
 bool UTankAimingComponent::IsBarrelAlreadyAtTarget(const FVector& AimDirection) const
 {
-	return AimDirection.Equals(Barrel->GetForwardVector(), AimTolerance);
+	const float Alignment = AimDirection | Barrel->GetForwardVector();
+
+	bool bAtTarget = Alignment >= AimToleranceCosine;
+
+	if (!bAtTarget)
+	{
+		UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: IsBarrelAlreadyAtTarget: FALSE - Error Angle=%f; AimDirection=%s; BarrelDirection=%s"),
+			*LoggingUtils::GetName(GetOwner()), *GetName(),
+			FMath::RadiansToDegrees(FMath::Acos(Alignment)), *AimDirection.ToCompactString(), *Barrel->GetForwardVector().ToCompactString()
+		);
+	}
+
+	return bAtTarget;
 }
 
 bool UTankAimingComponent::IsAimingAllowed() const

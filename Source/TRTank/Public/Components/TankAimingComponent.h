@@ -108,7 +108,7 @@ private:
 	TObjectPtr<UTankTurretComponent> Turret{};
 
 	UPROPERTY(Category = Setup, EditDefaultsOnly)
-	float AimTolerance{ 0.01f };
+	float AimToleranceDegrees{ 2.5f };
 
 	UPROPERTY(Category = Setup, EditDefaultsOnly)
 	EAimingMode DefaultAimingMode{ EAimingMode::AssistedAim };
@@ -119,5 +119,6 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category="Tank Aiming")
 	float ZeroingDistance = 5000.f;
-	
+
+	float AimToleranceCosine{};
 };

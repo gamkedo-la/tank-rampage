@@ -363,6 +363,10 @@ void ATankPlayerController::GetAimingData(FAimingData& AimingData) const
 		AimingData.AimingWorldDirection
 	);
 
+	UE_VLOG_ARROW(this, LogTRPlayer, VeryVerbose,
+		AimingData.AimingOriginWorldLocation, AimingData.AimingOriginWorldLocation + 1000.0f * AimingData.AimingWorldDirection,
+		FColor::Red, TEXT("Aim Direction"));
+
 	//Setup Ray Trace
 	UWorld* World = GetWorld();
 	check(World);
@@ -371,7 +375,7 @@ void ATankPlayerController::GetAimingData(FAimingData& AimingData) const
 	Params.AddIgnoredActor(GetPawn());
 	const auto& TraceStartLocation = AimingData.AimingOriginWorldLocation;
 	const auto TraceEndLocation = TraceStartLocation
-												+ MaxAimDistanceMeters * 100 //conversion to meters
+												+ MaxAimDistanceMeters * 100 //conversion to cm
 												* AimingData.AimingWorldDirection;
 	
 	AimingData.bHitResult = World->LineTraceSingleByChannel(

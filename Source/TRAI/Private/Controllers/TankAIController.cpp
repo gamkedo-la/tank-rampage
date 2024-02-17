@@ -53,8 +53,7 @@ void ATankAIController::Tick(float DeltaTime)
 	FTankAIContext AIContext
 	{
 		.MyTank = *ControlledTank,
-		.PlayerTank = *PlayerTank,
-		.bAllowFiringWhileAiming = false
+		.PlayerTank = *PlayerTank
 	};
 
 	if (!IsPlayerInRange(AIContext))
@@ -77,12 +76,8 @@ void ATankAIController::Tick(float DeltaTime)
 		InitTargetingError(AIContext);
 		TargetingErrorLastTime = NowSeconds;
 	}
-
-	// AI Tanks have trouble getting an aim lock while close, so allow firing while "aiming" when close up
-	if (!MoveTowardPlayer(AIContext))
-	{
-		AIContext.bAllowFiringWhileAiming = true;
-	}
+	
+	MoveTowardPlayer(AIContext);
 
 	AimAtPlayerTank(AIContext);
 	Fire(AIContext);
@@ -109,7 +104,7 @@ void ATankAIController::Fire(const FTankAIContext& AIContext)
 	auto TankAimingComponent = MyTank.GetTankAimingComponent();
 
 	const auto FiringStatus = TankAimingComponent->GetTankFiringStatus();
-	if (FiringStatus == ETankFiringStatus::Locked || (AIContext.bAllowFiringWhileAiming && FiringStatus == ETankFiringStatus::Aiming))
+	if (FiringStatus == ETankFiringStatus::Locked)
 	{
 		MyTank.Fire();
 	}

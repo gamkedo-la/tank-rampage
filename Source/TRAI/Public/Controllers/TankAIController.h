@@ -43,7 +43,6 @@ private:
 	{
 		ABaseTankPawn& MyTank;
 		ABaseTankPawn& PlayerTank;
-		bool bAllowFiringWhileAiming;
 	};
 
 	ABaseTankPawn* GetPlayerTank() const;

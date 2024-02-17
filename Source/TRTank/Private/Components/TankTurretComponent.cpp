@@ -8,11 +8,11 @@
 #include "VisualLogger/VisualLogger.h"
 
 
-void UTankTurretComponent::Rotate(float RelativeSpeed)
+bool UTankTurretComponent::Rotate(float RelativeSpeed)
 {
 	if (FMath::IsNearlyZero(RelativeSpeed))
 	{
-		return;
+		return false;
 	}
 
 	auto World = GetWorld();
@@ -25,8 +25,16 @@ void UTankTurretComponent::Rotate(float RelativeSpeed)
 	const auto RawYaw = GetRelativeRotation().Yaw + YawChange;
 	const auto FinalYaw = RawYaw;
 
-	SetRelativeRotation(FRotator{ 0, FinalYaw, 0 });
+	const bool bYawChange = !FMath::IsNearlyZero(YawChange, 1e-3);
 
-	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: Rotate - RelativeSpeed=%f; YawChange=%f; RawNewYaw=%f; FinalYaw=%f; DeltaTime=%fs"),
-		*LoggingUtils::GetName(GetOwner()), *GetName(), ClampedRelativeSpeed, YawChange, RawYaw, GetRelativeRotation().Yaw, DeltaSeconds);
+	// TODO: Need to detect oscillations as no change also - using TCircularBuffer
+	if (bYawChange)
+	{
+		SetRelativeRotation(FRotator{ 0, FinalYaw, 0 });
+	}
+
+	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: Rotate - YawChange=%s; RelativeSpeed=%f; YawChange=%f; RawNewYaw=%f; FinalYaw=%f; DeltaTime=%fs"),
+		*LoggingUtils::GetName(GetOwner()), *GetName(), LoggingUtils::GetBoolString(bYawChange), ClampedRelativeSpeed, YawChange, RawYaw, GetRelativeRotation().Yaw, DeltaSeconds);
+
+	return bYawChange;
 }
