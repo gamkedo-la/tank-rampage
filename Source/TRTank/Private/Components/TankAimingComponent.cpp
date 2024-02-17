@@ -51,6 +51,7 @@ void UTankAimingComponent::InitializeComponent()
 	CurrentAimingMode = DefaultAimingMode;
 
 	AimToleranceCosine = FMath::Cos(FMath::DegreesToRadians(AimToleranceDegrees));
+	AssistedAimTargetThresholdDistSq = FMath::Square(AssistedAimTargetThresholdDistanceMeters * 100);
 }
 
 void UTankAimingComponent::AimAt(const FAimingData& AimingData, float LaunchSpeed)
@@ -90,16 +91,49 @@ void UTankAimingComponent::AimAtWithNoLaunchSpeed(const FAimingData& AimingData)
 
 void UTankAimingComponent::AssistedAimAt(const FAimingData& AimingData, float LaunchSpeed)
 {
-	if (!AimingData.bHitResult)
+	const auto AimDirectionOptional = GetAimDirection(AimingData, LaunchSpeed);
+	if (!AimDirectionOptional)
 	{
 		FiringStatus = ETankFiringStatus::NoTarget;
+
+		UE_VLOG_UELOG(GetOwner(), LogTRTank, Verbose, TEXT("%s-%s: AssistedAimAt - FAILED: Location=%s from barrelLocation=%s at LaunchSpeed=%f m/s"),
+			*LoggingUtils::GetName(GetOwner()), *GetName(),
+			*AimingData.HitLocation.ToCompactString(), *Barrel->GetComponentLocation().ToCompactString(), LaunchSpeed / 100);
 		return;
 	}
-	
-	FVector OutProjectileVelocity{ EForceInit::ForceInitToZero };
+
+	const auto& AimDirection = *AimDirectionOptional;
+
+	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: AssistedAimAt - SUCCESS: Location=%s from barrelLocation=%s at LaunchSpeed=%f m/s with AimDirection=%s"),
+	              *LoggingUtils::GetName(GetOwner()), *GetName(),
+	              *AimingData.HitLocation.ToCompactString(), *Barrel->GetComponentLocation().ToCompactString(), LaunchSpeed / 100, *AimDirection.ToCompactString());
+
+	MoveBarrelTowards(AimDirection);
+}
+
+std::optional<FVector> UTankAimingComponent::GetAimDirection(const FAimingData& AimingData, float LaunchSpeed) const
+{
+	if (!AimingData.bHitResult)
+	{
+		return std::nullopt;
+	}
 
 	const auto FireLocation = Barrel->GetSocketLocation(TankSockets::GunFire);
-	
+
+	// If we are within the threshold distance of target, don't calculate the projectile velocity, just aim directly at intended target
+	if (const auto ToFireLocation = (AimingData.HitLocation - FireLocation); ToFireLocation.SizeSquared() <= AssistedAimTargetThresholdDistSq)
+	{
+		const auto AimDirection = ToFireLocation.GetSafeNormal();
+
+		UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: GetAimDirection - Skipping projectile calculation as distance=%fm within %fm; aim direction=%s"),
+			*LoggingUtils::GetName(GetOwner()), *GetName(),
+			ToFireLocation.Size() / 100, AssistedAimTargetThresholdDistanceMeters, *AimDirection.ToCompactString());
+
+		return AimDirection;
+	}
+
+	FVector OutProjectileVelocity{ EForceInit::ForceInitToZero };
+
 	const bool bSolutionFound = UGameplayStatics::SuggestProjectileVelocity(
 		this,
 		OutProjectileVelocity,
@@ -114,20 +148,19 @@ void UTankAimingComponent::AssistedAimAt(const FAimingData& AimingData, float La
 		{},
 		false);
 
-	const auto AimDirection = OutProjectileVelocity.GetSafeNormal();
-
-	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: AimAt - %s: Location=%s from barrelLocation=%s at LaunchSpeed=%f m/s with AimDirection=%s"),
-	              *LoggingUtils::GetName(GetOwner()), *GetName(),
-	              LoggingUtils::GetBoolString(bSolutionFound),
-	              *AimingData.AimingWorldDirection.ToCompactString(), *Barrel->GetComponentLocation().ToCompactString(), LaunchSpeed / 100, *AimDirection.ToCompactString());
-
 	if (bSolutionFound)
 	{
-		MoveBarrelTowards(AimDirection);
+		const auto AimDirection = OutProjectileVelocity.GetSafeNormal();
+
+		UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: GetAimDirection - projectile calculation adjusted aim direction from %s to %s"),
+			*LoggingUtils::GetName(GetOwner()), *GetName(),
+			*(AimingData.HitLocation - FireLocation).GetSafeNormal().ToCompactString(), *AimDirection.ToCompactString());
+
+		return AimDirection;
 	}
 	else
 	{
-		FiringStatus = ETankFiringStatus::NoTarget;
+		return std::nullopt;
 	}
 }
 
@@ -136,6 +169,7 @@ void UTankAimingComponent::DirectAimAt(const FAimingData& AimingData)
 	const FVector FireOriginLocation = Barrel->GetSocketLocation(TankSockets::GunFire);
 	const FVector TargetLocation = AimingData.AimingOriginWorldLocation + AimingData.AimingWorldDirection * ZeroingDistance;
 	const FVector AimDirection = (TargetLocation - FireOriginLocation).GetSafeNormal();
+
 	MoveBarrelTowards(AimDirection);
 }
 

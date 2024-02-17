@@ -385,7 +385,10 @@ void ATankPlayerController::GetAimingData(FAimingData& AimingData) const
 		ECollisionChannel::ECC_Visibility,
 		Params);
 	
-	AimingData.HitLocation = HitResult.Location;
+	if (AimingData.bHitResult)
+	{
+		AimingData.HitLocation = HitResult.Location;
+	}
 }
 
 FVector2D ATankPlayerController::GetCrosshairScreenspaceLocation() const

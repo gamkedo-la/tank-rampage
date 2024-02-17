@@ -4,6 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+
+#include <optional>
+
 #include "TankAimingComponent.generated.h"
 
 UENUM(BlueprintType)
@@ -100,6 +103,8 @@ private:
 
 	bool IsAimingAllowed() const;
 
+	std::optional<FVector> GetAimDirection(const FAimingData& AimingData, float LaunchSpeed) const;
+
 private:
 	UPROPERTY(Transient)
 	TObjectPtr<UTankBarrelComponent> Barrel{};
@@ -121,4 +126,12 @@ private:
 	float ZeroingDistance = 5000.f;
 
 	float AimToleranceCosine{};
+
+	/*
+	* Minimum distance needed for auto aim to be used. 
+	  If we are close enough to target just fire directly.
+	*/
+	UPROPERTY(EditDefaultsOnly, Category = "Tank Aiming")
+	float AssistedAimTargetThresholdDistanceMeters{ 10.0f };
+	float AssistedAimTargetThresholdDistSq{};
 };
