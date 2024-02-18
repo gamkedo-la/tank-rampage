@@ -7,6 +7,18 @@
 #include "TRTankLogging.h"
 #include "VisualLogger/VisualLogger.h"
 
+using namespace TR;
+
+namespace
+{
+	constexpr float PitchChangeEpsilon = 1e-3;
+}
+
+UTankBarrelComponent::UTankBarrelComponent()
+{
+	bWantsInitializeComponent = true;
+}
+
 bool UTankBarrelComponent::Elevate(float RelativeSpeed)
 {
 	if (FMath::IsNearlyZero(RelativeSpeed))
@@ -21,17 +33,46 @@ bool UTankBarrelComponent::Elevate(float RelativeSpeed)
 
 	const auto DeltaSeconds = World->GetDeltaSeconds();
 	const auto ElevationChange = ClampedRelativeSpeed * MaxDegreesPerSecond * DeltaSeconds;
-	const auto RawNewElevation = GetRelativeRotation().Pitch + ElevationChange;
+	const auto PreviousElevation = GetRelativeRotation().Pitch;
+	const auto RawNewElevation = PreviousElevation + ElevationChange;
 	const auto FinalElevation = FMath::Clamp(RawNewElevation, MinElevationDegrees, MaxElevationDegrees);
+	const auto FinalElevationChange = FinalElevation - PreviousElevation;
 
-	const bool bChanged = !FMath::IsNearlyEqual(FinalElevation, MinElevationDegrees) && !FMath::IsNearlyEqual(FinalElevation, MaxElevationDegrees);
+	check(OscillationsBuffer);
 
-	// TODO: Need to detect oscillations as no change also - using TCircularBuffer
+	if (!FMath::IsNearlyZero(FinalElevationChange, PitchChangeEpsilon))
+	{
+		OscillationsBuffer->Add(FinalElevation - PreviousElevation);
+	}
 
-	SetRelativeRotation(FRotator{ FinalElevation, 0, 0 });
+	const bool bOscillating = OscillationsBuffer->IsFull() && OscillationsBuffer->IsZero(OscillationThresholdDegrees);
+	if (!bOscillating)
+	{
+		SetRelativeRotation(FRotator{ FinalElevation, 0, 0 });
+	}
 
-	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: Elevate - RotationChanged=%s; RelativeSpeed=%f; ElevationChange=%f; RawNewElevation=%f; FinalElevation=%f; DeltaTime=%fs"),
-		*LoggingUtils::GetName(GetOwner()), *GetName(), LoggingUtils::GetBoolString(bChanged), ClampedRelativeSpeed, ElevationChange, RawNewElevation, GetRelativeRotation().Pitch, DeltaSeconds);
+	const bool bChanged = !bOscillating && !FMath::IsNearlyEqual(FinalElevation, MinElevationDegrees) && !FMath::IsNearlyEqual(FinalElevation, MaxElevationDegrees);
+
+	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: Elevate - RotationChanged=%s; Oscillating=%s; RelativeSpeed=%f; ElevationChange=%f; RawNewElevation=%f; FinalElevation=%f; DeltaTime=%fs; CumulativeChange=%f"),
+		*LoggingUtils::GetName(GetOwner()), *GetName(),
+		LoggingUtils::GetBoolString(bChanged), LoggingUtils::GetBoolString(bOscillating),
+		ClampedRelativeSpeed, ElevationChange, RawNewElevation, GetRelativeRotation().Pitch,
+		DeltaSeconds, OscillationsBuffer->Sum());
 
 	return bChanged;
+}
+
+void UTankBarrelComponent::InitializeComponent()
+{
+	UE_VLOG_UELOG(GetOwner(), LogTRTank, Log, TEXT("%s-%s: InitializeComponent: Num Oscillation Samples=%d"),
+		*LoggingUtils::GetName(GetOwner()), *GetName(), NumSamples);
+
+	Super::InitializeComponent();
+
+	if (!ensureMsgf(OscillationThresholdDegrees > 0, TEXT("OscillationThresholdDegrees=%f"), OscillationThresholdDegrees))
+	{
+		OscillationThresholdDegrees = 1e-3;
+	}
+
+	OscillationsBuffer = MakeUnique<BufferType>(NumSamples);
 }

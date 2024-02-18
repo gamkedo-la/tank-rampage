@@ -4,6 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "Components/StaticMeshComponent.h"
+
+#include "Containers/TimedCircularBuffer.h"
+
 #include "TankBarrelComponent.generated.h"
 
 /**
@@ -16,12 +19,17 @@ class UTankBarrelComponent : public UStaticMeshComponent
 
 public:
 
+	UTankBarrelComponent();
+
 	/*
 	* Elevate the barrel at given relative speed.
 	* 
 	* @param RelativeSpeed -1 is max downward movement and 1 is max upward movement
 	*/
 	bool Elevate(float RelativeSpeed);
+
+protected:
+	virtual void InitializeComponent() override;
 
 private:
 	UPROPERTY(EditDefaultsOnly, Category = Setup)
@@ -32,4 +40,13 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = Setup)
 	float MaxElevationDegrees{ 30.0f };
+
+	UPROPERTY(EditDefaultsOnly, Category = Oscillations, meta = (ClampMin = "1"))
+	int32 NumSamples{ 60 };
+
+	UPROPERTY(EditDefaultsOnly, Category = Oscillations, meta = (ClampMin = "0"))
+	float OscillationThresholdDegrees{ 0.5f };
+
+	using BufferType = TR::TTimedCircularBuffer<float>;
+	TUniquePtr<BufferType> OscillationsBuffer{};
 };

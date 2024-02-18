@@ -7,6 +7,15 @@
 #include "TRTankLogging.h"
 #include "VisualLogger/VisualLogger.h"
 
+namespace
+{
+	constexpr float YawChangeEpsilon = 1e-3;
+}
+
+UTankTurretComponent::UTankTurretComponent()
+{
+	bWantsInitializeComponent = true;
+}
 
 bool UTankTurretComponent::Rotate(float RelativeSpeed)
 {
@@ -25,16 +34,37 @@ bool UTankTurretComponent::Rotate(float RelativeSpeed)
 	const auto RawYaw = GetRelativeRotation().Yaw + YawChange;
 	const auto FinalYaw = RawYaw;
 
-	const bool bYawChange = !FMath::IsNearlyZero(YawChange, 1e-3);
+	check(OscillationsBuffer);
+	if (!FMath::IsNearlyZero(YawChange, YawChangeEpsilon))
+	{
+		OscillationsBuffer->Add(YawChange);
+	}
 
-	// TODO: Need to detect oscillations as no change also - using TCircularBuffer
+	const bool bOscillating = OscillationsBuffer->IsFull() && OscillationsBuffer->IsZero(OscillationThresholdDegrees);
+	const bool bYawChange = !bOscillating && !FMath::IsNearlyZero(YawChange, YawChangeEpsilon);
+
 	if (bYawChange)
 	{
 		SetRelativeRotation(FRotator{ 0, FinalYaw, 0 });
 	}
 
-	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: Rotate - YawChange=%s; RelativeSpeed=%f; YawChange=%f; RawNewYaw=%f; FinalYaw=%f; DeltaTime=%fs"),
-		*LoggingUtils::GetName(GetOwner()), *GetName(), LoggingUtils::GetBoolString(bYawChange), ClampedRelativeSpeed, YawChange, RawYaw, GetRelativeRotation().Yaw, DeltaSeconds);
+	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: Rotate - YawChange=%s; Oscillating=%s; RelativeSpeed=%f; YawChange=%f; RawNewYaw=%f; FinalYaw=%f; DeltaTime=%fs; CumulativeChange=%f"),
+		*LoggingUtils::GetName(GetOwner()), *GetName(),
+		LoggingUtils::GetBoolString(bYawChange), LoggingUtils::GetBoolString(bOscillating),
+		ClampedRelativeSpeed, YawChange, RawYaw, GetRelativeRotation().Yaw,
+		DeltaSeconds, OscillationsBuffer->Sum());
 
 	return bYawChange;
+}
+
+void UTankTurretComponent::InitializeComponent()
+{
+	Super::InitializeComponent();
+
+	if (!ensureMsgf(OscillationThresholdDegrees > 0, TEXT("OscillationThresholdDegrees=%f"), OscillationThresholdDegrees))
+	{
+		OscillationThresholdDegrees = 1e-3;
+	}
+
+	OscillationsBuffer = MakeUnique<BufferType>(NumSamples);
 }

@@ -4,6 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "Components/StaticMeshComponent.h"
+
+#include "Containers/TimedCircularBuffer.h"
+
 #include "TankTurretComponent.generated.h"
 
 /**
@@ -16,6 +19,8 @@ class UTankTurretComponent : public UStaticMeshComponent
 
 public:
 
+	UTankTurretComponent();
+
 	/*
 	* Rotate the barrel at given relative speed.
 	*
@@ -23,7 +28,19 @@ public:
 	*/
 	bool Rotate(float RelativeSpeed);
 
+protected:
+	virtual void InitializeComponent() override;
+
 private:
 	UPROPERTY(EditDefaultsOnly, Category = Setup)
 	float MaxDegreesPerSecond{ 45.0f };
+
+	UPROPERTY(EditDefaultsOnly, Category = Oscillations, meta = (ClampMin = "1"))
+	int32 NumSamples{ 60 };
+
+	UPROPERTY(EditDefaultsOnly, Category = Oscillations, meta = (ClampMin = "0"))
+	float OscillationThresholdDegrees { 2.0f };
+
+	using BufferType = TR::TTimedCircularBuffer<float>;
+	TUniquePtr<BufferType> OscillationsBuffer{};
 };
