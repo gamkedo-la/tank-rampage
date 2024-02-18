@@ -35,12 +35,12 @@ bool UTankTurretComponent::Rotate(float RelativeSpeed)
 	const auto FinalYaw = RawYaw;
 
 	check(OscillationsBuffer);
-	if (!FMath::IsNearlyZero(YawChange, YawChangeEpsilon))
+	if (bEnableOscillationDetection && !FMath::IsNearlyZero(YawChange, YawChangeEpsilon))
 	{
 		OscillationsBuffer->Add(YawChange);
 	}
 
-	const bool bOscillating = OscillationsBuffer->IsFull() && OscillationsBuffer->IsZero(OscillationThresholdDegrees);
+	const bool bOscillating = bEnableOscillationDetection && OscillationsBuffer->IsFull() && OscillationsBuffer->IsZero(OscillationThresholdDegrees);
 	const bool bYawChange = !bOscillating && !FMath::IsNearlyZero(YawChange, YawChangeEpsilon);
 
 	if (bYawChange)
@@ -66,5 +66,5 @@ void UTankTurretComponent::InitializeComponent()
 		OscillationThresholdDegrees = 1e-3;
 	}
 
-	OscillationsBuffer = MakeUnique<BufferType>(NumSamples);
+	OscillationsBuffer = MakeUnique<BufferType>(bEnableOscillationDetection ? NumSamples : 1);
 }

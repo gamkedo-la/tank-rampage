@@ -35,6 +35,9 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Setup)
 	float MaxDegreesPerSecond{ 45.0f };
 
+	UPROPERTY(EditDefaultsOnly, Category = Oscillations)
+	bool bEnableOscillationDetection {};
+
 	UPROPERTY(EditDefaultsOnly, Category = Oscillations, meta = (ClampMin = "1"))
 	int32 NumSamples{ 60 };
 

@@ -263,6 +263,8 @@ void ABaseTankPawn::Fire()
 	auto ActiveWeapon = ItemInventoryComponent->GetActiveWeapon();
 	check(ActiveWeapon);
 
+	UE_VLOG_UELOG(this, LogTRTank, Log, TEXT("%s: Fire: %s"), *GetName(), *ActiveWeapon->GetName());
+
 	ActiveWeapon->Activate(TankBarrel, TankSockets::GunFire);
 }
 

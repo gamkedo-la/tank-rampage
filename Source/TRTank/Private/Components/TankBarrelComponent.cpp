@@ -40,12 +40,12 @@ bool UTankBarrelComponent::Elevate(float RelativeSpeed)
 
 	check(OscillationsBuffer);
 
-	if (!FMath::IsNearlyZero(FinalElevationChange, PitchChangeEpsilon))
+	if (bEnableOscillationDetection && !FMath::IsNearlyZero(FinalElevationChange, PitchChangeEpsilon))
 	{
 		OscillationsBuffer->Add(FinalElevation - PreviousElevation);
 	}
 
-	const bool bOscillating = OscillationsBuffer->IsFull() && OscillationsBuffer->IsZero(OscillationThresholdDegrees);
+	const bool bOscillating = bEnableOscillationDetection && OscillationsBuffer->IsFull() && OscillationsBuffer->IsZero(OscillationThresholdDegrees);
 	if (!bOscillating)
 	{
 		SetRelativeRotation(FRotator{ FinalElevation, 0, 0 });
@@ -74,5 +74,5 @@ void UTankBarrelComponent::InitializeComponent()
 		OscillationThresholdDegrees = 1e-3;
 	}
 
-	OscillationsBuffer = MakeUnique<BufferType>(NumSamples);
+	OscillationsBuffer = MakeUnique<BufferType>(bEnableOscillationDetection ? NumSamples : 1);
 }

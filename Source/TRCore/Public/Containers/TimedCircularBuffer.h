@@ -169,22 +169,22 @@ namespace TR
 #pragma endregion Inline Definitions
 
 	template<typename T, typename TDefaultValueFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
-	TTimedCircularBuffer<T, TDefaultValueFunc>::TTimedCircularBuffer(float MeasurementIntervalSeconds, float ExpectedAddRateSeconds) : 
-		Count(static_cast<uint32>(FMath::CeilToInt32(MeasurementIntervalSeconds / ExpectedAddRateSeconds)))
+	TTimedCircularBuffer<T, TDefaultValueFunc>::TTimedCircularBuffer(float MeasurementIntervalSeconds, float ExpectedAddRateSeconds)
 	{
-		checkf(MeasurementIntervalSeconds > 0 && ExpectedAddRateSeconds > 0 && Count > 0, 
-			TEXT("MeasurementIntervalSeconds=%f; ExpectedAddRateSeconds=%f; Count=%d"), MeasurementIntervalSeconds, ExpectedAddRateSeconds, Count);
+		const auto BufferSize = FMath::CeilToInt32(MeasurementIntervalSeconds / ExpectedAddRateSeconds);
 
-		Buffer.AddZeroed(Count);
+		checkf(MeasurementIntervalSeconds > 0 && ExpectedAddRateSeconds > 0 && BufferSize > 0,
+			TEXT("MeasurementIntervalSeconds=%f; ExpectedAddRateSeconds=%f; Count=%d"), MeasurementIntervalSeconds, ExpectedAddRateSeconds, BufferSize);
+
+		Buffer.AddZeroed(BufferSize);
 	}
 
 	template<typename T, typename TDefaultValueFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
-	TTimedCircularBuffer<T, TDefaultValueFunc>::TTimedCircularBuffer(int32 NumSamples) :
-		Count(static_cast<uint32>(NumSamples))
+	TTimedCircularBuffer<T, TDefaultValueFunc>::TTimedCircularBuffer(int32 NumSamples)
 	{
 		checkf(NumSamples > 0, TEXT("NumSamples=%d"), NumSamples);
 
-		Buffer.AddZeroed(Count);
+		Buffer.AddZeroed(NumSamples);
 	}
 
 	template<typename T, typename TDefaultValueFunc> requires CircularBufferConcept<T, TDefaultValueFunc>

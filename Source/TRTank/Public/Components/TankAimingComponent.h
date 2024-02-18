@@ -97,13 +97,15 @@ private:
 
 	void DirectAimAt(const FAimingData& AimingData);
 	
-	void MoveBarrelTowards(const FVector& AimDirection);
+	void MoveBarrelTowards(const FVector& Target, const FVector& AimDirection);
 
-	bool IsBarrelAlreadyAtTarget(const FVector& AimDirection) const;
+	bool IsBarrelAlreadyAtTarget(const FVector& Target, const FVector& AimDirection) const;
 
 	bool IsAimingAllowed() const;
 
-	std::optional<FVector> GetAimDirection(const FAimingData& AimingData, float LaunchSpeed) const;
+	std::optional<FVector> GetAssistedAimDirection(const FAimingData& AimingData, float LaunchSpeed) const;
+
+	FVector GetBarrelLocation() const;
 
 private:
 	UPROPERTY(Transient)
@@ -134,4 +136,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Tank Aiming")
 	float AssistedAimTargetThresholdDistanceMeters{ 10.0f };
 	float AssistedAimTargetThresholdDistSq{};
+
+	UPROPERTY(EditDefaultsOnly, Category = "Tank Aiming")
+	float AssistedAimArcLengthErrorThresholdMeters{ 3.0f };
 };
