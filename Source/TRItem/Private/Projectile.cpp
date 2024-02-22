@@ -73,11 +73,16 @@ void AProjectile::Initialize(USceneComponent& IncidentComponent, const FName& In
 	AttachSocketName = IncidentSocketName;
 	ProjectileDamageParams = InProjectileDamageParams;
 
+	check(ExplosionForce);
+
 	if (ProjectileDamageParams.WeaponDamageType == EWeaponDamageType::Radial)
 	{
 		ExplosionForce->Falloff = ERadialImpulseFalloff::RIF_Linear;
 		ExplosionForce->Radius = ProjectileDamageParams.DamageOuterRadius;
 	}
+
+	ExplosionForce->ImpulseStrength *= ProjectileDamageParams.ImpactImpulseAmountMultiplier;
+	HitVfxScaleParameterValue *= ProjectileDamageParams.ImpactImpulseAmountMultiplier;
 
 	if (InOptHomingParams)
 	{

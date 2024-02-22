@@ -80,6 +80,11 @@ protected:
 	UPROPERTY(Category = "Damage | Radial", EditDefaultsOnly, BlueprintReadWrite)
 	float DamageFalloff{ 1.0f };
 
+	/*
+	* Multiplier on base impact impulse amount.
+	*/
+	UPROPERTY(Category = "Impulse", EditDefaultsOnly, BlueprintReadWrite, meta = (clampMin = "0"))
+	float ImpactImpulseAmountMultiplier{ 1.0f };
 
 	UPROPERTY(Category = "Homing", EditDefaultsOnly, BlueprintReadWrite)
 	bool bIsHoming{};

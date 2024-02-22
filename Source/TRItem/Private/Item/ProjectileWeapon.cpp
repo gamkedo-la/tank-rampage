@@ -87,7 +87,8 @@ void UProjectileWeapon::LaunchProjectile(USceneComponent& ActivationReferenceCom
 		.MaxDamageAmount = DamageAmount,
 		.DamageInnerRadius = DamageInnerRadius,
 		.DamageOuterRadius = DamageOuterRadius,
-		.DamageFalloff = DamageFalloff
+		.DamageFalloff = DamageFalloff,
+		.ImpactImpulseAmountMultiplier = ImpactImpulseAmountMultiplier
 	};
 
 	std::optional<FProjectileHomingParams> OptHomingParams;
