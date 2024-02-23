@@ -12,7 +12,7 @@ namespace
     constexpr int32 DefaultLevelUnlockCount = 3;
 
     TArray<FLevelUpData*> ParseLevelUnlockOptions(UDataTable* LevelUpDataTable);
-    TMap<int32, TArray<FLevelUnlock>> ParseLevelUnlocksByPlayerLevel(UDataTable* LevelUnlocksDataTable);
+    TSortedMap<int32, TArray<FLevelUnlock>> ParseLevelUnlocksByPlayerLevel(UDataTable* LevelUnlocksDataTable);
     int32 GetLevelOptionsByPlayerLevel(const TArray<FLevelUpData*>& LevelUpRows, int32 PlayerLevel);
 }
 
@@ -28,28 +28,36 @@ TArray<FLevelUnlocksConfig> LevelUnlocksParser::ToConfigArray(UDataTable* LevelU
         return {};
     }
 
-    TMap<int32, TArray<FLevelUnlock>> LevelUnlocksByPlayerLevel = ParseLevelUnlocksByPlayerLevel(LevelUnlocksDataTable);
+    TSortedMap<int32, TArray<FLevelUnlock>> LevelUnlocksByPlayerLevel = ParseLevelUnlocksByPlayerLevel(LevelUnlocksDataTable);
+
+    const int32 MaxUnlockLevel = [&LevelUnlocksByPlayerLevel]()
+    {
+         // Get the last element which will have the max level
+         decltype(LevelUnlocksByPlayerLevel)::TConstReverseIterator RevIt(LevelUnlocksByPlayerLevel);
+         return RevIt ? RevIt.Key() : 0;
+    }();
+
     // Starts at Level 2
     TArray<FLevelUpData*> LevelUnlockOptions = ParseLevelUnlockOptions(LevelUpDataTable);
 
-    if (LevelUnlockOptions.Num() + 1 != LevelUnlocksByPlayerLevel.Num())
+    if (LevelUnlockOptions.Num() + 1 != MaxUnlockLevel)
     {
         UE_LOG(LogTankRampage, Warning,
             TEXT("LevelUnlocksParser::ToConfigArray - LevelUpDataTable=%s number of rows=%d (starting at level 2) does not match LevelUnlocksDataTable=%s player levels count=%d (starting at level 1)"),
-            *LevelUpDataTable->GetName(), LevelUnlockOptions.Num(), *LevelUnlocksDataTable->GetName(), LevelUnlocksByPlayerLevel.Num()
+            *LevelUpDataTable->GetName(), LevelUnlockOptions.Num(), *LevelUnlocksDataTable->GetName(), MaxUnlockLevel
         );
     }
 
     TArray<FLevelUnlocksConfig> LevelUnlocksConfig;
-    LevelUnlocksConfig.Reserve(LevelUnlocksByPlayerLevel.Num());
+    LevelUnlocksConfig.Reserve(MaxUnlockLevel);
 
-    for(int32 PlayerLevel = 1; PlayerLevel <= LevelUnlocksByPlayerLevel.Num(); ++PlayerLevel)
+    for(int32 PlayerLevel = 1; PlayerLevel <= MaxUnlockLevel; ++PlayerLevel)
     {
         TArray<FLevelUnlock>* LevelUnlocksFindResult = LevelUnlocksByPlayerLevel.Find(PlayerLevel);
+        const auto LevelOptionCount = GetLevelOptionsByPlayerLevel(LevelUnlockOptions, PlayerLevel);
+
         if (LevelUnlocksFindResult)
         {
-            const auto LevelOptionCount = GetLevelOptionsByPlayerLevel(LevelUnlockOptions, PlayerLevel);
-
             LevelUnlocksConfig.Add(FLevelUnlocksConfig
             {
                 .AvailableUnlocks = std::move(*LevelUnlocksFindResult),
@@ -66,7 +74,7 @@ TArray<FLevelUnlocksConfig> LevelUnlocksParser::ToConfigArray(UDataTable* LevelU
             LevelUnlocksConfig.Add(FLevelUnlocksConfig
             {
                 .AvailableUnlocks = {},
-                .MaxUnlockOptions = 0
+                .MaxUnlockOptions = LevelOptionCount
             });
         }
     }
@@ -107,9 +115,9 @@ namespace
         return Data;
     }
 
-    TMap<int32, TArray<FLevelUnlock>> ParseLevelUnlocksByPlayerLevel(UDataTable* LevelUnlocksDataTable)
+    TSortedMap<int32, TArray<FLevelUnlock>> ParseLevelUnlocksByPlayerLevel(UDataTable* LevelUnlocksDataTable)
     {
-        TMap<int32, TArray<FLevelUnlock>> ParsedData;
+        TSortedMap<int32, TArray<FLevelUnlock>> ParsedData;
 
         for (const auto& [_, RowData] : LevelUnlocksDataTable->GetRowMap())
         {

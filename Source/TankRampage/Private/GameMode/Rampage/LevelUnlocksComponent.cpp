@@ -113,17 +113,20 @@ void ULevelUnlocksComponent::DetermineAvailableOptionCounts(int32 NextLevel, int
 
 	if (NextLevel >= LevelUnlocks.Num())
 	{
-		UE_VLOG_UELOG(this, LogTankRampage, Display, TEXT("%s: DetermineAvailableOptionCounts : NextLevel=%d >= LevelUnlocks.Num()=%d - Offering previous unlocks"),
-			*GetName(), NextLevel, LevelUnlocks.Num());
-
 		NumAvailableOptions = GetNumUnlockOptions(LevelUnlocks.Last());
 		NumCurrent = 0;
+
+		UE_VLOG_UELOG(this, LogTankRampage, Display, TEXT("%s: DetermineAvailableOptionCounts : NextLevel=%d >= LevelUnlocks.Num()=%d - Offering previous unlocks; MaxOptions=%d"),
+			*GetName(), NextLevel, LevelUnlocks.Num(), NumAvailableOptions);
 	}
 	else
 	{
 		const auto& Config = LevelUnlocks[NextLevel];
 		NumAvailableOptions = GetNumUnlockOptions(Config);
 		NumCurrent = NumAvailableOptions > 0 ? FMath::Min(FMath::RandRange(1, NumAvailableOptions), Config.AvailableUnlocks.Num()) : 0;
+
+		UE_VLOG_UELOG(this, LogTankRampage, Display, TEXT("%s: DetermineAvailableOptionCounts : NextLevel=%d - Initial new unlocks: %d/%d options"),
+			*GetName(), NextLevel, NumCurrent, NumAvailableOptions);
 	}
 }
 
