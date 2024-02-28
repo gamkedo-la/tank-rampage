@@ -256,12 +256,22 @@ void AProjectile::OnCollision(UPrimitiveComponent* HitComponent, AActor* OtherAc
 		PlayHitSfx(OtherActor);
 		PlayHitVfx();
 
-		Destroy();
+		MarkForDestroy();
 	}
 	else if (OtherActor)
 	{
 		UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: Ignoring self hit with instigator=%s"), *GetName(), *OtherActor->GetName());
 	}
+}
+
+void AProjectile::MarkForDestroy()
+{
+	// Allow frame to complete
+
+	GetWorldTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
+	{
+		Destroy();
+	}));
 }
 
 void AProjectile::PlayHitSfx(AActor* HitActor) const

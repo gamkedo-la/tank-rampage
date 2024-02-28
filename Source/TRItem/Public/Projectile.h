@@ -92,6 +92,8 @@ private:
 	void InitHomingInfo(const FProjectileHomingParams& InProjectileHomingParams);
 	static USceneComponent* GetHomingSceneComponent(AActor* Actor);
 
+	void MarkForDestroy();
+
 protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UFiredWeaponMovementComponent> ProjectileMovementComponent{};
