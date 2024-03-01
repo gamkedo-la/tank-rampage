@@ -54,6 +54,9 @@ private:
 
 	float CalculateSpawningScore(float DistanceFromPlayer, float MinDistance, bool bInFOV) const;
 
+	void GroundSpawnPoints();
+	void GroundSpawnPoint(USpawnLocationComponent& SpawnLocation);
+
 
 private:
 	UPROPERTY(Transient)
@@ -89,12 +92,20 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Spawning")
 	float CooldownTime{ 10.0f };
 
-
 	UPROPERTY(EditAnywhere, Category = "Spawning | Score")
 	float FOVScoreMultiplier{ 2.0f};
 
 	UPROPERTY(EditAnywhere, Category = "Spawning | Score")
 	float DistanceUnitMultiplier{ 0.005f };
+
+	UPROPERTY(EditAnywhere, Category = "Spawning | Grounding")
+	float GroundTraceUpOffset{ 5 * 100.0f };
+
+	UPROPERTY(EditAnywhere, Category = "Spawning | Grounding")
+	float GroundTraceDownOffset{ 10 * 100.0f };
+
+	UPROPERTY(EditAnywhere, Category = "Spawning | Grounding")
+	float GroundEpsilon{ 1e-3f };
 
 	std::default_random_engine Rng;
 };

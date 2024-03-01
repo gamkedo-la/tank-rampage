@@ -219,6 +219,8 @@ void AEnemySpawner::BeginPlay()
 
 	UE_VLOG_UELOG(this, LogTRAI, Log, TEXT("%s: BeginPlay - %d spawn locations found"), *GetName(), SpawnLocations.Num());
 
+	GroundSpawnPoints();
+
 #if ENABLE_VISUAL_LOG
 	if (FVisualLogger::IsRecording() && UE_LOG_ACTIVE(LogTRAI,Verbose))
 	{
@@ -229,6 +231,56 @@ void AEnemySpawner::BeginPlay()
 	}
 
 #endif
+}
+
+void AEnemySpawner::GroundSpawnPoints()
+{
+	UE_VLOG_UELOG(this, LogTRAI, Log, TEXT("%s: GroundSpawnPoints - Z Offset for trace is {%f,%f}"), *GetName(), GroundTraceUpOffset, GroundTraceDownOffset);
+
+	for (auto* SpawnLocation : SpawnLocations)
+	{
+		check(SpawnLocation);
+
+		GroundSpawnPoint(*SpawnLocation);
+	}
+}
+
+void AEnemySpawner::GroundSpawnPoint(USpawnLocationComponent& SpawnLocation)
+{
+	auto World = GetWorld();
+	check(World);
+
+	FHitResult HitResult;
+
+	const auto& CurrentLocation = SpawnLocation.GetComponentLocation();
+
+	const FVector TraceStart = CurrentLocation + FVector(0, 0, GroundTraceUpOffset);
+	const FVector TraceEnd = CurrentLocation - FVector(0, 0, GroundTraceDownOffset);
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+
+	FCollisionResponseParams ResponseParams;
+	ResponseParams.CollisionResponse.Pawn = ECollisionResponse::ECR_Ignore;
+
+	if (World->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECollisionChannel::ECC_Visibility, QueryParams, ResponseParams))
+	{
+		const auto& AdjustedLocation = HitResult.Location;
+
+		if (!CurrentLocation.Equals(AdjustedLocation, GroundEpsilon))
+		{
+			UE_VLOG_UELOG(this, LogTRAI, Verbose, TEXT("%s: GroundSpawnPoint: %s - Adjusted ground location from %s -> %s"),
+				*GetName(), *SpawnLocation.GetName(), *CurrentLocation.ToCompactString(), *AdjustedLocation.ToCompactString());
+
+			SpawnLocation.SetWorldLocation(AdjustedLocation);
+		}
+	}
+	else
+	{
+		UE_VLOG_LOCATION(this, LogTRAI, Warning, CurrentLocation, 100.0f, FColor::Orange, TEXT("Spawner could not find ground!"));
+		UE_VLOG_UELOG(this, LogTRAI, Warning, TEXT("%s: GroundSpawnPoint: %s - Could not find ground - no adjustment made to initial position of %s"),
+			*GetName(), *SpawnLocation.GetName(), *CurrentLocation.ToCompactString());
+	}
 }
 
 void AEnemySpawner::PostInitializeComponents()
