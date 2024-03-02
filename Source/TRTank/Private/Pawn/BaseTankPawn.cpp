@@ -120,7 +120,7 @@ void ABaseTankPawn::PostInitializeComponents()
 // called on replicated clients and server
 void ABaseTankPawn::NotifyControllerChanged()
 {
-	UE_VLOG_UELOG(this, LogTRTank, Log, TEXT("%s: NotifyControllerChanged"), *GetName());
+	UE_VLOG_UELOG(this, LogTRTank, Log, TEXT("%s: NotifyControllerChanged: %s"), *GetName(), *LoggingUtils::GetName(GetController()));
 
 	Super::NotifyControllerChanged();
 

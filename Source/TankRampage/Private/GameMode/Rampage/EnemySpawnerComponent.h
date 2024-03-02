@@ -48,6 +48,8 @@ private:
 
 	bool CalculateEligibleSpawnersAsNeeded(const APawn& PlayerPawn);
 
+	bool IsDueForSpawnerPrioritization() const;
+
 private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Spawning")
@@ -98,7 +100,9 @@ private:
 		int32 EligibleSpawnersIndex{};
 		int32 TotalSpawned{};
 		int32 IntervalsRemaining{};
-		int32 NumSpawners{};
+		int32 TotalIntervals{};
+		int32 NumEligibleSpawners{};
+		int32 NumTotalSpawners{};
 
 		TWeakObjectPtr<const AActor> LookAtActor{};
 

@@ -105,6 +105,9 @@ private:
 	float GroundTraceDownOffset{ 10 * 100.0f };
 
 	UPROPERTY(EditAnywhere, Category = "Spawning | Grounding")
+	float GroundSpawnOffset{ 25.0f };
+
+	UPROPERTY(EditAnywhere, Category = "Spawning | Grounding")
 	float GroundEpsilon{ 1e-3f };
 
 	std::default_random_engine Rng;

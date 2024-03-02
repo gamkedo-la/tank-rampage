@@ -235,7 +235,7 @@ void AEnemySpawner::BeginPlay()
 
 void AEnemySpawner::GroundSpawnPoints()
 {
-	UE_VLOG_UELOG(this, LogTRAI, Log, TEXT("%s: GroundSpawnPoints - Z Offset for trace is {%f,%f}"), *GetName(), GroundTraceUpOffset, GroundTraceDownOffset);
+	UE_VLOG_UELOG(this, LogTRAI, Log, TEXT("%s: GroundSpawnPoints - GroundSpawnOffset=%f and Z Offset for trace is {%f,%f}"), *GetName(), GroundSpawnOffset, GroundTraceUpOffset, GroundTraceDownOffset);
 
 	for (auto* SpawnLocation : SpawnLocations)
 	{
@@ -265,7 +265,7 @@ void AEnemySpawner::GroundSpawnPoint(USpawnLocationComponent& SpawnLocation)
 
 	if (World->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECollisionChannel::ECC_Visibility, QueryParams, ResponseParams))
 	{
-		const auto& AdjustedLocation = HitResult.Location;
+		const auto& AdjustedLocation = HitResult.Location + HitResult.Normal * GroundSpawnOffset;
 
 		if (!CurrentLocation.Equals(AdjustedLocation, GroundEpsilon))
 		{

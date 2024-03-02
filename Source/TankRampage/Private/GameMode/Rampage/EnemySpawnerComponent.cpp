@@ -153,6 +153,8 @@ float UEnemySpawnerComponent::CalculateSpawningLoop()
 
 	CalculatePossibleSpawners(*PlayerPawn);
 
+	CurrentSpawnerState.NumTotalSpawners = AvailableSpawnerIndices.Num();
+
 	if (AvailableSpawnerIndices.IsEmpty())
 	{
 		UE_VLOG_UELOG(GetOwner(), LogTankRampage, Log, TEXT("%s-%s: CalculateSpawningLoop - No available spawners"),
@@ -162,7 +164,7 @@ float UEnemySpawnerComponent::CalculateSpawningLoop()
 	
 	const auto [SpawnIntervalTime, SpawnCycles] = CalculateSpawnIntervalTimeAndCycles();
 
-	CurrentSpawnerState.IntervalsRemaining = SpawnCycles;
+	CurrentSpawnerState.IntervalsRemaining = CurrentSpawnerState.TotalIntervals = SpawnCycles;
 
 	return SpawnIntervalTime;
 }
@@ -188,8 +190,8 @@ void UEnemySpawnerComponent::ClearSpawningTimer()
 
 void UEnemySpawnerComponent::DoSpawnTimeSlice()
 {
-	UE_VLOG_UELOG(GetOwner(), LogTankRampage, Log, TEXT("%s-%s: DoSpawnTimeSlice running..."),
-		*LoggingUtils::GetName(GetOwner()), *GetName());
+	UE_VLOG_UELOG(GetOwner(), LogTankRampage, Log, TEXT("%s-%s: DoSpawnTimeSlice interval %d/%d running..."),
+		*LoggingUtils::GetName(GetOwner()), *GetName(), CurrentSpawnerState.TotalIntervals - CurrentSpawnerState.IntervalsRemaining + 1, CurrentSpawnerState.TotalIntervals);
 
 	auto PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
 	if (!PlayerPawn)
@@ -213,6 +215,9 @@ void UEnemySpawnerComponent::DoSpawnTimeSlice()
 	int32 IterationCount{}, SpawnCountCurrentLoop{}, TotalSliceSpawns{};
 	const int32 DesiredCount = CurrentSpawnerState.GetDesiredSpawnCount();
 	const AActor* LookAtActor = CurrentSpawnerState.LookAtActor.Get();
+
+	UE_VLOG_UELOG(GetOwner(), LogTankRampage, Log, TEXT("%s-%s: DoSpawnTimeSlice - Begin: %d desired with %d/%d spawned already"),
+		*LoggingUtils::GetName(GetOwner()), *GetName(), DesiredCount, TotalOverallSpawns, CurrentSpawnerState.SpawnerData.SpawnCount);
 
 	--CurrentSpawnerState.IntervalsRemaining;
 
@@ -371,7 +376,10 @@ void UEnemySpawnerComponent::CalculateEligibleSpawners(const APawn& PlayerPawn)
 	});
 
 	CurrentSpawnerState.EligibleSpawnersIndex = 0;
-	CurrentSpawnerState.NumSpawners = EligibleSpawners.Num();
+	CurrentSpawnerState.NumEligibleSpawners = EligibleSpawners.Num();
+
+	UE_VLOG_UELOG(GetOwner(), LogTankRampage, Log, TEXT("%s-%s: CalculateEligibleSpawners - NumEligibleSpawners=%d"),
+		*LoggingUtils::GetName(GetOwner()), *GetName(), CurrentSpawnerState.NumEligibleSpawners);
 
 	LastEligibleSpawnersSortTime = World->GetTimeSeconds();
 }
@@ -385,6 +393,8 @@ void UEnemySpawnerComponent::CalculatePossibleSpawners(const APawn& PlayerPawn)
 
 	UE_VLOG_UELOG(GetOwner(), LogTankRampage, Verbose, TEXT("%s-%s: CalculatePossibleSpawners - ConsiderationRadius=%fm"),
 		*LoggingUtils::GetName(GetOwner()), *GetName(), PlayerMaxSpeed * 60.0 / 100);
+
+	const auto StartingSpawnerCount = Spawners.Num();
 
 	for (auto SpawnerIt = Spawners.CreateIterator(); SpawnerIt; ++SpawnerIt)
 	{
@@ -402,6 +412,9 @@ void UEnemySpawnerComponent::CalculatePossibleSpawners(const APawn& PlayerPawn)
 			AvailableSpawnerIndices.Add(SpawnerIt.GetIndex());
 		}
 	}
+
+	UE_VLOG_UELOG(GetOwner(), LogTankRampage, Log, TEXT("%s-%s: CalculatePossibleSpawners - %d/%d available spawners: %d were removed"),
+		*LoggingUtils::GetName(GetOwner()), *GetName(), AvailableSpawnerIndices.Num(), Spawners.Num(), StartingSpawnerCount - Spawners.Num());
 }
 
 std::pair<float, int32> UEnemySpawnerComponent::CalculateSpawnIntervalTimeAndCycles() const
@@ -441,13 +454,20 @@ std::optional<FEnemySpawnerData> UEnemySpawnerComponent::GetCurrentSpawnerData()
 	return SpawnerDataByMinute[Index];
 }
 
+bool UEnemySpawnerComponent::IsDueForSpawnerPrioritization() const
+{
+	auto World = GetWorld();
+	check(World);
+
+	return LastEligibleSpawnersSortTime <= 0 || World->GetTimeSeconds() - LastEligibleSpawnersSortTime > MinRecalculationTimeSeconds;
+}
+
 bool UEnemySpawnerComponent::CalculateEligibleSpawnersAsNeeded(const APawn& PlayerPawn)
 {
 	auto World = GetWorld();
 	check(World);
 
-	if (LastEligibleSpawnersSortTime > 0 && World->GetTimeSeconds() - LastEligibleSpawnersSortTime <= MinRecalculationTimeSeconds &&
-		CurrentSpawnerState.AnySpawnersAreAvailable())
+	if (CurrentSpawnerState.AnySpawnersAreAvailable() && !IsDueForSpawnerPrioritization())
 	{
 		return true;
 	}
@@ -485,7 +505,10 @@ int32 UEnemySpawnerComponent::FCurrentSpawnerState::GetDesiredSpawnCount() const
 	DesiredSpawnDistribution = FMath::Max(DesiredSpawnDistribution, SpawnerData.SpawnClusterSize);
 
 	// This is called on the active spawner index so no need to -1 it
-	const int32 SpawnersRemaining = NumSpawners - EligibleSpawnersIndex;
+	// NumEligibleSpawners may be low but as player moves new spawners may become eligible so balance this with total num spawners in the loop
+	const int32 SpawnersRemaining = FMath::Min(NumTotalSpawners, 
+		(NumEligibleSpawners - EligibleSpawnersIndex) + NumEligibleSpawners * (FMath::Max(IntervalsRemaining - 1, 0)));
+
 	if (SpawnersRemaining > 0)
 	{
 		DesiredSpawnDistribution = FMath::Max(DesiredSpawnDistribution, FMath::CeilToInt32(Remaining / (static_cast<float>(SpawnersRemaining) * DesiredSpawnDistribution)));
@@ -496,7 +519,7 @@ int32 UEnemySpawnerComponent::FCurrentSpawnerState::GetDesiredSpawnCount() const
 
 bool UEnemySpawnerComponent::FCurrentSpawnerState::AnySpawnersAreAvailable() const
 {
-	return EligibleSpawnersIndex < NumSpawners;
+	return EligibleSpawnersIndex < NumEligibleSpawners;
 }
 
 int32 UEnemySpawnerComponent::FCurrentSpawnerState::SpawnsRemaining() const
