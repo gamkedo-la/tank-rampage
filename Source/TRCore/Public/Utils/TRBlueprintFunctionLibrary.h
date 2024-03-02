@@ -17,4 +17,7 @@ class TRCORE_API UTRBlueprintFunctionLibrary : public UBlueprintFunctionLibrary
 public:
 	UFUNCTION(BlueprintPure, Category = "Tank Rampage|Utils", meta = (DefaultToSelf = "WorldContextObject"))
 	static bool IsRunningInEditor(const UObject* WorldContextObject);
+
+	UFUNCTION(BlueprintPure, Category = "Tank Rampage|Utils")
+	static FString GetProjectVersion();
 };
