@@ -7,7 +7,11 @@
 #include "TRPlayerLogging.h"
 #include "Pawn/BaseTankPawn.h"
 #include "Components/HealthComponent.h"
+
 #include "Item/ItemInventory.h"
+#include "Item/Item.h"
+#include "Item/ItemNames.h"
+
 #include "Subsystems/TankEventsSubsystem.h"
 
 #include "InputActionValue.h"
@@ -88,6 +92,15 @@ void ATankPlayerController::SetupInputComponent()
 	else
 	{
 		UE_LOG(LogTRPlayer, Error, TEXT("%s: SetupPlayerInputComponent - MoveAction not bound"), *GetName());
+	}
+
+	if (ActivateTurboAction)
+	{
+		EnhancedInputComponent->BindAction(ActivateTurboAction, ETriggerEvent::Triggered, this, &ThisClass::OnActivateTurbo);
+	}
+	else
+	{
+		UE_LOG(LogTRPlayer, Error, TEXT("%s: SetupPlayerInputComponent - ActivateTurboAction not bound"), *GetName());
 	}
 
 	BindWeaponSelectActions(*EnhancedInputComponent);
@@ -237,6 +250,36 @@ void ATankPlayerController::OnMove(const FInputActionValue& Value)
 
 	ControlledTank->MoveForward(MoveAxisValue.Y);
 	ControlledTank->TurnRight(MoveAxisValue.X);
+}
+
+void ATankPlayerController::OnActivateTurbo()
+{
+	auto ControlledTank = GetControlledTank();
+	if (!ControlledTank || !IsControlledTankAlive())
+	{
+		return;
+	}
+
+	auto ItemInventory = ControlledTank->GetItemInventory();
+	check(ItemInventory);
+
+	auto TurboItem = ItemInventory->GetItemByName(TR::ItemNames::TurboSpeedBoost);
+	if (!TurboItem)
+	{
+		UE_LOG(LogTRPlayer, Log, TEXT("%s: OnActivateTurbo - Pawn=%s does not have the turbo item unlocked"),
+			*GetName(), *LoggingUtils::GetName(ControlledTank));
+		return;
+	}
+
+	if (TurboItem->CanBeActivated())
+	{
+		TurboItem->ActivateOnRootComponent();
+	}
+	else
+	{
+		UE_LOG(LogTRPlayer, Log, TEXT("%s: OnActivateTurbo - Pawn=%s; TurboItem=%s is in cooldown for %fs"),
+			*GetName(), *LoggingUtils::GetName(ControlledTank), *TurboItem->GetName(), TurboItem->GetCooldownTimeRemaining());
+	}
 }
 
 void ATankPlayerController::OnSelectWeapon(const FInputActionInstance& InputActionInstance)

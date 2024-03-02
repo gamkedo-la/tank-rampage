@@ -92,6 +92,21 @@ bool UItem::Activate(USceneComponent* ActivationReferenceComponent, const FName&
 	return true;
 }
 
+bool UItem::ActivateOnRootComponent()
+{
+	auto OwningActor = GetOwner();
+
+	UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s-%s: ActivateOnRootComponent: OwningActor=%s"),
+		*LoggingUtils::GetName(GetOuter()), *GetName(), *LoggingUtils::GetName(OwningActor));
+
+	if (!OwningActor)
+	{
+		return false;
+	}
+
+	return Activate(OwningActor->GetRootComponent(), NAME_None);
+}
+
 void UItem::Initialize(APawn* InOwner, const FItemConfigData& ItemConfigData)
 {
 	UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s-%s: Initialize: InOwner=%s; ItemConfigData=%s"),

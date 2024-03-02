@@ -28,6 +28,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	bool Activate(USceneComponent* ActivationReferenceComponent, const FName& ActivationSocketName);
 
+	UFUNCTION(BlueprintCallable)
+	bool ActivateOnRootComponent();
+
 	void Initialize(APawn* InOwner, const FItemConfigData& ItemConfigData);
 
 	UFUNCTION(BlueprintPure)

@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 
-namespace ItemNames
+namespace TR::ItemNames
 {
 	inline const FName MainGunName = "MainGun";
 	inline const FName MissilesName = "Missiles";
@@ -13,4 +13,5 @@ namespace ItemNames
 	inline const FName Shield = "Shield";
 	inline const FName Armor = "Armor";
 	inline const FName MiniNuke = "MiniNuke";
+	inline const FName TurboSpeedBoost = "Turbo";
 }

@@ -82,8 +82,5 @@ float UShieldItem::OnCalculateDamage(float Damage, const AActor* DamagedActor, c
 
 void UShieldItem::Recharge()
 {
-	auto MyOwner = GetOwner();
-	check(MyOwner);
-
-	Activate(MyOwner->GetRootComponent(), NAME_None);
+	ActivateOnRootComponent();
 }

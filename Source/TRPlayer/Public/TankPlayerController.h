@@ -55,6 +55,7 @@ private:
 	void OnLook(const FInputActionValue& Value);
 	void OnFire();
 	void OnMove(const FInputActionValue& Value);
+	void OnActivateTurbo();
 
 	void OnSelectWeapon(const FInputActionInstance& InputActionInstance);
 	void OnNextWeapon(const FInputActionInstance& InputActionInstance);
@@ -84,6 +85,9 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> MoveAction{};
+
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> ActivateTurboAction{};
 
 	UPROPERTY(EditDefaultsOnly, Category = Input)
 	TArray<const UInputAction*> WeaponSelectActions{};

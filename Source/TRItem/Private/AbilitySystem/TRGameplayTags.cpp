@@ -7,27 +7,74 @@
 #include "TRItemLogging.h"
 #include "VisualLogger/VisualLogger.h"
 
-TRITEM_API bool TR::GameplayTags::HasExactTag(AActor* Actor, const FName& TagName)
+namespace
 {
-	if (!Actor)
-	{
-		return false;
-	}
+	FGameplayTag* GetTagByName(const FName& TagName);
+	UAbilitySystemComponent* GetAbilitySystemComponent(AActor* Actor);
+}
 
-	auto AbilitySystemComponent = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Actor);
+bool TR::GameplayTags::HasExactTag(AActor* Actor, const FName& TagName)
+{
+	auto AbilitySystemComponent = GetAbilitySystemComponent(Actor);
 	if (!AbilitySystemComponent)
 	{
 		return false;
 	}
 
-	// Cache the FName -> FGameplayTag mappings
-	thread_local TMap<FName, FGameplayTag> TagMap;
-
-	FGameplayTag* Tag = TagMap.Find(TagName);
-	if (!Tag)
-	{
-		Tag = &TagMap.Add(TagName, FGameplayTag::RequestGameplayTag(TagName));
-	}
+	FGameplayTag* Tag = GetTagByName(TagName);
+	check(Tag);
 
 	return AbilitySystemComponent->HasMatchingGameplayTag(*Tag);
+}
+
+int32 TR::GameplayTags::GetExactTagCount(AActor* Actor, const FName& TagName)
+{
+	auto AbilitySystemComponent = GetAbilitySystemComponent(Actor);
+	if (!AbilitySystemComponent)
+	{
+		return false;
+	}
+
+	FGameplayTag* Tag = GetTagByName(TagName);
+	check(Tag);
+
+	return AbilitySystemComponent->GetGameplayTagCount(*Tag);
+}
+
+float TR::GameplayTags::GetAttributeMultiplierFromTag(AActor* Actor, const FName& TagName)
+{
+	const int32 TagCount = GetExactTagCount(Actor, TagName);
+	if (TagCount <= 0)
+	{
+		return 1.0f;
+	}
+
+	return AttributeMultiplierTagCountToValueFloat(TagCount);
+}
+
+namespace
+{
+	FGameplayTag* GetTagByName(const FName& TagName)
+	{
+		// Cache the FName -> FGameplayTag mappings
+		thread_local TMap<FName, FGameplayTag> TagMap;
+
+		FGameplayTag* Tag = TagMap.Find(TagName);
+		if (!Tag)
+		{
+			Tag = &TagMap.Add(TagName, FGameplayTag::RequestGameplayTag(TagName));
+		}
+
+		return Tag;
+	}
+
+	UAbilitySystemComponent* GetAbilitySystemComponent(AActor* Actor)
+	{
+		if (!IsValid(Actor))
+		{
+			return nullptr;
+		}
+
+		return UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Actor);
+	}
 }

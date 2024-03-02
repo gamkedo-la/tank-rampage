@@ -4,9 +4,11 @@
 #include "Components/TankTrackComponent.h"
 
 #include "TankSockets.h"
+#include "AbilitySystem/TRGameplayTags.h"
 
 #include "Logging/LoggingUtils.h"
 #include "TRTankLogging.h"
+
 #include "VisualLogger/VisualLogger.h"
 #include "Debug/TRDebugUtils.h"
 
@@ -39,7 +41,7 @@ void UTankTrackComponent::InitializeComponent()
 	}
 	else
 	{
-		UE_LOG(LogTRTank, Error, TEXT("%s-%s: Owner does not have a UMovementComponent available"), *LoggingUtils::GetName(GetOwner()), *GetName());
+		UE_VLOG_UELOG(GetOwner(), LogTRTank, Error, TEXT("%s-%s: Owner does not have a UMovementComponent available"), *LoggingUtils::GetName(GetOwner()), *GetName());
 	}
 }
 
@@ -78,6 +80,20 @@ bool UTankTrackComponent::IsGrounded() const
 		Params);
 }
 
+#if ENABLE_VISUAL_LOG
+
+void UTankTrackComponent::DescribeSelfToVisLog(FVisualLogEntry* Snapshot) const
+{
+	FVisualLogStatusCategory Category;
+	Category.Category = TEXT("Tank Track Component");
+
+	Category.Add(TEXT("MaxDrivingForceMultiplier"), FString::Printf(TEXT("%.1f"), GetAdjustedMaxDrivingForce() / TrackMaxDrivingForce));
+
+	Snapshot->Status.Add(Category);
+}
+
+#endif
+
 void UTankTrackComponent::DriveTrack(float Throttle)
 {
 	const auto& ForceLocation = GetSocketLocation(TankSockets::TreadThrottle);
@@ -89,22 +105,33 @@ void UTankTrackComponent::DriveTrack(float Throttle)
 
 	const auto& AdjustedLocalForward = ForceRotation.GetForwardVector();
 	const auto& ForceDirection = GetComponentToWorld().TransformVector(AdjustedLocalForward);
-	const auto ForceApplied = ForceDirection * Throttle * TrackMaxDrivingForce;
+	const auto ForceApplied = ForceDirection * Throttle * GetAdjustedMaxDrivingForce();
 
 	auto RootComponent = Cast<UPrimitiveComponent>(GetOwner()->GetRootComponent());
 
 	if (!RootComponent)
 	{
-		UE_LOG(LogTRTank, Error, TEXT("%s-%s: Owner root component %s is not a primitive component - unable to move"),
+		UE_VLOG_UELOG(GetOwner(), LogTRTank, Error, TEXT("%s-%s: Owner root component %s is not a primitive component - unable to move"),
 			*LoggingUtils::GetName(GetOwner()), *GetName(), *LoggingUtils::GetName(GetOwner()->GetRootComponent()));
 		return;
 	}
 
-	UE_LOG(LogTRTank, Verbose, TEXT("%s-%s: SetThrottle: %f"),
+	UE_LOG(LogTRTank, VeryVerbose, TEXT("%s-%s: SetThrottle: %f"),
 		*LoggingUtils::GetName(GetOwner()), *GetName(), Throttle);
 	TR::DebugUtils::DrawForceAtLocation(RootComponent, ForceApplied, ForceLocation);
 
 	RootComponent->AddForceAtLocation(ForceApplied, ForceLocation);
+}
+
+float UTankTrackComponent::GetAdjustedMaxDrivingForce() const
+{
+	const auto DrivingForceMultiplier = TR::GameplayTags::GetAttributeMultiplierFromTag(GetOwner(), TR::GameplayTags::SpeedMultiplier);
+	const auto AdjustedMaxDrivingForce = DrivingForceMultiplier * TrackMaxDrivingForce;
+
+	UE_LOG(LogTRTank, VeryVerbose, TEXT("%s-%s: GetAdjustedMaxDrivingForce: multiplier=%f; AdjustedMaxDrivingForce=%f"),
+		*LoggingUtils::GetName(GetOwner()), *GetName(), DrivingForceMultiplier, AdjustedMaxDrivingForce);
+
+	return AdjustedMaxDrivingForce;
 }
 
 void UTankTrackComponent::ApplySidewaysForce(float DeltaTime)
@@ -112,7 +139,7 @@ void UTankTrackComponent::ApplySidewaysForce(float DeltaTime)
 	const auto RootComponent = Cast<UPrimitiveComponent>(GetOwner()->GetRootComponent());
 	if (!RootComponent)
 	{
-		UE_LOG(LogTRTank, Error, TEXT("%s-%s: Owner root component %s is not a primitive component - unable to correct for slippage"),
+		UE_VLOG_UELOG(GetOwner(), LogTRTank, Error, TEXT("%s-%s: Owner root component %s is not a primitive component - unable to correct for slippage"),
 			*LoggingUtils::GetName(GetOwner()), *GetName(), *LoggingUtils::GetName(GetOwner()->GetRootComponent()));
 
 		SetComponentTickEnabled(false);
@@ -132,7 +159,7 @@ void UTankTrackComponent::ApplySidewaysForce(float DeltaTime)
 	auto CorrectionForce = RootComponent->GetMass() * CorrectionAcceleration * 0.5f;
 
 	// Only correct up to the max drive force magnitude * 0.5f in direction of slippage
-	const auto MaxForce = TrackMaxDrivingForce * 0.5f;
+	const auto MaxForce = GetAdjustedMaxDrivingForce() * 0.5f;
 	const auto RawCorrectionForceMagnitude = CorrectionForce.Size();
 	if (RawCorrectionForceMagnitude > MaxForce)
 	{

@@ -365,6 +365,8 @@ void ABaseTankPawn::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
 	HealthComponent->DescribeSelfToVisLog(Snapshot);
 	ItemInventoryComponent->DescribeSelfToVisLog(Snapshot);
 	TankAimingComponent->DescribeSelfToVisLog(Snapshot);
+	TankTreadLeft->DescribeSelfToVisLog(Snapshot);
+	TankTreadRight->DescribeSelfToVisLog(Snapshot);
 	AbilitySystemComponent->DescribeSelfToVisLog(Snapshot);
 }
 

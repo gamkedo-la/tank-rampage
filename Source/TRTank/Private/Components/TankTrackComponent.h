@@ -24,6 +24,12 @@ public:
 	UFUNCTION(BlueprintPure)
 	bool IsGrounded() const;
 
+#if ENABLE_VISUAL_LOG
+
+	void DescribeSelfToVisLog(FVisualLogEntry* Snapshot) const;
+
+#endif
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void InitializeComponent() override;
@@ -34,6 +40,8 @@ protected:
 private:
 
 	void DriveTrack(float Throttle);
+
+	float GetAdjustedMaxDrivingForce() const;
 
 private:
 

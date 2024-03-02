@@ -71,7 +71,7 @@ void UHealthComponent::TakeDamage(AActor* DamagedActor, float Damage, const UDam
 
 void UHealthComponent::OnItemUpgraded(UItem* Item)
 {
-	if (Item && Item->GetOwner() == GetOwner() && Item->GetName() == ItemNames::MaxHealth)
+	if (Item && Item->GetOwner() == GetOwner() && Item->GetName() == TR::ItemNames::MaxHealth)
 	{
 		auto MaxHealthEffect = Cast<UPassiveEffect>(Item);
 		if (!ensureMsgf(MaxHealthEffect, TEXT("Item=%s is not a UPassiveEffect"), *Item->GetName()))

@@ -225,7 +225,7 @@ void ATankAIController::OnPossess(APawn* InPawn)
 	}
 
 	// Give AI a basic item
-	Tank->GetItemInventory()->AddItemByName(ItemNames::MainGunName);
+	Tank->GetItemInventory()->AddItemByName(TR::ItemNames::MainGunName);
 
 	Tank->GetHealthComponent()->OnHealthChanged.AddDynamic(this, &ThisClass::OnHealthChanged);
 }
