@@ -14,6 +14,7 @@ public class TankRampage : ModuleRules
             "CoreUObject",
             "Engine",
             "InputCore",
+            "MoviePlayer", // Loading Screen
         });
 
 		PrivateDependencyModuleNames.AddRange(new string[] 
@@ -23,9 +24,8 @@ public class TankRampage : ModuleRules
             "TRPlayer",
             "TRAI",
             "TRItem",
+            "TRUI",
         });
-
-        // To include OnlineSubsystemSteam, add it to the plugins section in your uproject file with the Enabled attribute set to true
 
         CppStandard = CppStandardVersion.Cpp20;
     }
