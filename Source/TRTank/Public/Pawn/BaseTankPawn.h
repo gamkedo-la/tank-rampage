@@ -22,6 +22,7 @@ class UTankTrackComponent;
 class UTankMovementComponent;
 class UHealthComponent;
 class UItemInventory;
+class UFlippedOverCorrectionComponent;
 
 class UAbilitySystemComponent;
 class UAttributeSet;
@@ -75,7 +76,6 @@ public:
 	UAttributeSet* GetAttributeSet() const;
 
 	UItemInventory* GetItemInventory() const;
-
 
 #if ENABLE_VISUAL_LOG
 	virtual void GrabDebugSnapshot(FVisualLogEntry* Snapshot) const override;
@@ -149,6 +149,9 @@ private:
 
 	UPROPERTY(Category = "Camera", VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> Camera{};
+
+	UPROPERTY(Category = "Camera", VisibleDefaultsOnly)
+	TObjectPtr<UFlippedOverCorrectionComponent> FlippedOverCorrectionComponent{};
 };
 
 

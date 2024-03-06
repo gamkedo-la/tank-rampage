@@ -9,6 +9,7 @@
 #include "Components/TankTrackComponent.h"
 #include "Components/TankMovementComponent.h"
 #include "Components/HealthComponent.h"
+#include "Components/FlippedOverCorrectionComponent.h"
 
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
@@ -87,6 +88,8 @@ ABaseTankPawn::ABaseTankPawn()
 	AttributeSet = CreateDefaultSubobject<UTRAttributeSet>(TEXT("Attribute Set"));
 
 	ItemInventoryComponent = CreateDefaultSubobject<UItemInventory>(TEXT("Item Inventory"));
+
+	FlippedOverCorrectionComponent = CreateDefaultSubobject<UFlippedOverCorrectionComponent>(TEXT("Flipped Over Correction Component"));
 
 	Tags.Add(TR::Tags::Tank);
 }
@@ -367,6 +370,7 @@ void ABaseTankPawn::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
 	TankAimingComponent->DescribeSelfToVisLog(Snapshot);
 	TankTreadLeft->DescribeSelfToVisLog(Snapshot);
 	TankTreadRight->DescribeSelfToVisLog(Snapshot);
+	FlippedOverCorrectionComponent->DescribeSelfToVisLog(Snapshot);
 	AbilitySystemComponent->DescribeSelfToVisLog(Snapshot);
 }
 
