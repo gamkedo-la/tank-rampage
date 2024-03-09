@@ -44,7 +44,7 @@ public:
 	void AimAt(const FAimingData& AimingData);
 
 	UFUNCTION(BlueprintCallable)
-	void Fire();
+	bool Fire();
 
 	UFUNCTION(BlueprintCallable)
 	bool CanFire() const;

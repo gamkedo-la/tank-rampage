@@ -83,7 +83,12 @@ private:
 	UPROPERTY(EditAnywhere)
 	UCurveFloat* TargetingErrorByDistanceMeters{};
 
+	UPROPERTY(EditAnywhere)
+	UCurveFloat* TargetingErrorMultiplierByShotsFired{};
+
 	float FirstInRangeTime{ -1.0f };
 	float TargetingErrorLastTime{ -1.0f };
+	int32 ShotsFired{};
+
 	FVector TargetingError{ EForceInit::ForceInitToZero };
 };

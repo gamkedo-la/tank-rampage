@@ -106,7 +106,10 @@ void ATankAIController::Fire(const FTankAIContext& AIContext)
 	const auto FiringStatus = TankAimingComponent->GetTankFiringStatus();
 	if (FiringStatus == ETankFiringStatus::Locked)
 	{
-		MyTank.Fire();
+		if (MyTank.Fire())
+		{
+			++ShotsFired;
+		}
 	}
 }
 
@@ -188,10 +191,21 @@ void ATankAIController::InitTargetingError(const FTankAIContext& AIContext)
 		return;
 	}
 
-	const float PlayerDistanceMeters = AIContext.MyTank.GetDistanceTo(&AIContext.PlayerTank) / 100;
-	const float TargetingErrorMagnitude = TargetingErrorByDistanceMeters->FloatCurve.Eval(PlayerDistanceMeters);
+	if (!TargetingErrorMultiplierByShotsFired)
+	{
+		UE_VLOG_UELOG(this, LogTRAI, Warning, TEXT("%s-%s: InitTargetingError: No TargetingErrorMultiplierByShotsFired curve set - number of shots fired will not impact targeting"),
+			*GetName(), *AIContext.MyTank.GetName());
+	}
 
-	TargetingError = FMath::RandRange(-TargetingErrorMagnitude, TargetingErrorMagnitude) * FMath::VRand();
+	const float PlayerDistanceMeters = AIContext.MyTank.GetDistanceTo(&AIContext.PlayerTank) / 100;
+	float TargetingErrorMagnitudeMeters = TargetingErrorByDistanceMeters->FloatCurve.Eval(PlayerDistanceMeters);
+
+	if (TargetingErrorMultiplierByShotsFired)
+	{
+		TargetingErrorMagnitudeMeters *= TargetingErrorMultiplierByShotsFired->FloatCurve.Eval(ShotsFired);
+	}
+
+	TargetingError = FMath::RandRange(-TargetingErrorMagnitudeMeters, TargetingErrorMagnitudeMeters) * 100 * FMath::VRand();
 }
 
 void ATankAIController::OnHealthChanged(UHealthComponent* HealthComponent, float PreviousHealthValue, AController* EventInstigator, AActor* ChangeCauser)
@@ -250,6 +264,9 @@ void ATankAIController::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
 	Super::GrabDebugSnapshot(Snapshot);
 
 	auto& Category = Snapshot->Status[0];
+
+	Category.Add(TEXT("Shots Fired"), FString::Printf(TEXT("%d"), ShotsFired));
+	Category.Add(TEXT("Targeting Error"), TargetingError.ToCompactString());
 }
 
 #endif

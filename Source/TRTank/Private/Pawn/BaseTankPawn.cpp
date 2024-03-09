@@ -254,13 +254,13 @@ void ABaseTankPawn::AimAt(const FAimingData& AimingData)
 	}
 }
 
-void ABaseTankPawn::Fire()
+bool ABaseTankPawn::Fire()
 {
 	check(TankBarrel);
 
 	if (!CanFire())
 	{
-		return;
+		return false;
 	}
 
 	auto ActiveWeapon = ItemInventoryComponent->GetActiveWeapon();
@@ -268,7 +268,7 @@ void ABaseTankPawn::Fire()
 
 	UE_VLOG_UELOG(this, LogTRTank, Log, TEXT("%s: Fire: %s"), *GetName(), *ActiveWeapon->GetName());
 
-	ActiveWeapon->Activate(TankBarrel, TankSockets::GunFire);
+	return ActiveWeapon->Activate(TankBarrel, TankSockets::GunFire);
 }
 
 void ABaseTankPawn::SetLeftThrottle(float Value)
