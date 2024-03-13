@@ -38,11 +38,21 @@ float UItem::GetCooldownTimeRemaining() const
 	UWorld* World = GetWorld();
 	check(World);
 
-	float CurrentTime = World->GetTimeSeconds();
-	float TimeElapsedSinceLastFired = CurrentTime - LastActivationTimeSeconds;
-	bool bIsFireOnCooldown = TimeElapsedSinceLastFired < CooldownTimeSeconds;
+	// Never activated or no cooldown
+	if (LastActivationTimeSeconds < 0 || CooldownTimeSeconds <= 0)
+	{
+		return 0.0f;
+	}
 
-	return bIsFireOnCooldown ? CooldownTimeSeconds - TimeElapsedSinceLastFired : 0.f;
+	const auto CurrentTime = World->GetTimeSeconds();
+	const auto TimeElapsedSinceLastFired = CurrentTime - LastActivationTimeSeconds;
+
+	if (TimeElapsedSinceLastFired >= CooldownTimeSeconds)
+	{
+		return 0.0f;
+	}
+
+	return CooldownTimeSeconds - TimeElapsedSinceLastFired;
 }
 
 float UItem::GetCooldownProgressPercentage() const
@@ -50,11 +60,21 @@ float UItem::GetCooldownProgressPercentage() const
 	UWorld* World = GetWorld();
 	check(World);
 
-	float CurrentTime = World->GetTimeSeconds();
-	float TimeElapsedSinceLastFired = CurrentTime - LastActivationTimeSeconds;
-	bool bIsFireOnCooldown = TimeElapsedSinceLastFired < CooldownTimeSeconds;
-	float ProgressPercentage = TimeElapsedSinceLastFired / CooldownTimeSeconds;
-	return bIsFireOnCooldown ? ProgressPercentage : 1.f;
+	// Never activated or no cooldown
+	if (LastActivationTimeSeconds < 0 || CooldownTimeSeconds <= 0)
+	{
+		return 1.0f;
+	}
+
+	const auto CurrentTime = World->GetTimeSeconds();
+	const auto TimeElapsedSinceLastFired = CurrentTime - LastActivationTimeSeconds;
+
+	if (TimeElapsedSinceLastFired >= CooldownTimeSeconds)
+	{
+		return 1.0f;
+	}
+
+	return TimeElapsedSinceLastFired / CooldownTimeSeconds;
 }
 
 bool UItem::Activate(USceneComponent* ActivationReferenceComponent, const FName& ActivationSocketName)
