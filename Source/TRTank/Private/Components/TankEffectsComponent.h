@@ -30,6 +30,8 @@ private:
 	UFUNCTION()
 	void OnTankDestroyed(ABaseTankPawn* DestroyedTank, AController* DestroyedBy, AActor* DestroyedWith);
 
+	FVector GetExplosionLocation() const;
+
 private:
 	UPROPERTY(Category = "Death", EditDefaultsOnly)
 	TObjectPtr<UNiagaraSystem> DeathVfx{};
@@ -39,4 +41,7 @@ private:
 
 	UPROPERTY(Category = "Death", EditDefaultsOnly)
 	float DeathVfxScaleParameterValue{ 1.0f };
+
+	UPROPERTY(Category = "Death", EditDefaultsOnly)
+	float ExplosionZOffset{ 0.0f };
 };

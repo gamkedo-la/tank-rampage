@@ -41,7 +41,7 @@ void UTankEffectsComponent::PlayDeathVfx()
 		return;
 	}
 
-	const auto& Location = GetOwner()->GetActorLocation();
+	const auto& Location = GetExplosionLocation();
 
 	UE_VLOG_UELOG(GetOwner(), LogTRTank, Log, TEXT("%s: PlayHitVfx: %s playing at %s"), *GetName(), *DeathVfx.GetName(), *Location.ToCompactString());
 
@@ -67,6 +67,16 @@ void UTankEffectsComponent::OnTankDestroyed(ABaseTankPawn* DestroyedTank, AContr
 	UE_VLOG_UELOG(GetOwner(), LogTRTank, Log, TEXT("%s: OnTankDestroyed"), *GetName());
 
 	PlayDeathVfx();
+}
+
+FVector UTankEffectsComponent::GetExplosionLocation() const
+{
+	auto Actor = GetOwner();
+	check(Actor);
+
+	const auto& InitialLocation = Actor->GetActorLocation();
+
+	return InitialLocation + Actor->GetActorUpVector() * ExplosionZOffset;
 }
 
 void UTankEffectsComponent::SetNiagaraDeathEffectParameters_Implementation(UNiagaraComponent* NiagaraComponent)
