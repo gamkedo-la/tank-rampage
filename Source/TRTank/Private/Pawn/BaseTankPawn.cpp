@@ -10,6 +10,7 @@
 #include "Components/TankMovementComponent.h"
 #include "Components/HealthComponent.h"
 #include "Components/FlippedOverCorrectionComponent.h"
+#include "Components/TankEffectsComponent.h"
 
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
@@ -90,6 +91,7 @@ ABaseTankPawn::ABaseTankPawn()
 	ItemInventoryComponent = CreateDefaultSubobject<UItemInventory>(TEXT("Item Inventory"));
 
 	FlippedOverCorrectionComponent = CreateDefaultSubobject<UFlippedOverCorrectionComponent>(TEXT("Flipped Over Correction Component"));
+	TankEffectsComponent = CreateDefaultSubobject<UTankEffectsComponent>(TEXT("Tank Effects"));
 
 	Tags.Add(TR::Tags::Tank);
 }

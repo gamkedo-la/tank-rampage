@@ -23,6 +23,7 @@ class UTankMovementComponent;
 class UHealthComponent;
 class UItemInventory;
 class UFlippedOverCorrectionComponent;
+class UTankEffectsComponent;
 
 class UAbilitySystemComponent;
 class UAttributeSet;
@@ -150,8 +151,11 @@ private:
 	UPROPERTY(Category = "Camera", VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> Camera{};
 
-	UPROPERTY(Category = "Camera", VisibleDefaultsOnly)
+	UPROPERTY(Category = "Components", VisibleDefaultsOnly)
 	TObjectPtr<UFlippedOverCorrectionComponent> FlippedOverCorrectionComponent{};
+
+	UPROPERTY(Category = "Components", VisibleDefaultsOnly)
+	TObjectPtr<UTankEffectsComponent> TankEffectsComponent{};
 };
 
 
