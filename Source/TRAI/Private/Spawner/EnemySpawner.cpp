@@ -5,6 +5,8 @@
 
 #include "Spawner/SpawnLocationComponent.h"
 
+#include "Utils/CollisionUtils.h"
+
 #include "Logging/LoggingUtils.h"
 #include "TRAILogging.h"
 #include "VisualLogger/VisualLogger.h"
@@ -159,6 +161,8 @@ int32 AEnemySpawner::Spawn(int32 InDesiredCount, const AActor* LookAtActor, TArr
 	RandUtils::ShuffleIndices(Indices.begin(), Rng, LocationCount);
 	int32 SpawnedCount{};
 
+	TArray<AActor*, TInlineAllocator<32>> AlreadySpawned;
+
 	for (int32 i = 0; i < LocationCount && SpawnedCount < DesiredCount; ++i)
 	{
 		auto SpawnLocationActor = SpawnLocations[Indices[i]];
@@ -172,6 +176,11 @@ int32 AEnemySpawner::Spawn(int32 InDesiredCount, const AActor* LookAtActor, TArr
 			SpawnLocationActor->GetComponentLocation()
 		);
 
+		if (IsSpawnPointObstructed(SpawnClass, SpawnTransform, AlreadySpawned))
+		{
+			continue;
+		}
+
 		auto Spawned = World->SpawnActorDeferred<APawn>(SpawnClass, SpawnTransform, this, nullptr, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding);
 		if (Spawned)
 		{
@@ -181,6 +190,8 @@ int32 AEnemySpawner::Spawn(int32 InDesiredCount, const AActor* LookAtActor, TArr
 			UE_VLOG_LOCATION(this, LogTRAI, Log, SpawnTransform.GetLocation(), 50.0f, FColor::Green, TEXT("Spawn %s"), *SpawnClass->GetName());
 
 			++SpawnedCount;
+
+			AlreadySpawned.Add(Spawned);
 
 			if (OutSpawned)
 			{
@@ -200,6 +211,104 @@ int32 AEnemySpawner::Spawn(int32 InDesiredCount, const AActor* LookAtActor, TArr
 	}
 
 	return SpawnedCount;
+}
+
+template<typename InAllocatorType>
+bool AEnemySpawner::IsSpawnPointObstructed(UClass* SpawnClass, const FTransform& SpawnTransform, const TArray<AActor*, InAllocatorType>& SpawnedThisCycle) const
+{
+	check(SpawnClass);
+
+	auto World = GetWorld();
+	check(World);
+
+	// Get bounds of the CDO for the spawn class
+	AActor* SpawnCDO = Cast<AActor>(SpawnClass->GetDefaultObject());
+
+	if (!SpawnCDO)
+	{
+		UE_VLOG_UELOG(this, LogTRAI, Error, TEXT("%s: IsSpawnPointObstructed - SpawnClass=%s was not an actor class!"), *GetName(), *LoggingUtils::GetName(SpawnClass));
+		return false;
+	}
+
+	FVector BoundsExtent;
+	FVector* CachedBoundsExtent = BoundsCache.Find(SpawnCDO);
+	if (CachedBoundsExtent)
+	{
+		BoundsExtent = *CachedBoundsExtent;
+	}
+	else
+	{
+		// Compute for first time
+		const auto& Bounds = TR::CollisionUtils::GetAABB(*SpawnCDO);
+		BoundsExtent = Bounds.GetExtent();
+
+		BoundsExtent.X *= SpawnSafetyBoundsXYMultiplier;
+		BoundsExtent.Y *= SpawnSafetyBoundsXYMultiplier;
+
+		BoundsCache.Add(SpawnCDO, BoundsExtent);
+	}
+
+	FCollisionQueryParams QueryParams;
+	// Ignore any actors spawned this cycle as we've already accounted for not spawning multiple in same spawn location
+	// and don't want the safety bounds to interfere
+	for (auto Spawned : SpawnedThisCycle)
+	{
+		QueryParams.AddIgnoredActor(Spawned);
+	}
+
+	const FCollisionShape CollisionShape = FCollisionShape::MakeBox(BoundsExtent);
+
+#if UE_EDITOR
+	// Write out extra debug information to logs
+	TArray<FOverlapResult> Overlaps;
+	const bool bAnyOverlaps = World->OverlapMultiByObjectType(Overlaps, SpawnTransform.GetLocation(), SpawnTransform.GetRotation(),
+		ECollisionChannel::ECC_Pawn, CollisionShape, QueryParams);
+	if (!bAnyOverlaps)
+	{
+		UE_VLOG_UELOG(this, LogTRAI, Verbose, TEXT("%s: IsSpawnPointObstructed - Spawn point with SpawnClass=%s;Bounds=%s;Transform=%s did not have any pawn obstructions"),
+			*GetName(), *LoggingUtils::GetName(SpawnClass), *BoundsExtent.ToCompactString(), *SpawnTransform.ToHumanReadableString());
+		return false;
+	}
+
+	UE_VLOG_UELOG(this, LogTRAI, Log, TEXT("%s: IsSpawnPointObstructed - Spawn point with SpawnClass=%s;Bounds=%s;Transform=%s overlapped with %d existing pawns"),
+		*GetName(), *LoggingUtils::GetName(SpawnClass), *BoundsExtent.ToCompactString(), *SpawnTransform.ToHumanReadableString(), Overlaps.Num());
+
+	bool bLogIndividualOverlaps = UE_LOG_ACTIVE(LogTRAI, Verbose);
+
+#if ENABLE_VISUAL_LOG
+	bLogIndividualOverlaps |= FVisualLogger::IsRecording();
+#endif
+
+	if (bLogIndividualOverlaps)
+	{
+		TArray<AActor*> LoggedActors;
+		LoggedActors.Reserve(Overlaps.Num());
+
+		for (int32 AddedCount{}; const auto& OverlapResult : Overlaps)
+		{
+			const auto OverlappedActor = OverlapResult.GetActor();
+			// AddUnique returns the Index of existing element or Added so if it's unique it is added to end and will == previous count
+			if (!OverlappedActor || LoggedActors.AddUnique(OverlappedActor) < AddedCount)
+			{
+				continue;
+			}
+
+			++AddedCount;
+
+			UE_VLOG_UELOG(this, LogTRAI, Verbose, TEXT("%s: IsSpawnPointObstructed - Spawn point with SpawnClass=%s;Bounds=%s;Transform=%s overlapped with %s"),
+				*GetName(), *LoggingUtils::GetName(SpawnClass), *BoundsExtent.ToCompactString(), *SpawnTransform.ToHumanReadableString(),
+				*OverlappedActor->GetName());
+
+			UE_VLOG_LOCATION(this, LogTRAI, Verbose, OverlappedActor->GetActorLocation(), 50.0f, FColor::Orange, TEXT("%s"), *OverlappedActor->GetName());
+		}
+	}
+
+	return true;
+
+#else // not UE_EDITOR - Disable enhanced logging
+	return World->OverlapAnyTestByObjectType(SpawnTransform.GetLocation(), SpawnTransform.GetRotation(),
+		ECollisionChannel::ECC_Pawn, CollisionShape, QueryParams);
+#endif
 }
 
 float AEnemySpawner::GetTimeSinceLastSpawn() const

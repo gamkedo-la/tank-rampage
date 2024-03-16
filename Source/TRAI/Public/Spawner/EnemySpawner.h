@@ -57,6 +57,9 @@ private:
 	void GroundSpawnPoints();
 	void GroundSpawnPoint(USpawnLocationComponent& SpawnLocation);
 
+	template<typename InAllocatorType>
+	bool IsSpawnPointObstructed(UClass* SpawnClass, const FTransform& SpawnTransform, const TArray<AActor*, InAllocatorType>& SpawnedThisCycle) const;
+
 
 private:
 	UPROPERTY(Transient)
@@ -70,6 +73,8 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Spawning")
 	TArray<TSubclassOf<APawn>> SpawningTypes;
+
+	mutable TMap<AActor*, FVector> BoundsCache;
 
 	float LastSpawnTime{ -1.f };
 	bool bPlayerInSpawnZone{};
@@ -91,6 +96,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Spawning")
 	float CooldownTime{ 10.0f };
+
+	UPROPERTY(EditAnywhere, Category = "Spawning | Collision")
+	float SpawnSafetyBoundsXYMultiplier{ 2.0f };
 
 	UPROPERTY(EditAnywhere, Category = "Spawning | Score")
 	float FOVScoreMultiplier{ 2.0f};
