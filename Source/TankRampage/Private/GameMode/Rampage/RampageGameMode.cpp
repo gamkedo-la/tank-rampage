@@ -96,7 +96,7 @@ void ARampageGameMode::AddXP(APawn* PlayerPawn, int32 XP)
 			const auto PreviousLevelDiff = RampageGameState->LevelUpXP - RampageGameState->PreviousLevelXP;
 			NextLevelXP = RampageGameState->LevelUpXP + PreviousLevelDiff;
 
-			UE_VLOG_UELOG(this, LogTankRampage, Warning, TEXT("%s: New Level=%d over max configured XP levels=%d - clamping next level xp by last diff=%d to %d"),
+			UE_VLOG_UELOG(this, LogTankRampage, Display, TEXT("%s: New Level=%d over max configured XP levels=%d - clamping next level xp by last diff=%d to %d"),
 				*GetName(), RampageGameState->Level + 1, XPLevels.Num(), PreviousLevelDiff, NextLevelXP);
 		}
 

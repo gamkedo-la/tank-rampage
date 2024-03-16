@@ -40,10 +40,10 @@ TArray<FLevelUnlocksConfig> LevelUnlocksParser::ToConfigArray(UDataTable* LevelU
     // Starts at Level 2
     TArray<FLevelUpData*> LevelUnlockOptions = ParseLevelUnlockOptions(LevelUpDataTable);
 
-    if (LevelUnlockOptions.Num() + 1 != MaxUnlockLevel)
+    if (LevelUnlockOptions.Num() + 1 < MaxUnlockLevel)
     {
         UE_LOG(LogTankRampage, Warning,
-            TEXT("LevelUnlocksParser::ToConfigArray - LevelUpDataTable=%s number of rows=%d (starting at level 2) does not match LevelUnlocksDataTable=%s player levels count=%d (starting at level 1)"),
+            TEXT("LevelUnlocksParser::ToConfigArray - LevelUpDataTable=%s number of rows=%d (starting at level 2) is fewer than LevelUnlocksDataTable=%s player levels count=%d (starting at level 1)"),
             *LevelUpDataTable->GetName(), LevelUnlockOptions.Num(), *LevelUnlocksDataTable->GetName(), MaxUnlockLevel
         );
     }
