@@ -169,6 +169,17 @@ FVector UTankAimingComponent::GetBarrelLocation() const
 	return Barrel->GetSocketLocation(TankSockets::GunFire);
 }
 
+bool UTankAimingComponent::CanFire() const
+{
+	auto ArmedOwner = Cast<IArmedActor>(GetOwner()); 
+	if (!ArmedOwner)
+	{
+		return false;
+	}
+	
+	return ArmedOwner->CanFire();
+}
+
 void UTankAimingComponent::DirectAimAt(const FAimingData& AimingData)
 {
 	const FVector FireOriginLocation = GetBarrelLocation();
@@ -180,12 +191,17 @@ void UTankAimingComponent::DirectAimAt(const FAimingData& AimingData)
 
 void UTankAimingComponent::MoveBarrelTowards(const FVector& Target, const FVector& AimDirection)
 {
+	const bool bMoved = DoMoveBarrelTowards(Target, AimDirection);
+	FiringStatus = ComputeFiringStatus(bMoved);
+}
+
+bool UTankAimingComponent::DoMoveBarrelTowards(const FVector& Target, const FVector& AimDirection)
+{
 	check(Barrel && Turret);
 
 	if (IsBarrelAlreadyAtTarget(Target, AimDirection))
 	{
-		FiringStatus = ETankFiringStatus::Locked;
-		return;
+		return false;
 	}
 
 	const auto TargetRotation = AimDirection.Rotation();
@@ -196,17 +212,22 @@ void UTankAimingComponent::MoveBarrelTowards(const FVector& Target, const FVecto
 	bool bMoved = Barrel->Elevate(DesiredRotator.Pitch);
 	bMoved |= Turret->Rotate(ClampDeltaYaw(DesiredRotator.Yaw));
 
-	if (!bMoved)
+	return bMoved;
+}
+
+ETankFiringStatus UTankAimingComponent::ComputeFiringStatus(bool bBarrelMoved) const
+{
+	if (!bBarrelMoved)
 	{
-		FiringStatus = ETankFiringStatus::Locked;
+		return ETankFiringStatus::Locked;
 	}
-	else if(auto ArmedOwner = Cast<IArmedActor>(GetOwner()); ArmedOwner && ArmedOwner->CanFire())
+	else if (CanFire())
 	{
-		FiringStatus = ETankFiringStatus::Aiming;
+		return ETankFiringStatus::Aiming;
 	}
 	else
 	{
-		FiringStatus = ETankFiringStatus::Reloading;
+		return ETankFiringStatus::Reloading;
 	}
 }
 

@@ -81,6 +81,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetTankAimingMode(EAimingMode NewAimingMode);
 
+	UFUNCTION(BlueprintPure)
+	bool CanFire() const;
+
 #if ENABLE_VISUAL_LOG
 
 	void DescribeSelfToVisLog(FVisualLogEntry* Snapshot) const;
@@ -98,6 +101,9 @@ private:
 	void DirectAimAt(const FAimingData& AimingData);
 	
 	void MoveBarrelTowards(const FVector& Target, const FVector& AimDirection);
+
+	bool DoMoveBarrelTowards(const FVector& Target, const FVector& AimDirection);
+	ETankFiringStatus ComputeFiringStatus(bool bBarrelMoved) const;
 
 	bool IsBarrelAlreadyAtTarget(const FVector& Target, const FVector& AimDirection) const;
 
