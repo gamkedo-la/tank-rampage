@@ -198,22 +198,23 @@ int32 UItemInventory::AddItemByName(const FName& Name)
 		return INDEX_NONE;
 	}
 
-	if (ItemConfigRow->Class->IsChildOf<UWeapon>())
+	auto ItemCDO = Cast<UItem>(ItemConfigRow->Class->GetDefaultObject());
+	if (!ensureAlwaysMsgf(ItemCDO, TEXT("Could not get CDO as UItem for Class=%s;Name=%s"), *ItemConfigRow->Class->GetName(), *Name.ToString()))
 	{
-		return AddToInventoryArray<UWeapon>(Name, *ItemConfigRow, Weapons);
+		return INDEX_NONE;
 	}
-	else if (ItemConfigRow->Class->IsChildOf<UActivatableEffect>())
+
+	switch (ItemCDO->GetItemType())
 	{
-		return AddToInventoryArray<UActivatableEffect>(Name, *ItemConfigRow, ActivatableEffects);
-	}
-	else if (ItemConfigRow->Class->IsChildOf<UPassiveEffect>())
-	{
-		return AddToInventoryArray<UPassiveEffect>(Name, *ItemConfigRow, PassiveEffects);
-	}
-	else
-	{
-		ensureAlwaysMsgf(true, TEXT("%s-%s: Attempted to add unsupported item with Name=%s and Class=%s"),
-			*LoggingUtils::GetName(GetOwner()), *GetName(), *Name.ToString(), *LoggingUtils::GetName(ItemConfigRow->Class));
+		case EItemType::Weapon:
+			return AddToInventoryArray<UWeapon>(Name, *ItemConfigRow, Weapons);
+		case EItemType::ActivatableEffect:
+			return AddToInventoryArray<UActivatableEffect>(Name, *ItemConfigRow, ActivatableEffects);
+		case EItemType::PassiveEffect:
+			return AddToInventoryArray<UPassiveEffect>(Name, *ItemConfigRow, PassiveEffects);
+		default:
+			ensureAlwaysMsgf(true, TEXT("%s-%s: Attempted to add unsupported item with Name=%s and Class=%s"),
+				*LoggingUtils::GetName(GetOwner()), *GetName(), *Name.ToString(), *LoggingUtils::GetName(ItemConfigRow->Class));
 	}
 
 	return INDEX_NONE;

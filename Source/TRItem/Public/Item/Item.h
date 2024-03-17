@@ -6,6 +6,15 @@
 #include "UObject/NoExportTypes.h"
 #include "Item.generated.h"
 
+UENUM(BlueprintType)
+enum class EItemType : uint8
+{
+	Weapon UMETA(DisplayName = "Weapon"),
+	ActivatableEffect UMETA(DisplayName = "Activatable Effect"),
+	PassiveEffect UMETA(DisplayName = "Passive Effect"),
+	Max UMETA(DisplayName = "MAX"),
+};
+
 /**
  * Base class for both weapons and passive effects in the game.  
    NOTE: It is planned that this hierarchy will be replaced by classes using the Gameplay Ability System (GAS) in future.
@@ -51,6 +60,9 @@ public:
 	UFUNCTION(BlueprintPure)
 	FString GetDescription() const;
 
+	UFUNCTION(BlueprintPure)
+	EItemType GetItemType() const;
+
 protected:
 	virtual bool DoActivation(USceneComponent& ActivationReferenceComponent, const FName& ActivationSocketName) PURE_VIRTUAL(UItem::DoActivation, return false;);
 
@@ -83,6 +95,9 @@ protected:
 
 	UPROPERTY(Category = "Cooldown", BlueprintReadWrite)
 	float CooldownTimeSeconds{};
+
+	UPROPERTY(Category = "Config", EditDefaultsOnly)
+	EItemType ItemType{ EItemType::Max };
 
 private:
 	float LastActivationTimeSeconds{ -1.0f };
@@ -123,6 +138,11 @@ inline int32 UItem::GetMaxLevel() const
 inline FString UItem::GetDescription() const
 {
 	return Description;
+}
+
+inline EItemType UItem::GetItemType() const
+{
+	return ItemType;
 }
 
 #pragma endregion Inline Definitions

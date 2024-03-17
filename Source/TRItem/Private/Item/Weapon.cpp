@@ -2,3 +2,8 @@
 
 
 #include "Item/Weapon.h"
+
+UWeapon::UWeapon()
+{
+	ItemType = EItemType::Weapon;
+}

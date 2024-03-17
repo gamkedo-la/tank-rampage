@@ -3,3 +3,7 @@
 
 #include "Item/ActivatableEffect.h"
 
+UActivatableEffect::UActivatableEffect()
+{
+	ItemType = EItemType::ActivatableEffect;
+}

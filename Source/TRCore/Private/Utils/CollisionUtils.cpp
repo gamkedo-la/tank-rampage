@@ -23,7 +23,6 @@ FBox TR::CollisionUtils::GetAABB(const AActor& Actor)
 	// Cannot use GetActorBounds on a CDO as it only calculates the bounds of registered components and this only happens in InitializeComponent
 	// Need to use USceneComponent::CalcBounds
 
-	// ForceInitComponentBounds
 	const USceneComponent* RootSceneComponent = Actor.FindComponentByClass<const USceneComponent>();
 	if (!RootSceneComponent)
 	{

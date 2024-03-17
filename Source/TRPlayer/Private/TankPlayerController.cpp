@@ -211,6 +211,42 @@ void ATankPlayerController::BindWeaponSelectActions(UEnhancedInputComponent& Enh
 	}
 }
 
+const UInputAction* ATankPlayerController::GetInputActionForItemNameAndIndex(const FName& ItemName, int32 ItemIndex) const
+{
+	auto ItemInventory = GetItemInventory();
+	if (!ItemInventory)
+	{
+		return nullptr;
+	}
+
+	auto Item = ItemInventory->GetItemByName(ItemName);
+	if (!Item)
+	{
+		UE_LOG(LogTRPlayer, Error, TEXT("%s: GetInputActionForItemNameAndIndex - Could not find item with ItemName=%s;ItemIndex=%d"), *GetName(), *ItemName.ToString(), ItemIndex);
+		return nullptr;
+	}
+
+	auto ItemType = Item->GetItemType();
+	if (ItemType == EItemType::Weapon)
+	{
+		if (ItemIndex < 0 || ItemIndex >= WeaponSelectActions.Num())
+		{
+			UE_LOG(LogTRPlayer, Error, TEXT("%s: GetInputActionForItemNameAndIndex - Weapon index is out of range [0,%d]: ItemName=%s;ItemIndex=%d"),
+				*GetName(), WeaponSelectActions.Num(), *ItemName.ToString(), ItemIndex);
+			return nullptr;
+		}
+
+		return WeaponSelectActions[ItemIndex];
+	}
+	if (ItemName == TR::ItemNames::TurboSpeedBoost)
+	{
+		return ActivateTurboAction;
+	}
+
+	// No action bound to this item. It is likely a passive effect
+	return nullptr;
+}
+
 #pragma region Controls
 
 void ATankPlayerController::AimTowardCrosshair()
@@ -254,20 +290,17 @@ void ATankPlayerController::OnMove(const FInputActionValue& Value)
 
 void ATankPlayerController::OnActivateTurbo()
 {
-	auto ControlledTank = GetControlledTank();
-	if (!ControlledTank || !IsControlledTankAlive())
+	auto ItemInventory = GetItemInventory();
+	if (!ItemInventory)
 	{
 		return;
 	}
-
-	auto ItemInventory = ControlledTank->GetItemInventory();
-	check(ItemInventory);
 
 	auto TurboItem = ItemInventory->GetItemByName(TR::ItemNames::TurboSpeedBoost);
 	if (!TurboItem)
 	{
 		UE_LOG(LogTRPlayer, Log, TEXT("%s: OnActivateTurbo - Pawn=%s does not have the turbo item unlocked"),
-			*GetName(), *LoggingUtils::GetName(ControlledTank));
+			*GetName(), *LoggingUtils::GetName(GetControlledTank()));
 		return;
 	}
 
@@ -278,7 +311,7 @@ void ATankPlayerController::OnActivateTurbo()
 	else
 	{
 		UE_LOG(LogTRPlayer, Log, TEXT("%s: OnActivateTurbo - Pawn=%s; TurboItem=%s is in cooldown for %fs"),
-			*GetName(), *LoggingUtils::GetName(ControlledTank), *TurboItem->GetName(), TurboItem->GetCooldownTimeRemaining());
+			*GetName(), *LoggingUtils::GetName(GetControlledTank()), *TurboItem->GetName(), TurboItem->GetCooldownTimeRemaining());
 	}
 }
 
@@ -306,14 +339,11 @@ void ATankPlayerController::OnNextWeapon(const FInputActionInstance& InputAction
 		return;
 	}
 
-	auto ControlledTank = GetControlledTank();
-	if (!ControlledTank || !IsControlledTankAlive())
+	auto ItemInventory = GetItemInventory();
+	if (!ItemInventory)
 	{
 		return;
 	}
-
-	auto ItemInventory = ControlledTank->GetItemInventory();
-	check(ItemInventory);
 
 	auto World = GetWorld();
 	check(World);
@@ -332,14 +362,11 @@ void ATankPlayerController::OnPreviousWeapon(const FInputActionInstance& InputAc
 		return;
 	}
 
-	auto ControlledTank = GetControlledTank();
-	if (!ControlledTank || !IsControlledTankAlive())
+	auto ItemInventory = GetItemInventory();
+	if (!ItemInventory)
 	{
 		return;
 	}
-
-	auto ItemInventory = ControlledTank->GetItemInventory();
-	check(ItemInventory);
 
 	auto World = GetWorld();
 	check(World);
@@ -353,16 +380,27 @@ bool ATankPlayerController::IsWeaponScrollSwitchTriggerable(const FInputActionIn
 	return InputActionInstance.GetLastTriggeredWorldTime() - WeaponScrollLastTriggerTime > WeaponScrollRetriggerDelay;
 }
 
-void ATankPlayerController::SelectWeapon(int32 WeaponIndex) const
+UItemInventory* ATankPlayerController::GetItemInventory() const
 {
 	auto ControlledTank = GetControlledTank();
 	if (!ControlledTank || !IsControlledTankAlive())
 	{
-		return;
+		return nullptr;
 	}
 
 	auto ItemInventory = ControlledTank->GetItemInventory();
 	check(ItemInventory);
+
+	return ItemInventory;
+}
+
+void ATankPlayerController::SelectWeapon(int32 WeaponIndex) const
+{
+	auto ItemInventory = GetItemInventory();
+	if (!ItemInventory)
+	{
+		return;
+	}
 
 	// TODO: Switch to CanWeaponBeActivatedByIndex if we don't want player to switch to a weapon still in cooldown
 	if (ItemInventory->IsWeaponAvailableByIndex(WeaponIndex))

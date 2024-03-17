@@ -7,6 +7,11 @@
 #include "TRItemLogging.h"
 #include "VisualLogger/VisualLogger.h"
 
+UPassiveEffect::UPassiveEffect()
+{
+	ItemType = EItemType::PassiveEffect;
+}
+
 UPassiveEffect::FCurrentValueChangedWatcher::FCurrentValueChangedWatcher(const UPassiveEffect& Effect) : 
 	Effect(&Effect), SnapshotValue(Effect.CurrentValue)
 {

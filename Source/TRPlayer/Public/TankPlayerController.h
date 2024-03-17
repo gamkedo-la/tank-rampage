@@ -17,6 +17,7 @@ struct FInputActionValue;
 class UInputAction;
 class ABaseTankPawn;
 class UHealthComponent;
+class UItemInventory;
 class UEnhancedInputComponent;
 struct FInputActionInstance;
 
@@ -32,6 +33,9 @@ public:
 	ATankPlayerController();
 
 	virtual void GameHasEnded(AActor* EndGameFocus, bool bIsWinner) override;
+
+	UFUNCTION(BlueprintPure)
+	const UInputAction* GetInputActionForItemNameAndIndex(const FName& ItemName, int32 ItemIndex) const;
 
 protected:
 	virtual void BeginPlay() override;
@@ -71,6 +75,8 @@ private:
 	void OnHealthChanged(UHealthComponent* HealthComponent, float PreviousHealthValue, AController* EventInstigator, AActor* ChangeCauser);
 
 	bool IsWeaponScrollSwitchTriggerable(const FInputActionInstance& InputActionInstance) const;
+
+	UItemInventory* GetItemInventory() const;
 
 private:
 

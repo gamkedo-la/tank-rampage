@@ -23,6 +23,9 @@ class TRITEM_API UPassiveEffect : public UItem, public IPercentage
 	GENERATED_BODY()
 
 public:
+
+	UPassiveEffect();
+
 	virtual bool CanBeActivated() const override { return false; }
 
 	virtual float GetCurrentValue() const override { return CurrentValue; }

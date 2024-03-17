@@ -13,5 +13,8 @@ UCLASS(Abstract)
 class TRITEM_API UActivatableEffect : public UItem
 {
 	GENERATED_BODY()
+
+public:
+	UActivatableEffect();
 	
 };

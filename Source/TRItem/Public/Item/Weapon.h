@@ -18,6 +18,9 @@ class TRITEM_API UWeapon : public UItem
 	GENERATED_BODY()
 
 public:
+
+	UWeapon();
+
 	UFUNCTION(BlueprintPure)
 	virtual float GetLaunchSpeed() const { return 0.0f; }
 
