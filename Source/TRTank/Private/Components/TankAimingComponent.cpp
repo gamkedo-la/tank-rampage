@@ -217,18 +217,16 @@ bool UTankAimingComponent::DoMoveBarrelTowards(const FVector& Target, const FVec
 
 ETankFiringStatus UTankAimingComponent::ComputeFiringStatus(bool bBarrelMoved) const
 {
+	if (!CanFire())
+	{
+		return ETankFiringStatus::Reloading;
+	}
 	if (!bBarrelMoved)
 	{
 		return ETankFiringStatus::Locked;
 	}
-	else if (CanFire())
-	{
-		return ETankFiringStatus::Aiming;
-	}
-	else
-	{
-		return ETankFiringStatus::Reloading;
-	}
+
+	return ETankFiringStatus::Aiming;
 }
 
 bool UTankAimingComponent::IsBarrelAlreadyAtTarget(const FVector& Target, const FVector& AimDirection) const
