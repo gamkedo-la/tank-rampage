@@ -42,6 +42,8 @@ private:
 	UFUNCTION()
 	void OnTankDestroyed(ABaseTankPawn* DestroyedTank, AController* DestroyedBy, AActor* DestroyedWith);
 
+	void OnSpawningStateChanged();
+
 
 private:
 	UPROPERTY(Category = "Components", VisibleDefaultsOnly)

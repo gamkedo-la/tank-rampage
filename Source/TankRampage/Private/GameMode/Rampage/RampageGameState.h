@@ -33,6 +33,12 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ApplyLevelUnlock(APawn* Pawn, const FLevelUnlock& Unlock);
 
+	UFUNCTION(BlueprintPure)
+	float GetFirstEnemySpawnTime() const { return FirstEnemySpawnTime; }
+
+	UFUNCTION(BlueprintPure)
+	bool SpawnersAreValid() const { return bSpawnersAreValid; }
+
 private:
 
 	friend class ARampageGameMode;
@@ -43,4 +49,6 @@ private:
 	int32 PreviousLevelXP{};
 	int32 LevelUpXP{};
 	int32 TotalXP{};
+	float FirstEnemySpawnTime{};
+	bool bSpawnersAreValid{};
 };

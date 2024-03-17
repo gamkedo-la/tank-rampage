@@ -71,6 +71,9 @@ void UEnemySpawnerComponent::InitSpawningSchedule()
 	{
 		UE_VLOG_UELOG(GetOwner(), LogTankRampage, Error, TEXT("%s-%s: InitSpawningSchedule - Spawning state is invalid - no spawning will occur!"),
 			*LoggingUtils::GetName(GetOwner()), *GetName());
+
+		OnSpawnerStateChange.Broadcast();
+
 		return;
 	}
 
@@ -87,6 +90,8 @@ void UEnemySpawnerComponent::InitSpawningSchedule()
 
 	UE_VLOG_UELOG(GetOwner(), LogTankRampage, Log, TEXT("%s-%s: InitSpawningSchedule - Schedule spawning loop every minute"),
 		*LoggingUtils::GetName(GetOwner()), *GetName());
+
+	OnSpawnerStateChange.Broadcast();
 }
 
 void UEnemySpawnerComponent::ScheduleSpawning()
@@ -115,6 +120,7 @@ void UEnemySpawnerComponent::ScheduleSpawning()
 			UE_VLOG_UELOG(GetOwner(), LogTankRampage, Warning, TEXT("%s-%s: ScheduleSpawning - Spawning state became invalid - no additional spawning will occur!"),
 				*LoggingUtils::GetName(GetOwner()), *GetName());
 			TimerManager.ClearTimer(SpawnLoopTimer);
+			OnSpawnerStateChange.Broadcast();
 		}
 		return;
 	}

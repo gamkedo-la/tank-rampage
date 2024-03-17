@@ -57,6 +57,8 @@ void ARampageGameMode::PostInitializeComponents()
 	{
 		LevelUnlocksComponent->SetLevelUnlocks(LevelUnlocksParser::ToConfigArray(LevelUnlocksDataTable, LevelUpDataTable));
 	}
+
+	EnemySpawnerComponent->OnSpawnerStateChange.AddUObject(this, &ThisClass::OnSpawningStateChanged);
 }
 
 void ARampageGameMode::BeginPlay()
@@ -149,6 +151,8 @@ void ARampageGameMode::InitializeGameState()
 	{
 		RampageGameState->LevelUpXP = XPLevels[0];
 	}
+
+	RampageGameState->FirstEnemySpawnTime = EnemySpawnerComponent->GetEarliestSpawningGameTimeSeconds();
 }
 
 void ARampageGameMode::RegisterEvents()
@@ -167,8 +171,6 @@ void ARampageGameMode::OnTankDestroyed(ABaseTankPawn* DestroyedTank, AController
 {
 	check(DestroyedTank);
 
-	// TODO: We may want to consider spawning additional AI tanks as they are killed
-
 	auto Controller = DestroyedTank->GetController();
 	if (auto PlayerController = Cast<APlayerController>(Controller); PlayerController)
 	{
@@ -177,4 +179,15 @@ void ARampageGameMode::OnTankDestroyed(ABaseTankPawn* DestroyedTank, AController
 		
 		PlayerController->GameHasEnded(DestroyedTank, false);
 	}
+}
+
+void ARampageGameMode::OnSpawningStateChanged()
+{
+	auto RampageGameState = GetGameState<ARampageGameState>();
+	if (!ensure(RampageGameState))
+	{
+		return;
+	}
+
+	RampageGameState->bSpawnersAreValid = EnemySpawnerComponent->CanSpawnAny();
 }

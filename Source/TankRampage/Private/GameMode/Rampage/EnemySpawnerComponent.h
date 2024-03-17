@@ -12,6 +12,9 @@
 class AEnemySpawner;
 class UDataTable;
 
+DECLARE_MULTICAST_DELEGATE(FOnSpawnerStateChange);
+
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class UEnemySpawnerComponent : public UActorComponent
 {
@@ -19,6 +22,10 @@ class UEnemySpawnerComponent : public UActorComponent
 
 public:	
 	UEnemySpawnerComponent();
+
+	float GetEarliestSpawningGameTimeSeconds() const;
+
+	bool CanSpawnAny() const;
 
 protected:
 	virtual void BeginPlay() override;
@@ -49,6 +56,9 @@ private:
 	bool CalculateEligibleSpawnersAsNeeded(const APawn& PlayerPawn);
 
 	bool IsDueForSpawnerPrioritization() const;
+
+public:
+	FOnSpawnerStateChange OnSpawnerStateChange{};
 
 private:
 
@@ -125,3 +135,17 @@ private:
 	FTimerHandle SpawnLoopTimer{};
 	FTimerHandle SpawningTimer{};
 };
+
+#pragma region Inline Definitions
+
+inline float UEnemySpawnerComponent::GetEarliestSpawningGameTimeSeconds() const
+{
+	return EarliestSpawningGameTimeSeconds;
+}
+
+inline bool UEnemySpawnerComponent::CanSpawnAny() const
+{
+	return SpawnLoopTimer.IsValid();
+}
+
+#pragma endregion Inline Definitions
