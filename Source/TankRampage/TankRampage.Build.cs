@@ -25,6 +25,7 @@ public class TankRampage : ModuleRules
             "TRAI",
             "TRItem",
             "TRUI",
+            "TRGameplayMechanics",
         });
 
         CppStandard = CppStandardVersion.Cpp20;

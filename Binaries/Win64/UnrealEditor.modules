@@ -4,6 +4,7 @@
 	{
 		"TRAI": "UnrealEditor-TRAI.dll",
 		"TRCore": "UnrealEditor-TRCore.dll",
+		"TRGameplayMechanics": "UnrealEditor-TRGameplayMechanics.dll",
 		"TRItem": "UnrealEditor-TRItem.dll",
 		"TRPlayer": "UnrealEditor-TRPlayer.dll",
 		"TRTank": "UnrealEditor-TRTank.dll",
