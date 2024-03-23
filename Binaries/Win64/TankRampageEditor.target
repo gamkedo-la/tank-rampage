@@ -6282,6 +6282,14 @@
 			"Type": "SymbolFile"
 		},
 		{
+			"Path": "$(ProjectDir)/Binaries/Win64/UnrealEditor-TRSettings.dll",
+			"Type": "DynamicLibrary"
+		},
+		{
+			"Path": "$(ProjectDir)/Binaries/Win64/UnrealEditor-TRSettings.pdb",
+			"Type": "SymbolFile"
+		},
+		{
 			"Path": "$(ProjectDir)/Binaries/Win64/UnrealEditor-TRTank.dll",
 			"Type": "DynamicLibrary"
 		},

@@ -7,6 +7,7 @@
 		"TRGameplayMechanics": "UnrealEditor-TRGameplayMechanics.dll",
 		"TRItem": "UnrealEditor-TRItem.dll",
 		"TRPlayer": "UnrealEditor-TRPlayer.dll",
+		"TRSettings": "UnrealEditor-TRSettings.dll",
 		"TRTank": "UnrealEditor-TRTank.dll",
 		"TRUI": "UnrealEditor-TRUI.dll",
 		"TankRampage": "UnrealEditor-TankRampage.dll"

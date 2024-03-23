@@ -16,6 +16,9 @@ class TRGAMEPLAYMECHANICS_API ABreakableActorBase : public AActor
 public:	
 	ABreakableActorBase();
 
+protected:
+	//virtual void BeginPlay() override;
+
 
 protected:
 	UPROPERTY(Category = "Fracture", VisibleDefaultsOnly, BlueprintReadOnly)
