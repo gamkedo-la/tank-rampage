@@ -4,7 +4,6 @@
 #include "MiniNukeProjectile.h"
 
 #include "Kismet/GameplayStatics.h"
-#include "Camera/PlayerCameraManager.h"
 #include "Camera/CameraComponent.h"
 
 #include "TRItemLogging.h"
@@ -13,11 +12,6 @@
 
 void AMiniNukeProjectile::ApplyPostProcessEffects()
 {
-	//auto PlayerCameraManager = UGameplayStatics::GetPlayerCameraManager(this, 0);
-	// Potentially use AddCachedPPBlend but then need to remove it
-	// Can get player camera manager from PlayerController as well
-
-	// Alternative way is to get the UCameraComponent from the player pawn
 	auto PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
 	if (!PlayerPawn)
 	{
