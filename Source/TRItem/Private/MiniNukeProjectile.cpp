@@ -12,11 +12,16 @@
 
 void AMiniNukeProjectile::ApplyPostProcessEffects()
 {
+	if (!bEnablePostProcess)
+	{
+		UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: ApplyPostProcessEffects: Disabled"), *GetName());
+		return;
+	}
+
 	auto PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
 	if (!PlayerPawn)
 	{
 		UE_VLOG_UELOG(this, LogTRItem, Warning, TEXT("%s: ApplyPostProcessEffects: PlayerPawn is NULL"), *GetName());
-
 		return;
 	}
 
@@ -24,38 +29,77 @@ void AMiniNukeProjectile::ApplyPostProcessEffects()
 	if (!CameraComponent)
 	{
 		UE_VLOG_UELOG(this, LogTRItem, Warning, TEXT("%s: ApplyPostProcessEffects: PlayerPawn=%s has NULL CameraComponent"), *GetName(), *PlayerPawn->GetName());
-
 		return;
 	}
 
-	auto& CurrentSettings = CameraComponent->PostProcessSettings;
-	const auto OriginalSettings = CurrentSettings;
+	const auto OriginalSettings = CameraComponent->PostProcessSettings;
+	CameraComponent->PostProcessSettings = PostProcessSettings;
 
-	// TODO: Extract parameters
-	CurrentSettings.bOverride_WhiteTemp = true;
-	CurrentSettings.WhiteTemp = 100000.0;
+	auto World = GetWorld();
+	check(World);
 
-	CurrentSettings.bOverride_WhiteTint = true;
-	CurrentSettings.WhiteTint = 1.0f;
+	const auto CurrentTimeSeconds = World->GetTimeSeconds();
 
-	CurrentSettings.bOverride_ColorSaturation = true;
-	CurrentSettings.ColorSaturation = FVector4{ 2, 0, 2, 2 }; // RGBY
+	if (!ensureMsgf(PostProcessMinDuration <= PostProcessMaxDuration, TEXT("PostProcessMinDuration=%f > PostProcessMaxDuration=%f"), PostProcessMinDuration, PostProcessMaxDuration))
+	{
+		PostProcessMaxDuration = PostProcessMinDuration;
+	}
 
-	CurrentSettings.bOverride_VignetteIntensity = true;
-	CurrentSettings.VignetteIntensity = 0.9;
+	const auto PostProcessFadeStartTimeSeconds = CurrentTimeSeconds + PostProcessMinDuration;
+	const auto PostProcessFadeEndTimeSeconds = CurrentTimeSeconds + PostProcessMaxDuration;
 
-	CurrentSettings.bOverride_AutoExposureMinBrightness = CurrentSettings.bOverride_AutoExposureMaxBrightness = true;
-	CurrentSettings.AutoExposureMinBrightness = CurrentSettings.AutoExposureMaxBrightness = -4;
-
-	UE_VLOG_UELOG(PlayerPawn, LogTRItem, Log, TEXT("%s: ApplyPostProcessEffects: Begin"), *GetName());
+	UE_VLOG_UELOG(PlayerPawn, LogTRItem, Log, TEXT("%s: ApplyPostProcessEffects: Begin - TotalDuration=%fs; FadeDuration=%fs"), *GetName(), PostProcessMaxDuration, PostProcessMaxDuration - PostProcessMinDuration);
 
 	// Make sure not to capture "this" as object will be destroyed shortly
-	// TODO: Interpolate back to original values
-	FTimerHandle TimerHandle;
-	GetWorldTimerManager().SetTimer(TimerHandle, FTimerDelegate::CreateWeakLambda(CameraComponent, [CameraComponent, OriginalSettings, Name = GetName()]()
-	{
-			CameraComponent->PostProcessSettings = OriginalSettings;
-			UE_VLOG_UELOG(CameraComponent->GetOwner(), LogTRItem, Log, TEXT("%s: ApplyPostProcessEffects: End"), *Name);
+	FTimerHandle InterpolationTimerHandle;
 
-	}), ShockwaveDuration, false);
+	if (PostProcessFadeEndTimeSeconds > PostProcessFadeStartTimeSeconds)
+	{
+		GetWorldTimerManager().SetTimer(InterpolationTimerHandle, FTimerDelegate::CreateWeakLambda(CameraComponent,
+			[World, CameraComponent, OriginalSettings, NewSettings = PostProcessSettings, FadeDuration = PostProcessFadeEndTimeSeconds - PostProcessFadeStartTimeSeconds, PostProcessFadeStartTimeSeconds, Name = GetName()]()
+			{
+				const auto Alpha = FMath::Clamp((World->GetTimeSeconds() - PostProcessFadeStartTimeSeconds) / FadeDuration, 0.0f, 1.0f);
+				auto& CurrentSettings = CameraComponent->PostProcessSettings;
+
+				if (CurrentSettings.bOverride_WhiteTemp)
+				{
+					CurrentSettings.WhiteTemp = FMath::Lerp(NewSettings.WhiteTemp, OriginalSettings.WhiteTemp, Alpha);
+				}
+				if (CurrentSettings.bOverride_WhiteTint)
+				{
+					CurrentSettings.WhiteTint = FMath::Lerp(NewSettings.WhiteTint, OriginalSettings.WhiteTint, Alpha);
+				}
+				if(CurrentSettings.bOverride_ColorSaturation)
+				{
+					CurrentSettings.ColorSaturation = FMath::Lerp(NewSettings.ColorSaturation, OriginalSettings.ColorSaturation, Alpha);
+				}
+				if (CurrentSettings.bOverride_SceneFringeIntensity)
+				{
+					CurrentSettings.SceneFringeIntensity = FMath::Lerp(NewSettings.SceneFringeIntensity, OriginalSettings.SceneFringeIntensity, Alpha);
+				}
+				if (CurrentSettings.bOverride_BloomIntensity)
+				{
+					CurrentSettings.BloomIntensity = FMath::Lerp(NewSettings.BloomIntensity, OriginalSettings.BloomIntensity, Alpha);
+				}
+				if (CurrentSettings.bOverride_FilmGrainIntensity)
+				{
+					CurrentSettings.FilmGrainIntensity = FMath::Lerp(NewSettings.FilmGrainIntensity, OriginalSettings.FilmGrainIntensity, Alpha);
+				}
+
+				UE_VLOG_UELOG(CameraComponent->GetOwner(), LogTRItem, VeryVerbose, TEXT("%s: ApplyPostProcessEffects: Fade out - %.1f %% "), *Name, Alpha * 100);
+
+			}), PostProcessInterpolateInterval, true, PostProcessMinDuration);
+	} // Fading enabled
+
+	// Clear the effect at MaxDuration
+	FTimerHandle EndTimerHandle;
+	GetWorldTimerManager().SetTimer(EndTimerHandle, FTimerDelegate::CreateWeakLambda(CameraComponent,
+		[World, InterpolationTimerHandle, CameraComponent, OriginalSettings, Name = GetName()]() mutable
+	{
+		World->GetTimerManager().ClearTimer(InterpolationTimerHandle);
+		CameraComponent->PostProcessSettings = OriginalSettings;
+
+		UE_VLOG_UELOG(CameraComponent->GetOwner(), LogTRItem, Log, TEXT("%s: ApplyPostProcessEffects: End"), *Name);
+
+	}), PostProcessMaxDuration, false);
 }
