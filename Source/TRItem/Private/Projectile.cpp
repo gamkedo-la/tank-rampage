@@ -257,6 +257,7 @@ void AProjectile::OnCollision(UPrimitiveComponent* HitComponent, AActor* OtherAc
 		PlaySfxAtActorLocation(ExplosionSfx);
 		PlayHitSfx(OtherActor);
 		PlayHitVfx();
+		ApplyPostProcessEffects();
 
 		MarkForDestroy();
 	}

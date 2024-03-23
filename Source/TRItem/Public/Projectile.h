@@ -60,6 +60,8 @@ protected:
 	UFUNCTION(BlueprintNativeEvent)
 	void SetNiagaraHitEffectParameters(UNiagaraComponent* NiagaraComponent);
 
+	virtual void ApplyPostProcessEffects() {}
+
 private:
 	void InitDebugDraw();
 	void DestroyDebugDraw();
