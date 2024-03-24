@@ -65,6 +65,11 @@ namespace TR
 		* @param PopulationIntervalSeconds The approx rate at which values will be added to the buffer
 		*/
 		TTimedCircularBuffer(float MeasurementIntervalSeconds, float ExpectedAddRateSeconds);
+
+		/*
+		* Default initialize the circular buffer with a size of 1.
+		*/
+		TTimedCircularBuffer();
 		explicit TTimedCircularBuffer(int32 NumSamples);
 
 		uint32 Capacity() const;
@@ -82,6 +87,7 @@ namespace TR
 		void Add(T&& Value) requires std::movable<T>;
 		void Add(const T& Value) requires std::assignable_from<T&, T>;
 		void Clear();
+		void ClearAndResize(int32 NewNumSamples);
 
 	private:
 		uint32 NextIndex() const;
@@ -166,6 +172,9 @@ namespace TR
 		return FMath::Min(Count, Capacity());
 	}
 
+	template<typename T, typename TDefaultValueFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
+	inline TTimedCircularBuffer<T, TDefaultValueFunc>::TTimedCircularBuffer() : TTimedCircularBuffer(1) {}
+
 #pragma endregion Inline Definitions
 
 	template<typename T, typename TDefaultValueFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
@@ -198,6 +207,17 @@ namespace TR
 		}
 
 		return SumValue;
+	}
+
+	template<typename T, typename TDefaultValueFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
+	void TTimedCircularBuffer<T, TDefaultValueFunc>::ClearAndResize(int32 NewNumSamples)
+	{
+		checkf(NewNumSamples > 0, TEXT("NewNumSamples=%d"), NewNumSamples);
+
+		Buffer.Reset(NewNumSamples);
+		Buffer.AddZeroed(NewNumSamples);
+
+		Clear();
 	}
 
 }

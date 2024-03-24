@@ -143,8 +143,8 @@ void ATankAIController::AimAtPlayerTank(const FTankAIContext& AIContext)
 	const auto& AimTarget = PredictedPosition + TargetingError;
 
 	FAimingData AimingData;
-	AimingData.bHitResult = true;
-	AimingData.HitLocation = AimTarget;
+	AimingData.bAimTargetFound = true;
+	AimingData.AimTargetLocation = AimTarget;
 	
 	AITank.AimAt(AimingData);
 }

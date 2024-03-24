@@ -56,6 +56,8 @@ void ATankPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
+	AimDirectionBuffer.ClearAndResize(AimDirectionSmoothingSamples);
+
 	InitializeCamera();
 	InitializeInputMappingContext();
 }
@@ -257,8 +259,13 @@ void ATankPlayerController::AimTowardCrosshair()
 		return;
 	}
 	
+	auto TankAimingComponent = ControlledTank->GetTankAimingComponent();
+	check(TankAimingComponent);
+
+	const auto ZeroingDistance = TankAimingComponent->GetTankAimingMode() == EAimingMode::ManualAim ? TankAimingComponent->GetManualAimZeroingDistance() : -1;
+
 	FAimingData AimingData;
-	GetAimingData(AimingData);
+	GetAimingData(AimingData, ZeroingDistance);
 	
 	ControlledTank->AimAt(AimingData);
 }
@@ -433,10 +440,9 @@ void ATankPlayerController::OnLook(const FInputActionValue& Value)
 	}
 }
 
-void ATankPlayerController::GetAimingData(FAimingData& AimingData) const
+void ATankPlayerController::CrosshairToAimingData(const FVector2D& CrosshairScreenLocation, FAimingData& AimingData) const
 {
-	const auto CrosshairScreenLocation = GetCrosshairScreenspaceLocation();
-	
+	// TODO: This still causes jitter in AimingWorldDirection when moving fast and strafing
 	DeprojectScreenPositionToWorld(
 		CrosshairScreenLocation.X,
 		CrosshairScreenLocation.Y,
@@ -444,32 +450,81 @@ void ATankPlayerController::GetAimingData(FAimingData& AimingData) const
 		AimingData.AimingWorldDirection
 	);
 
-	UE_VLOG_ARROW(this, LogTRPlayer, VeryVerbose,
-		AimingData.AimingOriginWorldLocation, AimingData.AimingOriginWorldLocation + 1000.0f * AimingData.AimingWorldDirection,
-		FColor::Red, TEXT("Aim Direction"));
+	AimDirectionBuffer.Add(AimingData.AimingWorldDirection);
+	AimingData.AimingWorldDirection = AimDirectionBuffer.Average();
 
-	//Setup Ray Trace
+	// This doesn't work as not positioned correctly but does have less jitter
+	//FRotator Rotation;
+	//GetPlayerViewPoint(AimingData.AimingOriginWorldLocation, Rotation);
+	//AimingData.AimingWorldDirection = Rotation.Vector();
+}
+
+void ATankPlayerController::GetAimingData(FAimingData& AimingData, float ZeroingDistance) const
+{
+	const auto CrosshairScreenLocation = GetCrosshairScreenspaceLocation();
+
+	CrosshairToAimingData(CrosshairScreenLocation, AimingData);
+
+	const auto TargetLocationOptional = GetAimingTargetLocation(AimingData.AimingOriginWorldLocation, AimingData.AimingWorldDirection, ZeroingDistance);
+
+	if (TargetLocationOptional)
+	{
+		AimingData.bAimTargetFound = true;
+		AimingData.AimTargetLocation = *TargetLocationOptional;
+
+		UE_VLOG_ARROW(this, LogTRPlayer, VeryVerbose,
+			AimingData.AimingOriginWorldLocation, AimingData.AimTargetLocation,
+			FColor::Green, TEXT("Aim Target"));
+	}
+	else
+	{
+		AimingData.bAimTargetFound = false;
+
+		UE_VLOG_ARROW(this, LogTRPlayer, VeryVerbose,
+			AimingData.AimingOriginWorldLocation, AimingData.AimingOriginWorldLocation + 1000.0f * AimingData.AimingWorldDirection,
+			FColor::Red, TEXT("Aim Direction: NO HIT"));
+	}
+
+	UE_VLOG_UELOG(this, LogTRPlayer, VeryVerbose, TEXT("%s: GetAimingData - Screen=%s; WLoc=%s; WDir=%s; AimTarget=%s"),
+		*GetName(), *CrosshairScreenLocation.ToString(),
+		*AimingData.AimingOriginWorldLocation.ToCompactString(), *AimingData.AimingWorldDirection.ToCompactString(),
+		AimingData.bAimTargetFound ? *AimingData.AimingOriginWorldLocation.ToCompactString() : TEXT("<None>"));
+}
+
+std::optional<FVector> ATankPlayerController::GetAimingTargetLocation(const FVector& AimStartLocation, const FVector& AimTargetDirection, float ZeroingDistance) const
+{
+	// Manual aim
+	if (ZeroingDistance > 0)
+	{
+		return AimStartLocation + AimTargetDirection * ZeroingDistance;
+	}
+
+	// Setup Ray Trace
 	UWorld* World = GetWorld();
 	check(World);
+
 	FHitResult HitResult;
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(GetPawn());
-	const auto& TraceStartLocation = AimingData.AimingOriginWorldLocation;
+
+	const auto& TraceStartLocation = AimStartLocation;
 	const auto TraceEndLocation = TraceStartLocation
-												+ MaxAimDistanceMeters * 100 //conversion to cm
-												* AimingData.AimingWorldDirection;
-	
-	AimingData.bHitResult = World->LineTraceSingleByChannel(
+		+ MaxAimDistanceMeters * 100 //conversion to cm
+		* AimTargetDirection;
+
+	const bool bFoundHit = World->LineTraceSingleByChannel(
 		HitResult,
 		TraceStartLocation,
 		TraceEndLocation,
 		ECollisionChannel::ECC_Visibility,
 		Params);
-	
-	if (AimingData.bHitResult)
+
+	if (bFoundHit)
 	{
-		AimingData.HitLocation = HitResult.Location;
+		return HitResult.Location;
 	}
+
+	return std::nullopt;
 }
 
 FVector2D ATankPlayerController::GetCrosshairScreenspaceLocation() const

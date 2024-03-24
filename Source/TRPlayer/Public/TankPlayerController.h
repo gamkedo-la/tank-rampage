@@ -6,6 +6,9 @@
 #include "BasePlayerController.h"
 #include "Interfaces/TankOwner.h"
 
+
+#include "Containers/TimedCircularBuffer.h"
+
 #include <optional>
 
 #include "TankPlayerController.generated.h"
@@ -67,7 +70,10 @@ private:
 
 	void SelectWeapon(int32 WeaponIndex) const;
 
-	void GetAimingData(FAimingData& AimingData) const;
+	void GetAimingData(FAimingData& AimingData, float ZeroingDistance) const;
+	void CrosshairToAimingData(const FVector2D& CrosshairScreenLocation, FAimingData& AimingData) const;
+
+	std::optional<FVector> GetAimingTargetLocation(const FVector& AimStartLocation, const FVector& AimTargetDirection, float ZeroingDistance) const;
 	
 	FVector2D GetCrosshairScreenspaceLocation() const;
 
@@ -79,6 +85,9 @@ private:
 	UItemInventory* GetItemInventory() const;
 
 private:
+	
+	using FVectorBuffer = TR::TTimedCircularBuffer < FVector, decltype([]() { return FVector{ ForceInitToZero }; }) > ;
+	mutable FVectorBuffer AimDirectionBuffer;
 
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputMappingContext> InputMappingContext{};
@@ -112,6 +121,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = Aim)
 	FVector2D CrosshairPositionFraction{};
+
+	UPROPERTY(EditDefaultsOnly, Category = Aim)
+	int32 AimDirectionSmoothingSamples{ 6 };
 
 	float MaxAimDistanceMeters{ 1000.0f };
 

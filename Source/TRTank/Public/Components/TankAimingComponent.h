@@ -33,11 +33,11 @@ struct FAimingData
 
 	// Bool to indicate if the ray trace hit something.
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Aiming Data")
-	bool bHitResult = false;
+	bool bAimTargetFound = false;
 
 	// Location of the ray trace hit. Valid only if bIsRayTraceHit is true.
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Aiming Data")
-	FVector HitLocation = FVector::ZeroVector;
+	FVector AimTargetLocation = FVector::ZeroVector;
 
 	// World location of the aimer's perspective.
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Aiming Data")
@@ -71,6 +71,8 @@ public:
 	void AimAt(const FAimingData& AimingData, float LaunchSpeed);
 
 	void AimAtWithNoLaunchSpeed(const FAimingData& AimingData);
+
+	float GetManualAimZeroingDistance() const;
 	
 	UFUNCTION(BlueprintPure)
 	ETankFiringStatus GetTankFiringStatus() const { return FiringStatus; }
@@ -146,3 +148,12 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Tank Aiming")
 	float AssistedAimArcLengthErrorThresholdMeters{ 3.0f };
 };
+
+#pragma region Inline Definitions
+
+FORCEINLINE float UTankAimingComponent::GetManualAimZeroingDistance() const
+{
+	return ZeroingDistance;
+}
+
+#pragma endregion Inline Definitions
