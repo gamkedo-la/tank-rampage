@@ -6,11 +6,15 @@
 #include "Logging/LoggingUtils.h"
 #include "TRPlayerLogging.h"
 #include "Pawn/BaseTankPawn.h"
+
 #include "Components/HealthComponent.h"
+#include "Components/TankAimingComponent.h"
 
 #include "Item/ItemInventory.h"
 #include "Item/Item.h"
 #include "Item/ItemNames.h"
+
+#include "UI/TRHUD.h"
 
 #include "Subsystems/TankEventsSubsystem.h"
 
@@ -22,8 +26,6 @@
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/PlayerCameraManager.h"
-#include "Components/TankAimingComponent.h"
-#include "UI/TRHUD.h"
 
 ATankPlayerController::ATankPlayerController()
 {
@@ -131,6 +133,22 @@ void ATankPlayerController::OnPossess(APawn* InPawn)
 	}
 
 	Tank->GetHealthComponent()->OnHealthChanged.AddDynamic(this, &ThisClass::OnHealthChanged);
+}
+
+ABaseTankPawn* ATankPlayerController::GetControlledTankIfInputShouldBeActive() const
+{
+	if (IsGamePaused())
+	{
+		return nullptr;
+	}
+
+	auto ControlledTank = GetControlledTank();
+	if (!ControlledTank || !IsControlledTankAlive())
+	{
+		return nullptr;
+	}
+
+	return ControlledTank;
 }
 
 bool ATankPlayerController::IsControlledTankAlive() const
@@ -253,8 +271,8 @@ const UInputAction* ATankPlayerController::GetInputActionForItemNameAndIndex(con
 
 void ATankPlayerController::AimTowardCrosshair()
 {
-	auto ControlledTank = GetControlledTank();
-	if (!ControlledTank || !IsControlledTankAlive())
+	auto ControlledTank = GetControlledTankIfInputShouldBeActive();
+	if (!ControlledTank)
 	{
 		return;
 	}
@@ -272,8 +290,8 @@ void ATankPlayerController::AimTowardCrosshair()
 
 void ATankPlayerController::OnFire()
 {
-	auto ControlledTank = GetControlledTank();
-	if (!ControlledTank || !IsControlledTankAlive())
+	auto ControlledTank = GetControlledTankIfInputShouldBeActive();
+	if (!ControlledTank)
 	{
 		return;
 	}
@@ -283,8 +301,8 @@ void ATankPlayerController::OnFire()
 
 void ATankPlayerController::OnMove(const FInputActionValue& Value)
 {
-	auto ControlledTank = GetControlledTank();
-	if (!ControlledTank || !IsControlledTankAlive())
+	auto ControlledTank = GetControlledTankIfInputShouldBeActive();
+	if (!ControlledTank)
 	{
 		return;
 	}
@@ -389,8 +407,8 @@ bool ATankPlayerController::IsWeaponScrollSwitchTriggerable(const FInputActionIn
 
 UItemInventory* ATankPlayerController::GetItemInventory() const
 {
-	auto ControlledTank = GetControlledTank();
-	if (!ControlledTank || !IsControlledTankAlive())
+	auto ControlledTank = GetControlledTankIfInputShouldBeActive();
+	if (!ControlledTank)
 	{
 		return nullptr;
 	}
@@ -426,6 +444,11 @@ void ATankPlayerController::SelectWeapon(int32 WeaponIndex) const
 
 void ATankPlayerController::OnLook(const FInputActionValue& Value)
 {
+	if (IsGamePaused())
+	{
+		return;
+	}
+
 	const auto LookAxisValue = Value.Get<FVector2D>();
 
 	// AddYawInput and AddPitchInput requires Camera Control Rotation to be checked on the camera spring arm on the pawn

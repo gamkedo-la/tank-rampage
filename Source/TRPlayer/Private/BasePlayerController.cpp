@@ -97,6 +97,11 @@ void ABasePlayerController::ResumeGame()
 	SetInputModeGame();
 }
 
+bool ABasePlayerController::IsGamePaused() const
+{
+	return UGameplayStatics::IsGamePaused(this);
+}
+
 void ABasePlayerController::SetPaused(bool bPaused)
 {
 	UGameplayStatics::SetGamePaused(GetWorld(), bPaused);

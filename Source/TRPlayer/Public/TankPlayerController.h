@@ -46,10 +46,13 @@ protected:
 	virtual void Tick(float DeltaTime) override;
 
 	virtual ABaseTankPawn* GetControlledTank() const override;
+	
 
 	virtual void OnPossess(APawn* InPawn) override;
 
 private:
+
+	ABaseTankPawn* GetControlledTankIfInputShouldBeActive() const;
 
 	bool IsControlledTankAlive() const;
 
@@ -83,7 +86,7 @@ private:
 	bool IsWeaponScrollSwitchTriggerable(const FInputActionInstance& InputActionInstance) const;
 
 	UItemInventory* GetItemInventory() const;
-
+	
 private:
 	
 	using FVectorBuffer = TR::TTimedCircularBuffer < FVector, decltype([]() { return FVector{ ForceInitToZero }; }) > ;
