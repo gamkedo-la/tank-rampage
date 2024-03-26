@@ -26,7 +26,7 @@ public:
 	*
 	* @param RelativeSpeed -1 is max downward movement and 1 is max upward movement
 	*/
-	bool Rotate(float RelativeSpeed);
+	bool Rotate(double RelativeSpeed);
 
 protected:
 	virtual void InitializeComponent() override;
@@ -44,6 +44,6 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Oscillations, meta = (ClampMin = "0"))
 	float OscillationThresholdDegrees { 2.0f };
 
-	using BufferType = TR::TTimedCircularBuffer<float>;
+	using BufferType = TR::TTimedCircularBuffer<double>;
 	TUniquePtr<BufferType> OscillationsBuffer{};
 };

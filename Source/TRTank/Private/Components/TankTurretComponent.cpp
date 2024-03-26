@@ -17,7 +17,7 @@ UTankTurretComponent::UTankTurretComponent()
 	bWantsInitializeComponent = true;
 }
 
-bool UTankTurretComponent::Rotate(float RelativeSpeed)
+bool UTankTurretComponent::Rotate(double RelativeSpeed)
 {
 	if (FMath::IsNearlyZero(RelativeSpeed))
 	{
@@ -27,7 +27,7 @@ bool UTankTurretComponent::Rotate(float RelativeSpeed)
 	auto World = GetWorld();
 	check(World);
 
-	const auto ClampedRelativeSpeed = FMath::Clamp(RelativeSpeed, -1.0f, 1.0f);
+	const auto ClampedRelativeSpeed = FMath::Clamp(RelativeSpeed, -1.0, 1.0);
 
 	const auto DeltaSeconds = World->GetDeltaSeconds();
 	const auto YawChange = ClampedRelativeSpeed * MaxDegreesPerSecond * DeltaSeconds;

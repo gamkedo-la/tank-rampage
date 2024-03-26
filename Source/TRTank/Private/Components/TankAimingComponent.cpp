@@ -18,7 +18,7 @@
 
 namespace
 {
-	float ClampDeltaYaw(float Yaw);
+	double ClampDeltaYaw(double Yaw);
 }
 
 UTankAimingComponent::UTankAimingComponent()
@@ -185,6 +185,10 @@ void UTankAimingComponent::DirectAimAt(const FAimingData& AimingData)
 	const FVector FireOriginLocation = GetBarrelLocation();
 	const FVector AimDirection = (AimingData.AimTargetLocation - FireOriginLocation).GetSafeNormal();
 
+	UE_VLOG_ARROW(GetOwner(), LogTRTank, VeryVerbose,
+		FireOriginLocation, AimingData.AimTargetLocation,
+		FColor::Blue, TEXT("DirectAimAt"));
+
 	MoveBarrelTowards(AimingData.AimTargetLocation, AimDirection);
 }
 
@@ -206,10 +210,17 @@ bool UTankAimingComponent::DoMoveBarrelTowards(const FVector& Target, const FVec
 	const auto TargetRotation = AimDirection.Rotation();
 	const auto BarrelRotator = Barrel->GetForwardVector().Rotation();
 
-	const auto DesiredRotator = TargetRotation - Barrel->GetForwardVector().Rotation();
+	const auto DesiredRotator = TargetRotation - BarrelRotator;
 
-	bool bMoved = Barrel->Elevate(DesiredRotator.Pitch);
-	bMoved |= Turret->Rotate(ClampDeltaYaw(DesiredRotator.Yaw));
+	const bool bBarrelMoved = Barrel->Elevate(DesiredRotator.Pitch);
+	const bool bTurretMoved = Turret->Rotate(ClampDeltaYaw(DesiredRotator.Yaw));
+	const bool bMoved = bBarrelMoved || bTurretMoved;
+
+	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: DoMoveBarrelTowards: %s - BarrelMoved=%s; TurretMoved=%s"),
+		*LoggingUtils::GetName(GetOwner()), *GetName(),
+		LoggingUtils::GetBoolString(bMoved),
+		LoggingUtils::GetBoolString(bBarrelMoved), LoggingUtils::GetBoolString(bTurretMoved)
+	);
 
 	return bMoved;
 }
@@ -230,7 +241,7 @@ ETankFiringStatus UTankAimingComponent::ComputeFiringStatus(bool bBarrelMoved) c
 
 bool UTankAimingComponent::IsBarrelAlreadyAtTarget(const FVector& Target, const FVector& AimDirection) const
 {
-	const float Alignment = AimDirection | Barrel->GetForwardVector();
+	const auto Alignment = AimDirection | Barrel->GetForwardVector();
 	bool bAtTarget = Alignment >= AimToleranceCosine;
 
 	if (!bAtTarget)
@@ -288,15 +299,15 @@ void UTankAimingComponent::DescribeSelfToVisLog(FVisualLogEntry* Snapshot) const
 
 namespace
 {
-	float ClampDeltaYaw(float Yaw)
+	double ClampDeltaYaw(double Yaw)
 	{
-		auto ClampedAngle = FMath::Fmod(Yaw + 180.0f, 360.0f);
-		if (ClampedAngle < 0.0f)
+		auto ClampedAngle = FMath::Fmod(Yaw + 180.0, 360.0);
+		if (ClampedAngle < 0.0)
 		{
-			ClampedAngle += 360.0f;
+			ClampedAngle += 360.0;
 		}
 
-		ClampedAngle -= 180.0f;
+		ClampedAngle -= 180.0;
 
 		return ClampedAngle;
 	}

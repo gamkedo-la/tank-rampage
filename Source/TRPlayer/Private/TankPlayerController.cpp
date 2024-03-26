@@ -505,7 +505,7 @@ void ATankPlayerController::GetAimingData(FAimingData& AimingData, float Zeroing
 
 		UE_VLOG_ARROW(this, LogTRPlayer, VeryVerbose,
 			AimingData.AimingOriginWorldLocation, AimingData.AimingOriginWorldLocation + 1000.0f * AimingData.AimingWorldDirection,
-			FColor::Red, TEXT("Aim Direction: NO HIT"));
+			FColor::Red, TEXT("Aim Target: NO HIT"));
 	}
 
 	UE_VLOG_UELOG(this, LogTRPlayer, VeryVerbose, TEXT("%s: GetAimingData - Screen=%s; WLoc=%s; WDir=%s; AimTarget=%s"),

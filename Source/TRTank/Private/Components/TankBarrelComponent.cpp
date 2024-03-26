@@ -11,7 +11,7 @@ using namespace TR;
 
 namespace
 {
-	constexpr float PitchChangeEpsilon = 1e-3;
+	constexpr double PitchChangeEpsilon = 1e-3;
 }
 
 UTankBarrelComponent::UTankBarrelComponent()
@@ -19,7 +19,7 @@ UTankBarrelComponent::UTankBarrelComponent()
 	bWantsInitializeComponent = true;
 }
 
-bool UTankBarrelComponent::Elevate(float RelativeSpeed)
+bool UTankBarrelComponent::Elevate(double RelativeSpeed)
 {
 	if (FMath::IsNearlyZero(RelativeSpeed))
 	{
@@ -29,7 +29,7 @@ bool UTankBarrelComponent::Elevate(float RelativeSpeed)
 	auto World = GetWorld();
 	check(World);
 
-	const auto ClampedRelativeSpeed = FMath::Clamp(RelativeSpeed, -1.0f, 1.0f);
+	const auto ClampedRelativeSpeed = FMath::Clamp(RelativeSpeed, -1.0, 1.0);
 
 	const auto DeltaSeconds = World->GetDeltaSeconds();
 	const auto ElevationChange = ClampedRelativeSpeed * MaxDegreesPerSecond * DeltaSeconds;
