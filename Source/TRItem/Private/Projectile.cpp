@@ -249,7 +249,7 @@ void AProjectile::OnCollision(UPrimitiveComponent* HitComponent, AActor* OtherAc
 
 	if (bDestroy)
 	{
-		UE_VLOG_UELOG(this, LogTRItem, Verbose, TEXT("%s: Hit %s on %s"), *GetName(), *LoggingUtils::GetName(OtherComponent), *OtherActor->GetName());
+		UE_VLOG_UELOG(this, LogTRItem, Verbose, TEXT("%s: Hit %s on %s"), *GetName(), *LoggingUtils::GetName(OtherComponent), *LoggingUtils::GetName(OtherActor));
 
 		UE_VLOG_LOCATION(this, LogTRItem, Display, GetActorLocation(), ExplosionForce->Radius, FColor::Red, TEXT("Explosion"));
 		ExplosionForce->FireImpulse();
