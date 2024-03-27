@@ -341,7 +341,7 @@ void ABaseTankPawn::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
 	// Draw barrel
 	const auto& BarrelOBB = GetBounds(*TankBarrel);
 	const auto& BarrelExtent = BarrelOBB.GetExtent();
-	const auto& GunBarrelLocation = TankTurret->GetSocketLocation(TankSockets::GunAttach) + TankBarrel->GetForwardVector() * BarrelExtent.X - TankBarrel->GetUpVector() * BarrelExtent.Z;
+	const auto& GunBarrelLocation = TankBarrel->GetComponentLocation() + TankBarrel->GetForwardVector() * BarrelExtent.X - TankBarrel->GetUpVector() * BarrelExtent.Z;
 	auto BarrelTransform = TankBarrel->GetComponentTransform();
 	BarrelTransform.SetTranslation(GunBarrelLocation);
 

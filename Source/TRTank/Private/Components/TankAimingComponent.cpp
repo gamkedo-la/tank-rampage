@@ -118,12 +118,12 @@ std::optional<FVector> UTankAimingComponent::GetAssistedAimDirection(const FAimi
 		return std::nullopt;
 	}
 
-	const auto FireLocation = GetBarrelLocation();
+	const auto FireLocation = GetFiringLocation();
 
 	// If we are within the threshold distance of target, don't calculate the projectile velocity, just aim directly at intended target
 	if (const auto ToFireLocation = (AimingData.AimTargetLocation - FireLocation); ToFireLocation.SizeSquared() <= AssistedAimTargetThresholdDistSq)
 	{
-		const auto AimDirection = ToFireLocation.GetSafeNormal();
+		const auto AimDirection = GetAimDirection(AimingData);
 
 		UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: GetAssistedAimDirection - Skipping projectile calculation as distance=%fm within %fm; aim direction=%s"),
 			*LoggingUtils::GetName(GetOwner()), *GetName(),
@@ -164,9 +164,20 @@ std::optional<FVector> UTankAimingComponent::GetAssistedAimDirection(const FAimi
 	}
 }
 
-FVector UTankAimingComponent::GetBarrelLocation() const
+FVector UTankAimingComponent::GetFiringLocation() const
 {
 	return Barrel->GetSocketLocation(TankSockets::GunFire);
+}
+
+FVector UTankAimingComponent::GetAimStartLocation() const
+{
+	return Barrel->GetComponentLocation();
+}
+
+FVector UTankAimingComponent::GetAimDirection(const FAimingData& AimingData) const
+{
+	const FVector BarrelLocation = GetAimStartLocation();
+	return (AimingData.AimTargetLocation - BarrelLocation).GetSafeNormal();
 }
 
 bool UTankAimingComponent::CanFire() const
@@ -182,11 +193,10 @@ bool UTankAimingComponent::CanFire() const
 
 void UTankAimingComponent::DirectAimAt(const FAimingData& AimingData)
 {
-	const FVector FireOriginLocation = GetBarrelLocation();
-	const FVector AimDirection = (AimingData.AimTargetLocation - FireOriginLocation).GetSafeNormal();
+	const FVector AimDirection = GetAimDirection(AimingData);
 
 	UE_VLOG_ARROW(GetOwner(), LogTRTank, VeryVerbose,
-		FireOriginLocation, AimingData.AimTargetLocation,
+		GetAimStartLocation(), AimingData.AimTargetLocation,
 		FColor::Blue, TEXT("DirectAimAt"));
 
 	MoveBarrelTowards(AimingData.AimTargetLocation, AimDirection);
@@ -208,7 +218,13 @@ bool UTankAimingComponent::DoMoveBarrelTowards(const FVector& Target, const FVec
 	}
 
 	const auto TargetRotation = AimDirection.Rotation();
-	const auto BarrelRotator = Barrel->GetForwardVector().Rotation();
+	const auto BarrelRotator = [&]()
+	{
+		// Simpler than doing Barrel->GetActorForwardVector().Rotation(); // Since this just gives us the Yaw and Pitch with Roll = 0
+		auto Rotation = Barrel->GetComponentRotation();
+		Rotation.Roll = 0;
+		return Rotation;
+	}();
 
 	const auto DesiredRotator = TargetRotation - BarrelRotator;
 
@@ -216,10 +232,16 @@ bool UTankAimingComponent::DoMoveBarrelTowards(const FVector& Target, const FVec
 	const bool bTurretMoved = Turret->Rotate(ClampDeltaYaw(DesiredRotator.Yaw));
 	const bool bMoved = bBarrelMoved || bTurretMoved;
 
-	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: DoMoveBarrelTowards: %s - BarrelMoved=%s; TurretMoved=%s"),
+	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose,
+		TEXT("%s-%s: DoMoveBarrelTowards: %s - BarrelMoved=%s; TurretMoved=%s; TargetRotator=%s; BarrelRotator=%s; DesiredRotator=%s; FinalTurretRotation=%s; FinalBarrelRotation=%s"),
 		*LoggingUtils::GetName(GetOwner()), *GetName(),
 		LoggingUtils::GetBoolString(bMoved),
-		LoggingUtils::GetBoolString(bBarrelMoved), LoggingUtils::GetBoolString(bTurretMoved)
+		LoggingUtils::GetBoolString(bBarrelMoved), LoggingUtils::GetBoolString(bTurretMoved),
+		*TargetRotation.ToCompactString(),
+		*Barrel->GetForwardVector().Rotation().ToCompactString(),
+		*DesiredRotator.ToCompactString(),
+		*Turret->GetComponentRotation().ToCompactString(),
+		*Barrel->GetComponentRotation().ToCompactString()
 	);
 
 	return bMoved;
@@ -247,19 +269,21 @@ bool UTankAimingComponent::IsBarrelAlreadyAtTarget(const FVector& Target, const 
 	if (!bAtTarget)
 	{
 		// check arc length
-		const auto ArcError = FVector::Distance(Target, GetBarrelLocation()) * FMath::Acos(Alignment);
+		const auto ArcError = FVector::Distance(Target, GetFiringLocation()) * FMath::Acos(Alignment);
 		if (ArcError <= AssistedAimArcLengthErrorThresholdMeters * 100)
 		{
 			bAtTarget = true;
 		}
 	}
 
-	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: IsBarrelAlreadyAtTarget: %s - Error Angle=%f; ArcError=%fm; AimDirection=%s; BarrelDirection=%s"),
+	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: IsBarrelAlreadyAtTarget: %s - Error Angle=%f; ArcError=%fm; AimDirection=%s; BarrelDirection=%s; TurretRotator=%s; BarrelRotator=%s"),
 		*LoggingUtils::GetName(GetOwner()), *GetName(),
 		LoggingUtils::GetBoolString(bAtTarget),
 		FMath::RadiansToDegrees(FMath::Acos(Alignment)),
-		FVector::Distance(Target, GetBarrelLocation()) * FMath::Acos(Alignment) / 100,
-		*AimDirection.ToCompactString(), *Barrel->GetForwardVector().ToCompactString()
+		FVector::Distance(Target, GetFiringLocation()) * FMath::Acos(Alignment) / 100,
+		*AimDirection.ToCompactString(), *Barrel->GetForwardVector().ToCompactString(),
+		*Turret->GetComponentRotation().ToCompactString(),
+		*Barrel->GetComponentRotation().ToCompactString()
 	);
 
 	return bAtTarget;

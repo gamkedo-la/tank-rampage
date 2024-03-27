@@ -113,7 +113,9 @@ private:
 
 	std::optional<FVector> GetAssistedAimDirection(const FAimingData& AimingData, float LaunchSpeed) const;
 
-	FVector GetBarrelLocation() const;
+	FVector GetFiringLocation() const;
+	FVector GetAimStartLocation() const;
+	FVector GetAimDirection(const FAimingData& AimingData) const;
 
 private:
 	UPROPERTY(Transient)
