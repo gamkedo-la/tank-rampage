@@ -32,7 +32,13 @@ bool UTankBarrelComponent::Elevate(double RelativeSpeed)
 	const auto ClampedRelativeSpeed = FMath::Clamp(RelativeSpeed, -1.0, 1.0);
 
 	const auto DeltaSeconds = World->GetDeltaSeconds();
-	const auto ElevationChange = ClampedRelativeSpeed * MaxDegreesPerSecond * DeltaSeconds;
+
+	const auto ElevationChange = [&]()
+	{
+		auto Value = ClampedRelativeSpeed * MaxDegreesPerSecond * DeltaSeconds;
+		return RelativeSpeed >= 0 ? FMath::Min(RelativeSpeed, Value) : FMath::Max(RelativeSpeed, Value);
+	}();
+
 	const auto PreviousElevation = GetRelativeRotation().Pitch;
 	const auto RawNewElevation = PreviousElevation + ElevationChange;
 	const auto FinalElevation = FMath::Clamp(RawNewElevation, MinElevationDegrees, MaxElevationDegrees);
@@ -53,10 +59,10 @@ bool UTankBarrelComponent::Elevate(double RelativeSpeed)
 
 	const bool bChanged = !bOscillating && !FMath::IsNearlyEqual(FinalElevation, MinElevationDegrees) && !FMath::IsNearlyEqual(FinalElevation, MaxElevationDegrees);
 
-	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: Elevate - RotationChanged=%s; Oscillating=%s; RelativeSpeed=%f; ElevationChange=%f; RawNewElevation=%f; FinalElevation=%f; DeltaTime=%fs; CumulativeChange=%f"),
+	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: Elevate - RotationChanged=%s; Oscillating=%s; InitialRelativeSpeed=%f; RelativeSpeed=%f; ElevationChange=%f; RawNewElevation=%f; FinalElevation=%f; DeltaTime=%fs; CumulativeChange=%f"),
 		*LoggingUtils::GetName(GetOwner()), *GetName(),
 		LoggingUtils::GetBoolString(bChanged), LoggingUtils::GetBoolString(bOscillating),
-		ClampedRelativeSpeed, ElevationChange, RawNewElevation, GetRelativeRotation().Pitch,
+		RelativeSpeed, ClampedRelativeSpeed, ElevationChange, RawNewElevation, GetRelativeRotation().Pitch,
 		DeltaSeconds, OscillationsBuffer->Sum());
 
 	return bChanged;

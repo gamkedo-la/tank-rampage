@@ -30,7 +30,12 @@ bool UTankTurretComponent::Rotate(double RelativeSpeed)
 	const auto ClampedRelativeSpeed = FMath::Clamp(RelativeSpeed, -1.0, 1.0);
 
 	const auto DeltaSeconds = World->GetDeltaSeconds();
-	const auto YawChange = ClampedRelativeSpeed * MaxDegreesPerSecond * DeltaSeconds;
+	const auto YawChange = [&]()
+	{
+		auto Value = ClampedRelativeSpeed* MaxDegreesPerSecond* DeltaSeconds;
+		return RelativeSpeed >= 0 ? FMath::Min(RelativeSpeed, Value) : FMath::Max(RelativeSpeed, Value);
+	}();
+
 	const auto RawYaw = GetRelativeRotation().Yaw + YawChange;
 	const auto FinalYaw = RawYaw;
 
@@ -48,10 +53,10 @@ bool UTankTurretComponent::Rotate(double RelativeSpeed)
 		SetRelativeRotation(FRotator{ 0, FinalYaw, 0 });
 	}
 
-	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: Rotate - YawChange=%s; Oscillating=%s; RelativeSpeed=%f; YawChange=%f; RawNewYaw=%f; FinalYaw=%f; DeltaTime=%fs; CumulativeChange=%f"),
+	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: Rotate - YawChange=%s; Oscillating=%s; InitialRelativeSpeed=%f; RelativeSpeed=%f; YawChange=%f; RawNewYaw=%f; FinalYaw=%f; DeltaTime=%fs; CumulativeChange=%f"),
 		*LoggingUtils::GetName(GetOwner()), *GetName(),
 		LoggingUtils::GetBoolString(bYawChange), LoggingUtils::GetBoolString(bOscillating),
-		ClampedRelativeSpeed, YawChange, RawYaw, GetRelativeRotation().Yaw,
+		RelativeSpeed, ClampedRelativeSpeed, YawChange, RawYaw, GetRelativeRotation().Yaw,
 		DeltaSeconds, OscillationsBuffer->Sum());
 
 	return bYawChange;
