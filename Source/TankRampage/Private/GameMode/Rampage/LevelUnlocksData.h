@@ -9,8 +9,6 @@
 
 #include "LevelUnlocksData.generated.h"
 
-class UDataTable;
-
 namespace LevelUnlocksParser
 {
     TArray<FLevelUnlocksConfig> ToConfigArray(UDataTable* LevelUnlocksDataTable,
@@ -49,5 +47,4 @@ struct FLevelUpData : public FTableRowBase
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, DisplayName = "Unlock Choices")
     int32 UnlockChoices{ 3 };
-
 };

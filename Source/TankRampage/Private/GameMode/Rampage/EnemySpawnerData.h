@@ -7,8 +7,6 @@
 
 #include "EnemySpawnerData.generated.h"
 
-class UDataTable;
-
 USTRUCT(BlueprintType)
 struct FEnemySpawnerData : public FTableRowBase
 {

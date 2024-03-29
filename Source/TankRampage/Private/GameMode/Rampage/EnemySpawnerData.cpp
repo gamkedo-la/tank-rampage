@@ -1,8 +1,10 @@
 #include "EnemySpawnerData.h"
 
+#include "Utils/TRDataTableUtils.h"
+
 TArray<FEnemySpawnerData> EnemySpawnerDataParser::ReadAll(UDataTable* EnemySpawnerDataTable)
 {
-	if (!ensure(EnemySpawnerDataTable))
+	if (!TR::DataTableUtils::ValidateDataTableRowType<FEnemySpawnerData>(EnemySpawnerDataTable))
 	{
 		return {};
 	}

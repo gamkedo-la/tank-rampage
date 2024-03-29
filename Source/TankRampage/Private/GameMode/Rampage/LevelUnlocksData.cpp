@@ -5,6 +5,7 @@
 
 #include "Logging/LoggingUtils.h"
 #include "TankRampageLogging.h"
+#include "Utils/TRDataTableUtils.h"
 
 namespace
 {
@@ -110,13 +111,22 @@ namespace
     inline TArray<FLevelUpData*> ParseLevelUnlockOptions(UDataTable* LevelUpDataTable)
     {
         TArray<FLevelUpData*> Data;
-        LevelUpDataTable->GetAllRows("ParseLevelUnlockOptions", Data);
+
+        if (TR::DataTableUtils::ValidateDataTableRowType<FLevelUpData>(LevelUpDataTable))
+        {
+            LevelUpDataTable->GetAllRows("ParseLevelUnlockOptions", Data);
+        }
 
         return Data;
     }
 
     TSortedMap<int32, TArray<FLevelUnlock>> ParseLevelUnlocksByPlayerLevel(UDataTable* LevelUnlocksDataTable)
     {
+        if (!TR::DataTableUtils::ValidateDataTableRowType<FLevelUnlocksData>(LevelUnlocksDataTable))
+        {
+            return {};
+        }
+
         TSortedMap<int32, TArray<FLevelUnlock>> ParsedData;
 
         for (const auto& [_, RowData] : LevelUnlocksDataTable->GetRowMap())
