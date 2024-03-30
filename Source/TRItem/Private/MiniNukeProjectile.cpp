@@ -6,9 +6,17 @@
 #include "Kismet/GameplayStatics.h"
 #include "Camera/CameraComponent.h"
 
+#include "Item/WeaponConfig.h"
+
 #include "TRItemLogging.h"
 #include "Logging/LoggingUtils.h"
 #include "VisualLogger/VisualLogger.h"
+
+void AMiniNukeProjectile::ApplyPostHitEffects(const FHitResult& HitInfo, const FProjectileDamageParams& DamageParams)
+{
+	ApplyPostProcessEffects();
+	ApplyCameraShake(HitInfo, DamageParams);
+}
 
 void AMiniNukeProjectile::ApplyPostProcessEffects()
 {
@@ -102,4 +110,18 @@ void AMiniNukeProjectile::ApplyPostProcessEffects()
 		UE_VLOG_UELOG(CameraComponent->GetOwner(), LogTRItem, Log, TEXT("%s: ApplyPostProcessEffects: End"), *Name);
 
 	}), PostProcessMaxDuration, false);
+}
+
+void AMiniNukeProjectile::ApplyCameraShake(const FHitResult& HitInfo, const FProjectileDamageParams& DamageParams) const
+{
+	if (!ensureMsgf(ExplosionCameraShake, TEXT("%s: ExplosionCameraShake not set"), *GetName()))
+	{
+		return;
+	}
+
+	UGameplayStatics::PlayWorldCameraShake(this, ExplosionCameraShake, 
+		HitInfo.Location,
+		DamageParams.DamageInnerRadius * CameraShakeInnerRadiusMultiplier,
+		DamageParams.DamageOuterRadius * CameraShakeOuterRadiusMultiplier,
+		true);
 }

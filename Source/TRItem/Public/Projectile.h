@@ -60,7 +60,7 @@ protected:
 	UFUNCTION(BlueprintNativeEvent)
 	void SetNiagaraHitEffectParameters(UNiagaraComponent* NiagaraComponent);
 
-	virtual void ApplyPostProcessEffects() {}
+	virtual void ApplyPostHitEffects(const FHitResult& HitInfo, const FProjectileDamageParams& DamageParams) {}
 
 private:
 	void InitDebugDraw();
