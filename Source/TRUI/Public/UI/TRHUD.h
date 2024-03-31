@@ -16,6 +16,12 @@ class TRUI_API ATRHUD : public AHUD
 
 public:
 
+	virtual void ShowHUD() override;
+
 	UFUNCTION(BlueprintImplementableEvent, Category = "UI")
 	void OnGameOver();
+
+protected:
+	UFUNCTION(BlueprintImplementableEvent, Category = "UI")
+	void OnToggleHUDVisibility(bool bVisible);
 };
