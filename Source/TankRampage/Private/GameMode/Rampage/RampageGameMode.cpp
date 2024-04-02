@@ -58,7 +58,10 @@ void ARampageGameMode::PostInitializeComponents()
 		LevelUnlocksComponent->SetLevelUnlocks(LevelUnlocksParser::ToConfigArray(LevelUnlocksDataTable, LevelUpDataTable));
 	}
 
-	EnemySpawnerComponent->OnSpawnerStateChange.AddUObject(this, &ThisClass::OnSpawningStateChanged);
+	if (ensure(EnemySpawnerComponent))
+	{
+		EnemySpawnerComponent->OnSpawnerStateChange.AddUObject(this, &ThisClass::OnSpawningStateChanged);
+	}
 }
 
 void ARampageGameMode::BeginPlay()

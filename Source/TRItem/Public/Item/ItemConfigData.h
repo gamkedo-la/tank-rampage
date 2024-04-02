@@ -28,6 +28,9 @@ struct TRITEM_API FItemConfigData : public FTableRowBase
 
 	UPROPERTY(Category = "Item | UI", EditAnywhere, BlueprintReadOnly)
 	bool bShowInHUDItemSlots{ true };
+	
+	UPROPERTY(Category = "Item | UI", EditAnywhere, BlueprintReadOnly)
+	FLinearColor UIBackgroundColor{ 0.0f, 1.0f, 0.114498f, 1.0f};
 
 	FString ToString() const;
 };
