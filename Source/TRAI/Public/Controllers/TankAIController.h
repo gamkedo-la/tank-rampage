@@ -56,7 +56,7 @@ private:
 	void InitTargetingError(const FTankAIContext& AIContext);
 
 	UFUNCTION()
-	void OnHealthChanged(UHealthComponent* HealthComponent, float PreviousHealthValue, AController* EventInstigator, AActor* ChangeCauser);
+	void OnHealthChanged(UHealthComponent* HealthComponent, float PreviousHealthValue, float PreviousMaxHealthValue, AController* EventInstigator, AActor* ChangeCauser);
 
 private:
 	UPROPERTY(EditDefaultsOnly)
