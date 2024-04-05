@@ -7,13 +7,6 @@
 #include "TRCoreLogging.h"
 #include "VisualLogger/VisualLogger.h"
 
-
-#if ENABLE_VISUAL_LOG
-#define SHOULD_LOG_DAMAGE(CategoryName, Verbosity) ((FVisualLogger::IsRecording() || UE_LOG_ACTIVE(CategoryName, Verbosity)) && !DamageAdjustmentDelegateOrderSet.IsEmpty())
-#else
-#define SHOULD_LOG_DAMAGE(CategoryName, Verbosity) (UE_LOG_ACTIVE(CategoryName, Verbosity) && !DamageAdjustmentDelegateOrderSet.IsEmpty())
-#endif
-
 IDamageAdjustmentOwner* IDamageAdjustmentOwner::GetFromActor(AActor* Actor)
 {
 	if (!Actor)
@@ -49,6 +42,12 @@ void IDamageAdjustmentOwner::RegisterDamageAdjustment(const UObject* AdjustmentO
 		.Priority = RegistrationOrdinal
 	});
 }
+
+#if ENABLE_VISUAL_LOG
+	#define SHOULD_LOG_DAMAGE(CategoryName, Verbosity) ((FVisualLogger::IsRecording() || UE_LOG_ACTIVE(CategoryName, Verbosity)) && !DamageAdjustmentDelegateOrderSet.IsEmpty())
+#else
+	#define SHOULD_LOG_DAMAGE(CategoryName, Verbosity) (UE_LOG_ACTIVE(CategoryName, Verbosity) && !DamageAdjustmentDelegateOrderSet.IsEmpty())
+#endif
 
 
 float IDamageAdjustmentOwner::CalculateAdjustedDamage(float Damage, const AActor* DamagedActor, const AController* InstigatedBy, const AActor* DamageCauser) const

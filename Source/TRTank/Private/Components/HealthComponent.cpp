@@ -23,7 +23,7 @@ void UHealthComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	Health = MaxHealth;
+	Health = InitialMaxHealth = MaxHealth;
 
 	// TODO: Use gameplay tags
 	GetOwner()->Tags.Add(TR::Tags::Alive);
@@ -44,6 +44,7 @@ void UHealthComponent::BeginPlay()
 
 void UHealthComponent::TakeDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser)
 {
+	// TODO: If we don't switch to GAS, then would need to determine active defense bonuses here to reduce damage via tags in an FGameplayTagContainer added to an ActiveEffectsComponent or similar
 	// Damage will be negative if health was restored
 	const auto PreviousHealth = Health;
 	Health = FMath::Clamp(Health - Damage, 0, MaxHealth);
@@ -64,7 +65,7 @@ void UHealthComponent::TakeDamage(AActor* DamagedActor, float Damage, const UDam
 
 	if (!FMath::IsNearlyEqual(Health, PreviousHealth))
 	{
-		OnHealthChanged.Broadcast(this, PreviousHealth, MaxHealth, InstigatedBy, DamageCauser);
+		OnHealthChanged.Broadcast(this, PreviousHealth, InstigatedBy, DamageCauser);
 	}
 }
 
@@ -78,20 +79,18 @@ void UHealthComponent::OnItemUpgraded(UItem* Item)
 			return;
 		}
 
-		// Change MaxHealth independently of CurrentHealth on upgrade
-		const auto PreviousMaxHealth = MaxHealth;
-		MaxHealth = MaxHealthEffect->GetMaxValue();
-
-		const auto PreviousHealth = Health;
-		Health = MaxHealthEffect->GetCurrentValue();
+		const auto OrigMaxHealth = MaxHealth;
+		MaxHealth = InitialMaxHealth * MaxHealthEffect->GetCurrentValue();
 		
-		// Consider max health only change a health change
-		const auto bHealthChanged = !FMath::IsNearlyEqual(PreviousHealth, Health) || !FMath::IsNearlyEqual(PreviousMaxHealth, MaxHealth);
+		const auto bHealthChanged = !FMath::IsNearlyEqual(OrigMaxHealth, MaxHealth);
 
 		if (bHealthChanged)
 		{
-			UE_VLOG_UELOG(GetOwner(), LogTRTank, Display, TEXT("%s-%s: OnItemUpgraded - CurrentHealth %f -> %f and MaxHealth %f -> %f"),
-				*LoggingUtils::GetName(GetOwner()), *GetName(), PreviousHealth, Health, PreviousMaxHealth, MaxHealth);
+			const auto PreviousHealth = Health;
+			Health = MaxHealth;
+
+			UE_VLOG_UELOG(GetOwner(), LogTRTank, Display, TEXT("%s-%s: OnItemUpgraded - MaxHealth upgraded from %f to %f"),
+				*LoggingUtils::GetName(GetOwner()), *GetName(), OrigMaxHealth, MaxHealth);
 
 			AController* Controller{};
 			if (auto Pawn = Cast<APawn>(GetOwner()); Pawn)
@@ -99,7 +98,7 @@ void UHealthComponent::OnItemUpgraded(UItem* Item)
 				Controller = Pawn->GetController();
 			}
 
-			OnHealthChanged.Broadcast(this, PreviousHealth, PreviousMaxHealth, Controller, GetOwner());
+			OnHealthChanged.Broadcast(this, PreviousHealth, Controller, GetOwner());
 		}
 	}
 }

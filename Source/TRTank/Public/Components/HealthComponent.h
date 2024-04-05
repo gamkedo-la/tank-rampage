@@ -10,7 +10,7 @@
 
 class UItem;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_FiveParams(FOnHealthChanged, UHealthComponent*, HealthComponent, float, PreviousHealthValue, float, PreviousMaxHealthValue, AController*, EventInstigator, AActor*, ChangeCauser);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnHealthChanged, UHealthComponent*, HealthComponent, float, PreviousHealthValue, AController*, EventInstigator, AActor*, ChangeCauser);
 
 
 // TODO: Move health and max health into AttributeSet as part of GAS
@@ -69,11 +69,14 @@ private:
 	UPROPERTY(Category = "Health", EditDefaultsOnly)
 	float MaxHealth{ 100.0f };
 
+	float InitialMaxHealth{};
+
 	UPROPERTY(Category = "Health", VisibleInstanceOnly)
 	float Health{};
 
 	UPROPERTY(Category = "Item", EditDefaultsOnly)
 	bool bRegisterItemUpgradeEvents{};
+
 };
 
 #pragma region Inline Definitions

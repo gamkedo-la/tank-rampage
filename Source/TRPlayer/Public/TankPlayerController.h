@@ -81,7 +81,7 @@ private:
 	FVector2D GetCrosshairScreenspaceLocation() const;
 
 	UFUNCTION()
-	void OnHealthChanged(UHealthComponent* HealthComponent, float PreviousHealthValue, float PreviousMaxHealthValue, AController* EventInstigator, AActor* ChangeCauser);
+	void OnHealthChanged(UHealthComponent* HealthComponent, float PreviousHealthValue, AController* EventInstigator, AActor* ChangeCauser);
 
 	bool IsWeaponScrollSwitchTriggerable(const FInputActionInstance& InputActionInstance) const;
 
