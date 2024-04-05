@@ -30,5 +30,4 @@ private:
 private:
 
 	int32 TimesUsed{};
-	
 };
