@@ -8,7 +8,7 @@
 
 #include "PassiveEffect.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnItemValueChanged, const class UPassiveEffect*, Item, float, CurrentValue, float, PreviousValue);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FiveParams(FOnItemValueChanged, const class UPassiveEffect*, Item, float, CurrentValue, float, PreviousValue, float, MaxValue, float, PreviousMaxValue);
 
 
 /**

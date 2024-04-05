@@ -27,5 +27,7 @@ UPassiveEffect::FCurrentValueChangedWatcher::~FCurrentValueChangedWatcher()
 	UE_VLOG_UELOG(Effect->GetOuter(), LogTRItem, Log, TEXT("%s: Broadcast OnValueChanged event %f -> %f"),
 		*Effect->GetName(), SnapshotValue, Effect->CurrentValue);
 
-	Effect->OnItemValueChanged.Broadcast(Effect, Effect->CurrentValue, SnapshotValue);
+	const auto EffectMaxValue = Effect->GetMaxValue();
+
+	Effect->OnItemValueChanged.Broadcast(Effect, Effect->CurrentValue, SnapshotValue, EffectMaxValue, EffectMaxValue);
 }

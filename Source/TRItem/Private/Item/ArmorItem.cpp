@@ -33,6 +33,7 @@ void UArmorItem::BeforeOnLevelChanged(int32 NewLevel, int32 PreviousLevel)
 	UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s: BeforeOnLevelChanged: NewLevel=%d; CurrentValue=%f/%f"), *GetName(), NewLevel, CurrentValue, MaxValue);
 
 	CurrentValueBeforeLevelChange = CurrentValue;
+	MaxValueBeforeLevelChange = MaxValue;
 }
 
 void UArmorItem::AfterOnLevelChanged(int32 NewLevel, int32 PreviousLevel)
@@ -40,12 +41,13 @@ void UArmorItem::AfterOnLevelChanged(int32 NewLevel, int32 PreviousLevel)
 	UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s: AfterOnLevelChanged: NewLevel=%d; CurrentValue=%f/%f"), *GetName(), NewLevel, CurrentValue, MaxValue);
 
 	// fire off event if value changed
-	if (FMath::IsNearlyEqual(CurrentValueBeforeLevelChange, CurrentValue))
+
+	if (FMath::IsNearlyEqual(CurrentValueBeforeLevelChange, CurrentValue) && FMath::IsNearlyEqual(MaxValueBeforeLevelChange, MaxValue))
 	{
 		return;
 	}
 
-	OnItemValueChanged.Broadcast(this, CurrentValue, CurrentValueBeforeLevelChange);
+	OnItemValueChanged.Broadcast(this, CurrentValue, CurrentValueBeforeLevelChange, MaxValue, MaxValueBeforeLevelChange);
 }
 
 float UArmorItem::OnCalculateDamage(float Damage, const AActor* DamagedActor, const AController* InstigatedBy, const AActor* DamageCauser)

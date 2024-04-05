@@ -32,4 +32,5 @@ private:
 	float ArmorDecayZeroThreshold{ 10.0f };
 
 	float CurrentValueBeforeLevelChange{};
+	float MaxValueBeforeLevelChange{};
 };
