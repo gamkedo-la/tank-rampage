@@ -23,6 +23,12 @@ void UTRAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	// GAS, replicate anyways even if doesn't change - want to respond to every event
 	DOREPLIFETIME_CONDITION_NOTIFY(UTRAttributeSet, Health, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UTRAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
+
+	DOREPLIFETIME_CONDITION_NOTIFY(UTRAttributeSet, Armor, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UTRAttributeSet, MaxArmor, COND_None, REPNOTIFY_Always);
+
+	DOREPLIFETIME_CONDITION_NOTIFY(UTRAttributeSet, Speed, COND_None, REPNOTIFY_Always);
+
 	DOREPLIFETIME_CONDITION_NOTIFY(UTRAttributeSet, XPTotal, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UTRAttributeSet, XPLevel, COND_None, REPNOTIFY_Always);
 }
@@ -35,6 +41,10 @@ void UTRAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, fl
 	{
 		// This only clamps the value returned by querying the modifier but doesn't permantently change the current health
 		NewValue = GetClampedHealth(NewValue);
+	}
+	else if (Attribute == GetArmorAttribute())
+	{
+		NewValue = GetClampedArmor(NewValue);
 	}
 }
 
@@ -49,6 +59,10 @@ void UTRAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 		// This will permanently clamp the health attribute to the proper range
 		SetHealth(GetClampedHealth(GetHealth()));
 	}
+	else if (EvaluatedData.Attribute == GetArmorAttribute())
+	{
+		SetArmor(GetClampedArmor(GetArmor()));
+	}
 }
 
 void UTRAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth) const
@@ -59,6 +73,21 @@ void UTRAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth) cons
 void UTRAttributeSet::OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth) const
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UTRAttributeSet, MaxHealth, OldMaxHealth);
+}
+
+void UTRAttributeSet::OnRep_Armor(const FGameplayAttributeData& OldArmor) const
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UTRAttributeSet, Armor, OldArmor);
+}
+
+void UTRAttributeSet::OnRep_MaxArmor(const FGameplayAttributeData& OldMaxArmor) const
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UTRAttributeSet, MaxArmor, OldMaxArmor);
+}
+
+void UTRAttributeSet::OnRep_Speed(const FGameplayAttributeData& OldSpeed) const
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UTRAttributeSet, Speed, OldSpeed);
 }
 
 void UTRAttributeSet::OnRep_XPTotal(const FGameplayAttributeData& OldXPTotal) const
@@ -74,4 +103,9 @@ void UTRAttributeSet::OnRep_XPLevel(const FGameplayAttributeData& OldXPLevel) co
 float UTRAttributeSet::GetClampedHealth(float CurrentHealth) const
 {
 	return FMath::Clamp(CurrentHealth, 0.0f, GetMaxHealth());
+}
+
+float UTRAttributeSet::GetClampedArmor(float CurrentArmor) const
+{
+	return FMath::Clamp(CurrentArmor, 0.0f, GetMaxArmor());
 }

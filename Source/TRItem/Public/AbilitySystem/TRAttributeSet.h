@@ -41,6 +41,15 @@ public:
 	UPROPERTY(Replicated, ReplicatedUsing = OnRep_MaxHealth, BlueprintReadOnly, Category = "Vital Attributes")
 	FGameplayAttributeData MaxHealth;
 
+	UPROPERTY(Replicated, ReplicatedUsing = OnRep_Armor, BlueprintReadOnly, Category = "Vital Attributes")
+	FGameplayAttributeData Armor;
+
+	UPROPERTY(Replicated, ReplicatedUsing = OnRep_MaxArmor, BlueprintReadOnly, Category = "Vital Attributes")
+	FGameplayAttributeData MaxArmor;
+
+	UPROPERTY(Replicated, ReplicatedUsing = OnRep_Speed, BlueprintReadOnly, Category = "Vital Attributes")
+	FGameplayAttributeData Speed;
+
 	UPROPERTY(Replicated, ReplicatedUsing = OnRep_XPTotal, BlueprintReadOnly, Category = "XP Attributes")
 	FGameplayAttributeData XPTotal;
 
@@ -49,6 +58,12 @@ public:
 
 	ATTRIBUTE_ACCESSORS(UTRAttributeSet, Health)
 	ATTRIBUTE_ACCESSORS(UTRAttributeSet, MaxHealth)
+
+	ATTRIBUTE_ACCESSORS(UTRAttributeSet, Armor)
+	ATTRIBUTE_ACCESSORS(UTRAttributeSet, MaxArmor)
+
+	ATTRIBUTE_ACCESSORS(UTRAttributeSet, Speed)
+
 	ATTRIBUTE_ACCESSORS(UTRAttributeSet, XPTotal)
 	ATTRIBUTE_ACCESSORS(UTRAttributeSet, XPLevel)
 
@@ -60,6 +75,15 @@ private:
 	void OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth) const;
 
 	UFUNCTION()
+	void OnRep_Armor(const FGameplayAttributeData& OldArmor) const;
+
+	UFUNCTION()
+	void OnRep_MaxArmor(const FGameplayAttributeData& OldMaxArmor) const;
+
+	UFUNCTION()
+	void OnRep_Speed(const FGameplayAttributeData& OldSpeed) const;
+
+	UFUNCTION()
 	void OnRep_XPTotal(const FGameplayAttributeData& OldXPTotal) const;
 
 	UFUNCTION()
@@ -67,5 +91,5 @@ private:
 
 
 	float GetClampedHealth(float CurrentHealth) const;
-
+	float GetClampedArmor(float CurrentArmor) const;
 };

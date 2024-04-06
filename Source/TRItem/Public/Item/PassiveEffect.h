@@ -32,6 +32,12 @@ public:
 
 	virtual float GetMaxValue() const override { return MaxValue; }
 
+	UFUNCTION(Category = "Item", BlueprintCallable, meta=(DisplayName = "Update Current Value"))
+	bool SetCurrentValue(float Value);
+
+protected:
+	virtual void OnValueChanged(float PreviousValue) {}
+
 public:
 	UPROPERTY(Transient, Category = "Notification", BlueprintAssignable)
 	FOnItemValueChanged OnItemValueChanged{};
@@ -40,14 +46,16 @@ protected:
 	class FCurrentValueChangedWatcher
 	{
 	public:
-		explicit FCurrentValueChangedWatcher(const UPassiveEffect& Effect);
+		explicit FCurrentValueChangedWatcher(UPassiveEffect& Effect);
 		~FCurrentValueChangedWatcher();
 
 		FCurrentValueChangedWatcher(const FCurrentValueChangedWatcher&) = delete;
 		FCurrentValueChangedWatcher& operator=(const FCurrentValueChangedWatcher&) = delete;
 
+		bool IsChanged() const;
+
 	private:
-		const UPassiveEffect* Effect;
+		UPassiveEffect* Effect;
 		float SnapshotValue;
 	};
 
