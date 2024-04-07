@@ -9,7 +9,7 @@
 class AXPToken;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnXPTokenOverlap, AXPToken*, Token, APawn*, PlayerPawn);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnXPLevelUp);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnXPLevelUp, int32, NewLevel);
 
 /**
  * 

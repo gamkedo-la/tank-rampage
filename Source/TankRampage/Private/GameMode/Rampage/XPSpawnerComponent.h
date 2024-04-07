@@ -7,6 +7,7 @@
 #include "XPSpawnerComponent.generated.h"
 
 class AXPToken;
+class ABaseTankPawn;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UXPSpawnerComponent : public UActorComponent

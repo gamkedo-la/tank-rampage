@@ -7,6 +7,7 @@
 #include "XPCollectionComponent.h"
 #include "LevelUnlocksComponent.h"
 #include "EnemySpawnerComponent.h"
+#include "LootDropComponent.h"
 
 #include "RampageGameState.h"
 #include "Pawn/BaseTankPawn.h"
@@ -30,6 +31,7 @@ ARampageGameMode::ARampageGameMode()
 	XPCollectionComponent = CreateDefaultSubobject<UXPCollectionComponent>(TEXT("XP Collection"));
 	LevelUnlocksComponent = CreateDefaultSubobject<ULevelUnlocksComponent>(TEXT("Level Unlocks"));
 	EnemySpawnerComponent = CreateDefaultSubobject<UEnemySpawnerComponent>(TEXT("Enemy Spawner"));
+	LootDropComponent = CreateDefaultSubobject<ULootDropComponent>("Loot Drop");
 }
 
 void ARampageGameMode::OnTokenCollected(const AXPToken& Token, APawn* PlayerPawn)
@@ -132,7 +134,7 @@ void ARampageGameMode::AddXP(APawn* PlayerPawn, int32 XP)
 		if (auto XPSubsystem = World->GetSubsystem<UXPSubsystem>(); ensure(XPSubsystem))
 		{
 			// Hud will listen for this and present a dialog option to present upgrade options
-			XPSubsystem->OnXPLevelUp.Broadcast();
+			XPSubsystem->OnXPLevelUp.Broadcast(RampageGameState->Level);
 		}
 	}
 }

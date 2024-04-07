@@ -38,7 +38,7 @@ void UXPSpawnerComponent::BeginPlay()
 
 void UXPSpawnerComponent::OnTankDestroyed(ABaseTankPawn* DestroyedTank, AController* DestroyedBy, AActor* DestroyedWith)
 {
-	UE_VLOG_UELOG(this, LogTankRampage, Log, TEXT("%s: OnTankDestroyed - DestroyedTank=%s; DestroyedBy=%s; DestroyedWith=%s"),
+	UE_VLOG_UELOG(GetOwner(), LogTankRampage, Log, TEXT("%s: OnTankDestroyed - DestroyedTank=%s; DestroyedBy=%s; DestroyedWith=%s"),
 		*GetName(), *LoggingUtils::GetName(DestroyedTank), *LoggingUtils::GetName(DestroyedBy), *LoggingUtils::GetName(DestroyedWith));
 
 	// Destroyed tank must not be player controlled and destroyer must be the player and not friendly fire from another AI tank
@@ -68,7 +68,7 @@ FVector UXPSpawnerComponent::GetSpawnLocation(const FVector& BaseLocation) const
 		Params
 	))
 	{
-		UE_VLOG_UELOG(this, LogTankRampage, Log, TEXT("%s: SpawnToken - Collided with %s owned by %s - adjusting location from %s to %s"),
+		UE_VLOG_UELOG(GetOwner(), LogTankRampage, Log, TEXT("%s: SpawnToken - Collided with %s owned by %s - adjusting location from %s to %s"),
 			*GetName(), 
 			*LoggingUtils::GetName(HitResult.Component.Get()),
 			*LoggingUtils::GetName(HitResult.GetActor()),
@@ -78,7 +78,7 @@ FVector UXPSpawnerComponent::GetSpawnLocation(const FVector& BaseLocation) const
 	}
 	else
 	{
-		UE_VLOG_UELOG(this, LogTankRampage, Warning, TEXT("%s: SpawnToken - Could not find ground to snap token; Location=%s"),
+		UE_VLOG_UELOG(GetOwner(), LogTankRampage, Warning, TEXT("%s: SpawnToken - Could not find ground to snap token; Location=%s"),
 			*GetName(), *BaseLocation.ToCompactString());
 
 		return BaseLocation;
@@ -87,7 +87,7 @@ FVector UXPSpawnerComponent::GetSpawnLocation(const FVector& BaseLocation) const
 
 void UXPSpawnerComponent::SpawnToken(const FVector& Location, const AController& Owner) const
 {
-	UE_VLOG_UELOG(this, LogTankRampage, Log, TEXT("%s: SpawnToken - Location=%s; Owner=%s"),
+	UE_VLOG_UELOG(GetOwner(), LogTankRampage, Log, TEXT("%s: SpawnToken - Location=%s; Owner=%s"),
 		*GetName(), *Location.ToCompactString(), *Owner.GetName());
 
 	auto World = GetWorld();
@@ -101,12 +101,12 @@ void UXPSpawnerComponent::SpawnToken(const FVector& Location, const AController&
 	auto Token = World->SpawnActor<AXPToken>(XPTokenClass, SpawnLocation, FRotator::ZeroRotator, SpawnParameters);
 	if (Token)
 	{
-		UE_VLOG_UELOG(this, LogTankRampage, Log, TEXT("%s: SpawnToken - Spawned token=%s with class=%s at Location=%s"),
+		UE_VLOG_UELOG(GetOwner(), LogTankRampage, Log, TEXT("%s: SpawnToken - Spawned token=%s with class=%s at Location=%s"),
 			*GetName(), *Token->GetName(), *LoggingUtils::GetName(XPTokenClass), *SpawnLocation.ToCompactString());
 	}
 	else
 	{
-		UE_VLOG_UELOG(this, LogTankRampage, Warning, TEXT("%s: SpawnToken - Unable to spawn token with class=%s; Location=%s; Owner=%s"),
+		UE_VLOG_UELOG(GetOwner(), LogTankRampage, Warning, TEXT("%s: SpawnToken - Unable to spawn token with class=%s; Location=%s; Owner=%s"),
 			*GetName(), *LoggingUtils::GetName(XPTokenClass), *Location.ToCompactString(), *Owner.GetName());
 	}
 }
