@@ -8,7 +8,7 @@
 
 #include "PassiveEffect.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnItemValueChanged, const class UPassiveEffect*, Item, float, CurrentValue, float, PreviousValue);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FiveParams(FOnItemValueChanged, const class UPassiveEffect*, Item, float, CurrentValue, float, PreviousValue, float, MaxValue, float, PreviousMaxValue);
 
 
 /**
@@ -43,6 +43,10 @@ public:
 	FOnItemValueChanged OnItemValueChanged{};
 
 protected:
+
+	virtual void BeforeOnLevelChanged(int32 NewLevel, int32 PreviousLevel) override;
+	virtual void AfterOnLevelChanged(int32 NewLevel, int32 PreviousLevel) override;
+
 	class FCurrentValueChangedWatcher
 	{
 	public:
@@ -65,4 +69,9 @@ protected:
 
 	UPROPERTY(Category = "Config", EditDefaultsOnly, BlueprintReadWrite)
 	float MaxValue{};
+
+private:
+
+	float CurrentValueBeforeLevelChange{};
+	float MaxValueBeforeLevelChange{};
 };

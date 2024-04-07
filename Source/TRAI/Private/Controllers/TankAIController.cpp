@@ -208,7 +208,7 @@ void ATankAIController::InitTargetingError(const FTankAIContext& AIContext)
 	TargetingError = FMath::RandRange(-TargetingErrorMagnitudeMeters, TargetingErrorMagnitudeMeters) * 100 * FMath::VRand();
 }
 
-void ATankAIController::OnHealthChanged(UHealthComponent* HealthComponent, float PreviousHealthValue, AController* EventInstigator, AActor* ChangeCauser)
+void ATankAIController::OnHealthChanged(UHealthComponent* HealthComponent, float PreviousHealthValue, float PreviousMaxHealthValue, AController* EventInstigator, AActor* ChangeCauser)
 {
 	check(HealthComponent);
 

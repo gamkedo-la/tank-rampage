@@ -561,7 +561,7 @@ FVector2D ATankPlayerController::GetCrosshairScreenspaceLocation() const
 
 #pragma endregion Controls
 
-void ATankPlayerController::OnHealthChanged(UHealthComponent* HealthComponent, float PreviousHealthValue, AController* EventInstigator, AActor* ChangeCauser)
+void ATankPlayerController::OnHealthChanged(UHealthComponent* HealthComponent, float PreviousHealthValue, float PreviousMaxHealthValue, AController* EventInstigator, AActor* ChangeCauser)
 {
 	check(HealthComponent);
 
