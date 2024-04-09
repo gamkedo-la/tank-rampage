@@ -9,6 +9,30 @@
 
 class ABasePickup;
 class ABaseTankPawn;
+class UCurveTable;
+struct FRealCurve;
+
+USTRUCT()
+struct FLootConfig
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<ABasePickup> Class{};
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UCurveTable> DropCurveTable{};
+};
+
+USTRUCT()
+struct FLootLevelData
+{
+	GENERATED_USTRUCT_BODY()
+
+	FRealCurve* Curve{};
+
+	int32 Awarded{};
+};
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ULootDropComponent : public UActorComponent
@@ -28,24 +52,27 @@ private:
 	UFUNCTION()
 	void OnXPLevelUp(int32 NewLevel);
 
-	void SpawnLoot(const AController* Owner, const FVector& BaseSpawnLocation) const;
+	void SpawnLoot(const AController* Owner, const FVector& BaseSpawnLocation);
 
 	const ABasePickup* SpawnLoot(const AController* Owner, const FVector& SpawnLocation, UClass* PickupClass) const;
 	FVector GetSpawnLocation(const FVector& BaseLocation) const;
 
-	bool ShouldSpawnLootClass(const UClass* PickupClass) const;
+	bool ShouldSpawnLootClass(const FLootConfig& LootConfig) const;
 
+	bool ValidateConfig();
+	bool ValidateCurveTable(UCurveTable* CurveTable) const;
+
+	void InitializeLevelData(int32 Level);
 
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Loot")
-	TArray<TSubclassOf<ABasePickup>> LootClasses{};
-
-	// TODO: Switch to curve table with possibility of guaranteed drops per level
-	UPROPERTY(EditDefaultsOnly)
-	float DropProbability{ 0.05f };
+	TArray<FLootConfig> LootConfigs{};
 
 	UPROPERTY(EditDefaultsOnly)
 	float SpawnRadius{ 300.0f };
+
+	UPROPERTY(Transient)
+	TMap<UClass*, FLootLevelData> LevelDataByClass{};
 
 	int32 CurrentLevel{};
 	int32 EnemiesDestroyedThisLevel{};
