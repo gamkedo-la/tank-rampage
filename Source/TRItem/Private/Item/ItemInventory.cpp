@@ -322,7 +322,7 @@ void UItemInventory::DescribeSelfToVisLog(FVisualLogEntry* Snapshot) const
 			continue;
 		}
 
-		Items.Add(Item->GetName(), FString::Printf(TEXT("Level %d; CooldownTime=%.1fs"), Item->GetLevel(), Item->GetCooldownTimeRemaining()));
+		Items.Add(Item->GetName(), Item->ToString());
 	}
 
 	Category.AddChild(Items);

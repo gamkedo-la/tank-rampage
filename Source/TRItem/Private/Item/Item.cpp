@@ -161,3 +161,18 @@ void UItem::SetLevel(int32 Level)
 		AfterOnLevelChanged(ItemLevel, PreviousLevel);
 	}
 }
+
+FString UItem::ToString() const
+{
+	FString s;
+
+	NativeToString(s);
+	s += BlueprintToString();
+
+	return s;
+}
+
+void UItem::NativeToString(FString& str) const
+{
+	str.Appendf(TEXT("Level %d; CooldownTime=%.1fs"), GetLevel(), GetCooldownTimeRemaining());
+}

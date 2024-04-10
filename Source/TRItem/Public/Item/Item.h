@@ -63,6 +63,8 @@ public:
 	UFUNCTION(BlueprintPure)
 	EItemType GetItemType() const;
 
+	FString ToString() const;
+
 protected:
 	virtual bool DoActivation(USceneComponent& ActivationReferenceComponent, const FName& ActivationSocketName) PURE_VIRTUAL(UItem::DoActivation, return false;);
 
@@ -90,6 +92,11 @@ protected:
 	* Called after a level change event before the OnLevelChanged function is called.
 	*/
 	virtual void AfterOnLevelChanged(int32 NewLevel, int32 PreviousLevel) {};
+
+	virtual void NativeToString(FString& Str) const;
+
+	UFUNCTION(BlueprintImplementableEvent)
+	FString BlueprintToString() const;
 
 protected:
 

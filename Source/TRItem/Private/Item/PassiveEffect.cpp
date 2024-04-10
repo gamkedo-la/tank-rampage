@@ -32,6 +32,13 @@ bool UPassiveEffect::SetCurrentValue(float Value)
 	return ChangeWatcher.IsChanged();
 }
 
+void UPassiveEffect::NativeToString(FString& Str) const
+{
+	Super::NativeToString(Str);
+
+	Str.Appendf(TEXT(";CurrentValue=%.1f;MaxValue=%.1f"), CurrentValue, MaxValue);
+}
+
 UPassiveEffect::FCurrentValueChangedWatcher::FCurrentValueChangedWatcher(UPassiveEffect& Effect) : 
 	Effect(&Effect), SnapshotValue(Effect.CurrentValue)
 {

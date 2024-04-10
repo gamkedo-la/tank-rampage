@@ -38,6 +38,8 @@ public:
 protected:
 	virtual void OnValueChanged(float PreviousValue) {}
 
+	virtual void NativeToString(FString& Str) const override;
+
 public:
 	UPROPERTY(Transient, Category = "Notification", BlueprintAssignable)
 	FOnItemValueChanged OnItemValueChanged{};
