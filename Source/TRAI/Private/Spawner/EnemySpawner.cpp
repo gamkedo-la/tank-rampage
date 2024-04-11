@@ -328,18 +328,10 @@ void AEnemySpawner::BeginPlay()
 
 	UE_VLOG_UELOG(this, LogTRAI, Log, TEXT("%s: BeginPlay - %d spawn locations found"), *GetName(), SpawnLocations.Num());
 
-	GroundSpawnPoints();
+	auto World = GetWorld();
+	check(World);
 
-#if ENABLE_VISUAL_LOG
-	if (FVisualLogger::IsRecording() && UE_LOG_ACTIVE(LogTRAI,Verbose))
-	{
-		for (auto SpawnLocation : SpawnLocations)
-		{
-			UE_VLOG_LOCATION(this, LogTRAI, Verbose, SpawnLocation->GetComponentLocation(), 50.0f, FColor::Blue, TEXT("Spawn Location"));
-		}
-	}
-
-#endif
+	World->OnWorldBeginPlay.AddUObject(this, &ThisClass::GroundSpawnPoints);
 }
 
 void AEnemySpawner::GroundSpawnPoints()
@@ -382,6 +374,12 @@ void AEnemySpawner::GroundSpawnPoint(USpawnLocationComponent& SpawnLocation)
 				*GetName(), *SpawnLocation.GetName(), *CurrentLocation.ToCompactString(), *AdjustedLocation.ToCompactString());
 
 			SpawnLocation.SetWorldLocation(AdjustedLocation);
+
+			UE_VLOG_LOCATION(this, LogTRAI, Verbose, SpawnLocation.GetComponentLocation(), 50.0f, FColor::Blue, TEXT("Spawn Location (Adj)"));
+		}
+		else
+		{
+			UE_VLOG_LOCATION(this, LogTRAI, Verbose, SpawnLocation.GetComponentLocation(), 50.0f, FColor::Green, TEXT("Spawn Location"));
 		}
 	}
 	else
