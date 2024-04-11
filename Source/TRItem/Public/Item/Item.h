@@ -98,6 +98,8 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent)
 	FString BlueprintToString() const;
 
+	float GetLastActivationTimeSeconds() const;
+
 protected:
 
 	UPROPERTY(Category = "Cooldown", BlueprintReadWrite)
@@ -108,6 +110,7 @@ protected:
 
 private:
 	float LastActivationTimeSeconds{ -1.0f };
+
 	int32 ItemLevel{ 1 };
 
 	UPROPERTY(Category = "Level", EditDefaultsOnly)
@@ -150,6 +153,11 @@ inline FString UItem::GetDescription() const
 inline EItemType UItem::GetItemType() const
 {
 	return ItemType;
+}
+
+inline float UItem::GetLastActivationTimeSeconds() const
+{
+	return LastActivationTimeSeconds;
 }
 
 #pragma endregion Inline Definitions
