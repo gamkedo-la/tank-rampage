@@ -55,7 +55,11 @@ private:
 	void SpawnLoot(const AController* Owner, const FVector& BaseSpawnLocation);
 
 	const ABasePickup* SpawnLoot(const AController* Owner, const FVector& SpawnLocation, UClass* PickupClass) const;
-	FVector GetSpawnLocation(const FVector& BaseLocation) const;
+	FVector GetSpawnLocation(const TSubclassOf<ABasePickup>& PickupClass, const FVector& BaseLocation) const;
+
+	FVector GetSpawnOffsetLocation(const TSubclassOf<ABasePickup>& PickupClass, const FVector& BaseLocation) const;
+	TOptional<FBox> GetPickupBounds(const TSubclassOf<ABasePickup>& PickupClass) const;
+	FVector GroundSpawnLocation(const TSubclassOf<ABasePickup>& PickupClass, const FVector& Location) const;
 
 	bool ShouldSpawnLootClass(const FLootConfig& LootConfig) const;
 
