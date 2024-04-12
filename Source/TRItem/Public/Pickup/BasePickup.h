@@ -16,6 +16,9 @@ class TRITEM_API ABasePickup : public AActor
 public:	
 	ABasePickup();
 
+	UFUNCTION(BlueprintPure)
+	float GetSpawnOffsetZ() const;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -49,4 +52,17 @@ private:
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Applied Effects")
 	TSubclassOf<UGameplayEffect> InstantGameplayEffectClass;
+
+private:
+	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
+	float SpawnOffsetZ{};
 };
+
+#pragma region Inline Definitions
+
+inline float ABasePickup::GetSpawnOffsetZ() const
+{
+	return SpawnOffsetZ;
+}
+
+#pragma endregion Inline Definitions
