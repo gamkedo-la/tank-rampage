@@ -15,6 +15,8 @@
 #include "TRItemLogging.h"
 #include "VisualLogger/VisualLogger.h"
 
+#include "Utils/CollisionUtils.h"
+
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
 
@@ -418,11 +420,9 @@ FVector AProjectile::GetGroundLocation() const
 	if (World)
 	{
 		FHitResult Hit;
-		FCollisionQueryParams Params;
-		Params.AddIgnoredActor(this);
 
-		if (World->LineTraceSingleByChannel(Hit, CurrentLocation, CurrentLocation - FVector(0, 0, 10000),
-			ECollisionChannel::ECC_Visibility, Params))
+		if (World->LineTraceSingleByObjectType(Hit, CurrentLocation, CurrentLocation - FVector(0, 0, 10000),
+			TR::CollisionChannel::GroundObjectType))
 		{
 			return Hit.Location;
 		}

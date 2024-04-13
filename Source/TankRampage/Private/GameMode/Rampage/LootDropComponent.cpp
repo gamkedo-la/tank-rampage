@@ -285,12 +285,6 @@ FVector ULootDropComponent::GroundSpawnLocation(const TSubclassOf<ABasePickup>& 
 
 	FHitResult HitResult;
 
-	FCollisionResponseParams ResponseParams;
-	auto& CollisionResponse = ResponseParams.CollisionResponse;
-
-	CollisionResponse.SetAllChannels(ECollisionResponse::ECR_Ignore);
-	CollisionResponse.WorldStatic = ECollisionResponse::ECR_Block;
-
 	const auto OffsetZ = [&]()
 	{
 		auto PickupCDO = Cast<ABasePickup>(PickupClass->GetDefaultObject());
@@ -303,13 +297,11 @@ FVector ULootDropComponent::GroundSpawnLocation(const TSubclassOf<ABasePickup>& 
 		return PickupCDO->GetSpawnOffsetZ();
 	}();
 
-	if (World->LineTraceSingleByChannel(
+	if (World->LineTraceSingleByObjectType(
 		HitResult,
 		Location + FVector(0, 0, 100),
 		Location - FVector(0, 0, 1000),
-		ECollisionChannel::ECC_Visibility,
-		{},
-		ResponseParams
+		TR::CollisionChannel::GroundObjectType
 	))
 	{
 		UE_VLOG_UELOG(GetOwner(), LogTankRampage, Log, TEXT("%s: GroundSpawnLocation - Collided with %s owned by %s - adjusting location from %s to %s"),
@@ -468,25 +460,9 @@ namespace
 			return false;
 		}
 
-		// Only consider blocks with the player tank
-		if (Component->GetCollisionResponseToChannel(ECC_Pawn) != ECollisionResponse::ECR_Block)
-		{
-			return true;
-		}
-
-		auto Actor = Overlap.GetActor();
-		if (!Actor)
-		{
-			return false;
-		}
-
-		// Ignore specific actors
-		const auto& ActorName = Actor->GetName();
-
-		return ActorName.Contains("Landscape")
-#if WITH_EDITOR
-			|| ActorName.Contains("Floor")
-#endif
-		;
+		// Ignore the ground for checking for overlaps 
+		// and only consider blocks with the player tank
+		return Component->GetCollisionObjectType() == TR::CollisionChannel::GroundObjectType ||
+			Component->GetCollisionResponseToChannel(ECC_Pawn) != ECollisionResponse::ECR_Block;
 	}
 }

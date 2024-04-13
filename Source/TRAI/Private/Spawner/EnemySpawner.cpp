@@ -358,13 +358,7 @@ void AEnemySpawner::GroundSpawnPoint(USpawnLocationComponent& SpawnLocation)
 	const FVector TraceStart = CurrentLocation + FVector(0, 0, GroundTraceUpOffset);
 	const FVector TraceEnd = CurrentLocation - FVector(0, 0, GroundTraceDownOffset);
 
-	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(this);
-
-	FCollisionResponseParams ResponseParams;
-	ResponseParams.CollisionResponse.Pawn = ECollisionResponse::ECR_Ignore;
-
-	if (World->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECollisionChannel::ECC_Visibility, QueryParams, ResponseParams))
+	if (World->LineTraceSingleByObjectType(HitResult, TraceStart, TraceEnd, TR::CollisionChannel::GroundObjectType))
 	{
 		const auto& AdjustedLocation = HitResult.Location + HitResult.Normal * GroundSpawnOffset;
 
@@ -385,7 +379,8 @@ void AEnemySpawner::GroundSpawnPoint(USpawnLocationComponent& SpawnLocation)
 	else
 	{
 		UE_VLOG_LOCATION(this, LogTRAI, Warning, CurrentLocation, 100.0f, FColor::Orange, TEXT("Spawner could not find ground!"));
-		UE_VLOG_UELOG(this, LogTRAI, Warning, TEXT("%s: GroundSpawnPoint: %s - Could not find ground - no adjustment made to initial position of %s"),
+		UE_VLOG_UELOG(this, LogTRAI, Warning, 
+			TEXT("%s: GroundSpawnPoint: %s - Could not find ground (Is landscape/floor set to 'Ground' profile?) - no adjustment made to initial position of %s"),
 			*GetName(), *SpawnLocation.GetName(), *CurrentLocation.ToCompactString());
 	}
 }
