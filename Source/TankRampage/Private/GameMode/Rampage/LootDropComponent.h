@@ -46,6 +46,8 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
+	struct FSpawnContext;
+
 	UFUNCTION()
 	void OnTankDestroyed(ABaseTankPawn* DestroyedTank, AController* DestroyedBy, AActor* DestroyedWith);
 
@@ -55,10 +57,14 @@ private:
 	void SpawnLoot(const AController* Owner, const FVector& BaseSpawnLocation);
 
 	const ABasePickup* SpawnLoot(const AController* Owner, const FVector& SpawnLocation, UClass* PickupClass) const;
-	FVector GetSpawnLocation(const TSubclassOf<ABasePickup>& PickupClass, const FVector& BaseLocation) const;
+	FVector GetSpawnLocation(FSpawnContext& SpawnContext, const FVector& BaseLocation, FVector& InitialSpawnLocation) const;
 
-	FVector GetSpawnOffsetLocation(const TSubclassOf<ABasePickup>& PickupClass, const FVector& BaseLocation) const;
+	FVector GetInitialSpawnLocation(FSpawnContext& SpawnContext, const FVector& BaseLocation) const;
+	bool GetCollisionFreeSpawnLocation(FSpawnContext& SpawnContext, FVector& SpawnLocation) const;
 	TOptional<FBox> GetPickupBounds(const TSubclassOf<ABasePickup>& PickupClass) const;
+	TOptional<FBox> GetPickupBounds(const ABasePickup& Pickup) const;
+	bool IsOverlappingExistingSpawns(const FSpawnContext& SpawnContext, const FVector& InitialSpawnLocation) const;
+
 	FVector GroundSpawnLocation(const TSubclassOf<ABasePickup>& PickupClass, const FVector& Location) const;
 
 	bool ShouldSpawnLootClass(const FLootConfig& LootConfig) const;
@@ -72,8 +78,14 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Loot")
 	TArray<FLootConfig> LootConfigs{};
 
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
 	float SpawnRadius{ 300.0f };
+
+	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
+	int32 CollisionTestMaxIterations{ 5 };
+
+	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
+	int32 MultipleLootOverlapCheckMaxIterations{ 5 };
 
 	UPROPERTY(Transient)
 	TMap<UClass*, FLootLevelData> LevelDataByClass{};

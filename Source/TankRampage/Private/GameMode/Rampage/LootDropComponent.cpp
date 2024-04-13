@@ -21,13 +21,28 @@
 #include "Kismet/GameplayStatics.h"
 
 #include <cstdio>
+#include <optional>
 
 namespace
 {
 	FRealCurve* FindCurveForLevel(UCurveTable* CurveTable, int32 Level);
 
 	bool ShouldIgnoreOverlap(const FOverlapResult& Overlap);
+
+	const UObject* OverlapKey(const FOverlapResult& Overlap);
+
+	FBox GetObjectAABB(const UObject* Object);
 }
+
+struct ULootDropComponent::FSpawnContext
+{
+	TSubclassOf<ABasePickup> PickupClass{};
+	TOptional<FBox> PickupBounds{};
+	FBox OverlapBounds{ EForceInit::ForceInitToZero };
+	TArray<FBox>* OtherSpawned{};
+
+	FSpawnContext(const TSubclassOf<ABasePickup>& PickupClass, TArray<FBox>& OtherSpawned) : PickupClass(PickupClass), OtherSpawned(&OtherSpawned) {}
+};
 
 // Sets default values for this component's properties
 ULootDropComponent::ULootDropComponent()
@@ -97,6 +112,8 @@ void ULootDropComponent::OnXPLevelUp(int32 NewLevel)
 
 void ULootDropComponent::SpawnLoot(const AController* Owner, const FVector& BaseSpawnLocation)
 {
+	TArray<FBox> SpawnedLootBounds;
+
 	for (const auto& Config : LootConfigs)
 	{
 		const auto& Class = Config.Class;
@@ -110,7 +127,10 @@ void ULootDropComponent::SpawnLoot(const AController* Owner, const FVector& Base
 			continue;
 		}
 
-		const auto& SpawnLocation = GetSpawnLocation(Class, BaseSpawnLocation);
+		FSpawnContext Context(Class, SpawnedLootBounds);
+		FVector InitialSpawnLocation;
+
+		const auto& SpawnLocation = GetSpawnLocation(Context, BaseSpawnLocation, InitialSpawnLocation);
 
 		if (auto Spawned = SpawnLoot(Owner, SpawnLocation, Class); Spawned)
 		{
@@ -118,6 +138,17 @@ void ULootDropComponent::SpawnLoot(const AController* Owner, const FVector& Base
 			check(LevelData);
 
 			++LevelData->Awarded;
+
+			if (!Context.PickupBounds)
+			{
+				Context.PickupBounds = GetPickupBounds(*Spawned);
+			}
+
+			if (Context.PickupBounds)
+			{
+				// Store the initial spawn selection locations for spawn overlap detection
+				SpawnedLootBounds.Add(Context.PickupBounds->MoveTo(InitialSpawnLocation));
+			}
 		}
 	}
 }
@@ -155,22 +186,90 @@ const ABasePickup* ULootDropComponent::SpawnLoot(const AController* Owner, const
 	return Pickup;
 }
 
-FVector ULootDropComponent::GetSpawnLocation(const TSubclassOf<ABasePickup>& PickupClass, const FVector& BaseLocation) const
+FVector ULootDropComponent::GetSpawnLocation(FSpawnContext& SpawnContext, const FVector& BaseLocation, FVector& InitialSpawnLocation) const
 {
-	const FVector OffsetSpawnLocation = GetSpawnOffsetLocation(PickupClass, BaseLocation);
+	SpawnContext.PickupBounds = GetPickupBounds(SpawnContext.PickupClass);
 
-	return GroundSpawnLocation(PickupClass, OffsetSpawnLocation);
+	FVector SpawnLocation = InitialSpawnLocation = GetInitialSpawnLocation(SpawnContext, BaseLocation);
+
+	for (int32 i = 0; i < CollisionTestMaxIterations; ++i)
+	{
+		UE_VLOG_UELOG(GetOwner(), LogTankRampage, Log, TEXT("%s: GetSpawnLocation - %s - Testing for collision iteration %d / %d with SpawnLocation=%s"),
+			*GetName(), *LoggingUtils::GetName(SpawnContext.PickupClass), i + 1, CollisionTestMaxIterations, *SpawnLocation.ToCompactString());
+
+		if (GetCollisionFreeSpawnLocation(SpawnContext, SpawnLocation))
+		{
+			// No further collision
+			break;
+		}
+		else if (i == CollisionTestMaxIterations - 1)
+		{
+			UE_VLOG_UELOG(GetOwner(), LogTankRampage, Warning, TEXT("%s: GetSpawnLocation - %s - Reached max iterations of %d when testing for collisions - SpawnLocation=%s"),
+				*GetName(), *LoggingUtils::GetName(SpawnContext.PickupClass), CollisionTestMaxIterations, *SpawnLocation.ToCompactString());
+		}
+	}
+
+	return GroundSpawnLocation(SpawnContext.PickupClass, SpawnLocation);
 }
 
-FVector ULootDropComponent::GetSpawnOffsetLocation(const TSubclassOf<ABasePickup>& PickupClass, const FVector& BaseLocation) const
+FVector ULootDropComponent::GetInitialSpawnLocation(FSpawnContext& SpawnContext, const FVector& BaseLocation) const
 {
-	const FVector InitialOffsetLocation = { FMath::FRandRange(-SpawnRadius, SpawnRadius), FMath::FRandRange(-SpawnRadius, SpawnRadius), 0.0f };
-	const FVector InitialSpawnLocation = BaseLocation + InitialOffsetLocation;
+	int32 i = 0;
+	FVector InitialSpawnLocation;
 
-	const auto& PickupBoundsOptional = GetPickupBounds(PickupClass);
-	if (!PickupBoundsOptional)
+	do
 	{
-		return InitialSpawnLocation;
+		++i;
+
+		const FVector InitialOffsetLocation = { FMath::FRandRange(-SpawnRadius, SpawnRadius), FMath::FRandRange(-SpawnRadius, SpawnRadius), 0.0f };
+		InitialSpawnLocation = BaseLocation + InitialOffsetLocation;
+
+		UE_VLOG_UELOG(GetOwner(), LogTankRampage, Log, TEXT("%s: GetInitialSpawnLocation - %s - Testing for other loot collision iteration %d / %d with InitialSpawnLocation=%s"),
+			*GetName(), *LoggingUtils::GetName(SpawnContext.PickupClass), i, MultipleLootOverlapCheckMaxIterations, *InitialSpawnLocation.ToCompactString());
+
+		if (!IsOverlappingExistingSpawns(SpawnContext, InitialSpawnLocation))
+		{
+			break;
+		}
+	}
+	while (i < MultipleLootOverlapCheckMaxIterations);
+
+	if (i == MultipleLootOverlapCheckMaxIterations)
+	{
+		UE_VLOG_UELOG(GetOwner(), LogTankRampage, Warning, TEXT("%s: GetInitialSpawnLocation - %s - Reached max iterations of %d when testing for collisions - InitialSpawnLocation=%s"),
+			*GetName(), *LoggingUtils::GetName(SpawnContext.PickupClass), MultipleLootOverlapCheckMaxIterations, *InitialSpawnLocation.ToCompactString());
+	}
+
+	return InitialSpawnLocation;
+}
+
+bool ULootDropComponent::IsOverlappingExistingSpawns(const FSpawnContext& SpawnContext, const FVector& SpawnLocation) const
+{
+	check(SpawnContext.OtherSpawned);
+
+	if (!SpawnContext.PickupBounds || SpawnContext.OtherSpawned->IsEmpty())
+	{
+		return false;
+	}
+
+	const FBox PickupBox = SpawnContext.PickupBounds->MoveTo(SpawnLocation);
+
+	for (const auto& ExistingSpawnedBounds : *SpawnContext.OtherSpawned)
+	{
+		if (ExistingSpawnedBounds.Intersect(PickupBox))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool ULootDropComponent::GetCollisionFreeSpawnLocation(FSpawnContext& SpawnContext, FVector& SpawnLocation) const
+{
+	if (!SpawnContext.PickupBounds)
+	{
+		return true;
 	}
 
 	auto World = GetWorld();
@@ -178,24 +277,23 @@ FVector ULootDropComponent::GetSpawnOffsetLocation(const TSubclassOf<ABasePickup
 
 	TArray<FOverlapResult> Overlaps;
 
-	const FVector& PickupBoundsExtent = PickupBoundsOptional->GetExtent();
+	const FVector& PickupBoundsExtent = SpawnContext.PickupBounds->GetExtent();
 
 	const auto PickupCollisionShape = FCollisionShape::MakeBox(PickupBoundsExtent);
 
 	World->OverlapMultiByObjectType(
 		Overlaps,
-		InitialSpawnLocation,
+		SpawnLocation,
 		FQuat{ EForceInit::ForceInit }, // ZeroRotator
 		ECollisionChannel::ECC_WorldStatic,
 		PickupCollisionShape);
 
-	FBox OverlapBounds{ EForceInit::ForceInitToZero };
-	TSet<AActor*, DefaultKeyFuncs<AActor*>, TInlineSetAllocator<64>> OverlappedActors;
+	TSet<const UObject*, DefaultKeyFuncs<const UObject*>, TInlineSetAllocator<64>> OverlapResults;
 
 	for (const auto& OverlapResult : Overlaps)
 	{
-		auto Actor = OverlapResult.GetActor();
-		if (!Actor)
+		const auto Key = OverlapKey(OverlapResult);
+		if (!Key)
 		{
 			continue;
 		}
@@ -206,54 +304,59 @@ FVector ULootDropComponent::GetSpawnOffsetLocation(const TSubclassOf<ABasePickup
 		}
 
 		bool bAlreadyVisited{};
-		OverlappedActors.Add(Actor, &bAlreadyVisited);
+		OverlapResults.Add(Key, &bAlreadyVisited);
 
 		if (!bAlreadyVisited)
 		{
-			const FBox& ActorBounds = TR::CollisionUtils::GetAABB(*Actor);
-			OverlapBounds += ActorBounds;
+			const FBox& ObjectBounds = GetObjectAABB(Key);
 
-			UE_VLOG_UELOG(GetOwner(), LogTankRampage, Verbose, TEXT("%s: GetSpawnOffsetLocation - %s Overlapped with %s Bounds=%s; TotalOverlapBounds=%s"),
-				*GetName(), *Actor->GetName(), *LoggingUtils::GetName(PickupClass),
-				*ActorBounds.ToString(), *OverlapBounds.ToString());
+			SpawnContext.OverlapBounds += ObjectBounds;
+
+			UE_VLOG_UELOG(GetOwner(), LogTankRampage, Verbose, TEXT("%s: GetCollisionFreeSpawnLocation - %s Overlapped with %s Bounds=%s; TotalOverlapBounds=%s"),
+				*GetName(), *Key->GetName(), *LoggingUtils::GetName(SpawnContext.PickupClass),
+				*ObjectBounds.ToString(), *SpawnContext.OverlapBounds.ToString());
 		}
 	}
 
-	UE_VLOG_BOX(GetOwner(), LogTankRampage, Verbose, PickupBoundsOptional->MoveTo(InitialSpawnLocation), FColor::Blue, TEXT("I: %s"), *PickupClass->GetName());
+	UE_VLOG_BOX(GetOwner(), LogTankRampage, Verbose, SpawnContext.PickupBounds->MoveTo(SpawnLocation), FColor::Blue, TEXT("I: %s"), *SpawnContext.PickupClass->GetName());
 
 	// Draw overlap
-	if (!OverlappedActors.IsEmpty())
+	if (!OverlapResults.IsEmpty())
 	{
-		UE_VLOG_BOX(GetOwner(), LogTankRampage, Verbose, OverlapBounds, FColor::Orange, TEXT("O: %s"), *PickupClass->GetName());
+		UE_VLOG_BOX(GetOwner(), LogTankRampage, Verbose, SpawnContext.OverlapBounds, FColor::Orange, TEXT("O: %s"), *SpawnContext.PickupClass->GetName());
 	}
 	else
 	{
-		UE_VLOG_UELOG(GetOwner(), LogTankRampage, Verbose, TEXT("%s: GetSpawnOffsetLocation - No overlaps detected with %s at %s"),
-			*GetName(), *LoggingUtils::GetName(PickupClass), *InitialSpawnLocation.ToCompactString());
+		UE_VLOG_UELOG(GetOwner(), LogTankRampage, Verbose, TEXT("%s: GetCollisionFreeSpawnLocation - No overlaps detected with %s at %s"),
+			*GetName(), *LoggingUtils::GetName(SpawnContext.PickupClass), *SpawnLocation.ToCompactString());
 
-		return InitialSpawnLocation;
+		// No adjustment required
+		return true;
 	}
 
 	FVector OverlapCenter, OverlapExtent;
-	OverlapBounds.GetCenterAndExtents(OverlapCenter, OverlapExtent);
+	SpawnContext.OverlapBounds.GetCenterAndExtents(OverlapCenter, OverlapExtent);
 
 	// Discount the Z
-	OverlapCenter.Z = InitialSpawnLocation.Z;
+	OverlapCenter.Z = SpawnLocation.Z;
 	const auto ExtentSize = OverlapExtent.Size2D() + PickupBoundsExtent.Size2D();
 
-	const auto FromOverlapped = (InitialSpawnLocation - OverlapCenter);
+	const auto FromOverlapped = (SpawnLocation - OverlapCenter);
 	const auto FromOverlappedDirection = FromOverlapped.GetSafeNormal();
 	const auto CircleEdgeLocation = FromOverlappedDirection * ExtentSize;
 
 	const auto PushOutOffset = CircleEdgeLocation - FromOverlapped;
-	const auto FinalLocation = InitialSpawnLocation + PushOutOffset;
+	const auto FinalLocation = SpawnLocation + PushOutOffset;
 
-	UE_VLOG_BOX(GetOwner(), LogTankRampage, Verbose, PickupBoundsOptional->MoveTo(FinalLocation), FColor::Green, TEXT("F: %s"), *PickupClass->GetName());
-	UE_VLOG_UELOG(GetOwner(), LogTankRampage, Log, TEXT("%s: GetSpawnOffsetLocation - %d overlaps detected with %s at %s -> %s"),
-		*GetName(), OverlappedActors.Num(), *LoggingUtils::GetName(PickupClass),
-		*InitialSpawnLocation.ToCompactString(), *FinalLocation.ToCompactString());
+	UE_VLOG_BOX(GetOwner(), LogTankRampage, Verbose, SpawnContext.PickupBounds->MoveTo(FinalLocation), FColor::Green, TEXT("F: %s"), *SpawnContext.PickupClass->GetName());
+	UE_VLOG_UELOG(GetOwner(), LogTankRampage, Log, TEXT("%s: GetCollisionFreeSpawnLocation - %d overlaps detected with %s at %s -> %s"),
+		*GetName(), OverlapResults.Num(), *LoggingUtils::GetName(SpawnContext.PickupClass),
+		*SpawnLocation.ToCompactString(), *FinalLocation.ToCompactString());
 
-	return FinalLocation;
+	SpawnLocation = FinalLocation;
+
+	// Overlaps detected in this iteration
+	return false;
 }
 
 TOptional<FBox> ULootDropComponent::GetPickupBounds(const TSubclassOf<ABasePickup>& PickupClass) const
@@ -271,6 +374,20 @@ TOptional<FBox> ULootDropComponent::GetPickupBounds(const TSubclassOf<ABasePicku
 	auto PickupMesh = TR::ObjectUtils::FindDefaultComponentByClass<UMeshComponent>(PickupCDO);
 
 	if (!ensureMsgf(PickupMesh, TEXT("PickupClass=%s has no primitive component; CDO=%s"), *PickupClass->GetName(), *PickupCDO->GetName()))
+	{
+		return {};
+	}
+
+	return TR::CollisionUtils::GetAABB(*PickupMesh);
+}
+
+TOptional<FBox> ULootDropComponent::GetPickupBounds(const ABasePickup& Pickup) const
+{
+	// Get the primitive component as the collider is going to be a larger overlap volume
+	// The mesh doesn't have a bounds
+	auto PickupMesh = Pickup.FindComponentByClass<UMeshComponent>();
+
+	if (!ensureMsgf(PickupMesh, TEXT("Pickup=%s has no primitive component"), *Pickup.GetName()))
 	{
 		return {};
 	}
@@ -464,5 +581,29 @@ namespace
 		// and only consider blocks with the player tank
 		return Component->GetCollisionObjectType() == TR::CollisionChannel::GroundObjectType ||
 			Component->GetCollisionResponseToChannel(ECC_Pawn) != ECollisionResponse::ECR_Block;
+	}
+
+	inline const UObject* OverlapKey(const FOverlapResult& Overlap)
+	{
+		const UObject* Key = Overlap.GetActor();
+		return Key ? Key : Overlap.GetComponent();
+	}
+
+	FBox GetObjectAABB(const UObject* Object)
+	{
+		const auto ActorResult = Cast<AActor>(Object);
+		if (ActorResult)
+		{
+			return TR::CollisionUtils::GetAABB(*ActorResult);
+		}
+
+		const auto ComponentResult = Cast<USceneComponent>(Object);
+		if (ComponentResult)
+		{
+			return TR::CollisionUtils::GetAABB(*ComponentResult);
+		}
+
+		// Invalid
+		return FBox{ EForceInit::ForceInitToZero };
 	}
 }
