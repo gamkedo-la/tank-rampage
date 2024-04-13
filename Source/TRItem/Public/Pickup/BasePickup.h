@@ -19,6 +19,9 @@ public:
 	UFUNCTION(BlueprintPure)
 	float GetSpawnOffsetZ() const;
 
+	UFUNCTION(BlueprintPure)
+	bool IsMarkedForDestroy() const;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -56,6 +59,8 @@ protected:
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
 	float SpawnOffsetZ{};
+
+	bool bMarkedForDestroy{};
 };
 
 #pragma region Inline Definitions
@@ -65,4 +70,8 @@ inline float ABasePickup::GetSpawnOffsetZ() const
 	return SpawnOffsetZ;
 }
 
+inline bool ABasePickup::IsMarkedForDestroy() const
+{
+	return bMarkedForDestroy;
+}
 #pragma endregion Inline Definitions

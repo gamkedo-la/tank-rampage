@@ -5,6 +5,7 @@
 
 #include "XPSubsystem.h"
 #include "Subsystems/TankEventsSubsystem.h"
+#include "Item/ItemSubsystem.h"
 #include "Pawn/BaseTankPawn.h"
 #include "Pickup/BasePickup.h"
 
@@ -126,6 +127,9 @@ void ULootDropComponent::OnXPLevelUp(int32 NewLevel)
 
 void ULootDropComponent::SpawnLoot(const AController* Owner, const FVector& BaseSpawnLocation, const TOptional<FVector>& SpawnReferenceLocation)
 {
+	auto World = GetWorld();
+	check(World);
+
 	TArray<FSpawnData> SpawnedLootBounds;
 
 	for (const auto& Config : LootConfigs)
@@ -167,6 +171,11 @@ void ULootDropComponent::SpawnLoot(const AController* Owner, const FVector& Base
 					Context.PickupBounds->GetExtent(),
 					{ InitialSpawnLocation, Spawned->GetActorLocation() }
 				});
+			}
+
+			if (auto ItemSubsystem = World->GetSubsystem<UItemSubsystem>(); ensure(ItemSubsystem))
+			{
+				ItemSubsystem->OnLootSpawned.Broadcast(Spawned);
 			}
 		}
 	}

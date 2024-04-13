@@ -14,6 +14,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Camera/CameraComponent.h"
 
+#include "Subsystems/TankEventsSubsystem.h"
+
 #include <limits>
 #include <optional>
 #include <array>
@@ -188,6 +190,11 @@ int32 AEnemySpawner::Spawn(int32 InDesiredCount, const AActor* LookAtActor, TArr
 
 			UE_VLOG_UELOG(this, LogTRAI, Log, TEXT("%s: Spawn - Spawned %s -> %s"), *GetName(), *SpawnClass->GetName(), *Spawned->GetName());
 			UE_VLOG_LOCATION(this, LogTRAI, Log, SpawnTransform.GetLocation(), 50.0f, FColor::Green, TEXT("Spawn %s"), *SpawnClass->GetName());
+
+			if (auto TankEventsSubsystem = World->GetSubsystem<UTankEventsSubsystem>(); ensure(TankEventsSubsystem))
+			{
+				TankEventsSubsystem->OnEnemySpawned.Broadcast(Spawned);
+			}
 
 			++SpawnedCount;
 
