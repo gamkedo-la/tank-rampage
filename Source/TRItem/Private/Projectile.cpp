@@ -309,7 +309,7 @@ bool AProjectile::ApplyDamageTo(AActor* OtherActor, const FHitResult& Hit, APawn
 		UGameplayStatics::ApplyRadialDamageWithFalloff(
 			this, ProjectileDamageParams.MaxDamageAmount, ProjectileDamageParams.MinDamageAmount,
 			Hit.ImpactPoint, ProjectileDamageParams.DamageInnerRadius, ProjectileDamageParams.DamageOuterRadius,
-			ProjectileDamageParams.DamageFalloff, nullptr, IgnoreActors, this, InstigatorController);
+			ProjectileDamageParams.DamageFalloff, nullptr, IgnoreActors, this, InstigatorController, TR::CollisionChannel::ExplosionDamageTraceType);
 
 		UE_VLOG_LOCATION(this, LogTRItem, Log, Hit.ImpactPoint, ProjectileDamageParams.DamageInnerRadius, FColor::Red, TEXT(""),
 			*GetName(), *LoggingUtils::GetName(InstigatingPawn), *LoggingUtils::GetName(OtherActor));
