@@ -12,8 +12,3 @@ namespace TR::CollisionUtils
 	TRCORE_API FBox GetAABB(const USceneComponent& Component);
 }
 
-namespace TR::CollisionChannel
-{
-	inline constexpr ECollisionChannel GroundObjectType = ECollisionChannel::ECC_GameTraceChannel1;
-	inline constexpr ECollisionChannel ExplosionDamageTraceType = ECollisionChannel::ECC_GameTraceChannel2;
-}

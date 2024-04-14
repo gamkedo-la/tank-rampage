@@ -46,30 +46,16 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
-	struct FSpawnContext;
-
 	UFUNCTION()
 	void OnTankDestroyed(ABaseTankPawn* DestroyedTank, AController* DestroyedBy, AActor* DestroyedWith);
 
 	UFUNCTION()
 	void OnXPLevelUp(int32 NewLevel);
 
-	void SpawnLoot(const AController* Owner, const FVector& BaseSpawnLocation, const TOptional<FVector>& SpawnReferenceLocation);
+	void SpawnLoot(const AController* Owner, const FVector& BaseSpawnLocation);
 
 	const ABasePickup* SpawnLoot(const AController* Owner, const FVector& SpawnLocation, UClass* PickupClass) const;
-	FVector GetSpawnLocation(FSpawnContext& SpawnContext, const FVector& BaseLocation, FVector& InitialSpawnLocation) const;
-
-	FVector GetLocationWithOffset(const FVector& Location) const;
-	FVector GetSpawnBaseLocation(const ABaseTankPawn& DestroyedTank, const AController* DestroyedBy, TOptional<FVector>& OutSpawnReferenceLocation) const;
-	TOptional<FVector> GetReferenceActorLocation(const ABaseTankPawn& DestroyedTank, const AController* DestroyedBy) const;
-	FVector GetOffsetSpawnLocation(const FSpawnContext& SpawnContext, const FVector& BaseLocation, int32 LocationIndex) const;
-	bool GetCollisionFreeSpawnLocation(FSpawnContext& SpawnContext, FVector& SpawnLocation, int32 Iteration) const;
-	TOptional<FBox> GetPickupBounds(const TSubclassOf<ABasePickup>& PickupClass) const;
-	TOptional<FBox> GetPickupBounds(const ABasePickup& Pickup) const;
-	bool IsOverlappingExistingSpawns(const FSpawnContext& SpawnContext, const FVector& Location, int32 LocationIndex) const;
-	FVector OrientDirectionTowardPlayer(const FSpawnContext& SpawnContext, const FVector& Position, const FVector& Direction) const;
-
-	FVector GroundSpawnLocation(const TSubclassOf<ABasePickup>& PickupClass, const FVector& Location) const;
+	FVector GetSpawnLocation(const FVector& BaseLocation) const;
 
 	bool ShouldSpawnLootClass(const FLootConfig& LootConfig) const;
 
@@ -78,19 +64,12 @@ private:
 
 	void InitializeLevelData(int32 Level);
 
-
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Loot")
 	TArray<FLootConfig> LootConfigs{};
 
-	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
+	UPROPERTY(EditDefaultsOnly)
 	float SpawnRadius{ 300.0f };
-
-	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
-	int32 CollisionTestMaxIterations{ 5 };
-
-	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
-	int32 MultipleLootOverlapCheckMaxIterations{ 5 };
 
 	UPROPERTY(Transient)
 	TMap<UClass*, FLootLevelData> LevelDataByClass{};

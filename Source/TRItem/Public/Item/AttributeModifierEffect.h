@@ -34,6 +34,9 @@ protected:
 	UPROPERTY(Category = "Config", EditDefaultsOnly, BlueprintReadWrite)
 	float AttributeMultiplier{ 1.0f };
 
+	UPROPERTY(Category = "Config", EditDefaultsOnly, BlueprintReadWrite)
+	float DurationSeconds{ 5.0f };
+
 private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Effect")

@@ -11,8 +11,6 @@
 #include "VisualLogger/VisualLogger.h"
 #include "TankRampageLogging.h"
 
-#include "Utils/CollisionUtils.h"
-
 UXPSpawnerComponent::UXPSpawnerComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
@@ -58,19 +56,8 @@ FVector UXPSpawnerComponent::GetSpawnLocation(const FVector& BaseLocation) const
 	check(World);
 
 	// Spawn at ground
-
-	const auto OffsetZ = [&]()
-	{
-		check(XPTokenClass);
-		auto CDO = Cast<ABasePickup>(XPTokenClass->GetDefaultObject());
-
-		if (!ensureMsgf(CDO, TEXT("XPTokenClass=%s has no CDO!"), *XPTokenClass->GetName()))
-		{
-			return decltype(CDO->GetSpawnOffsetZ()){};
-		}
-
-		return CDO->GetSpawnOffsetZ();
-	}();
+	FCollisionObjectQueryParams Params;
+	Params.ObjectTypesToQuery = FCollisionObjectQueryParams::AllStaticObjects | FCollisionObjectQueryParams::AllDynamicObjects;
 
 	FHitResult HitResult;
 
@@ -78,7 +65,7 @@ FVector UXPSpawnerComponent::GetSpawnLocation(const FVector& BaseLocation) const
 		HitResult,
 		BaseLocation + FVector(0, 0, 100),
 		BaseLocation - FVector(0, 0, 1000),
-		TR::CollisionChannel::GroundObjectType
+		Params
 	))
 	{
 		UE_VLOG_UELOG(GetOwner(), LogTankRampage, Log, TEXT("%s: SpawnToken - Collided with %s owned by %s - adjusting location from %s to %s"),
@@ -87,14 +74,14 @@ FVector UXPSpawnerComponent::GetSpawnLocation(const FVector& BaseLocation) const
 			*LoggingUtils::GetName(HitResult.GetActor()),
 			*BaseLocation.ToCompactString(), *HitResult.Location.ToCompactString());
 
-		return HitResult.Location + FVector(0, 0, OffsetZ);
+		return HitResult.Location;
 	}
 	else
 	{
-		UE_VLOG_UELOG(GetOwner(), LogTankRampage, Warning, TEXT("%s: SpawnToken - Could not find ground to snap token (Is landscape/floor set to 'Ground' profile?); Location=%s"),
+		UE_VLOG_UELOG(GetOwner(), LogTankRampage, Warning, TEXT("%s: SpawnToken - Could not find ground to snap token; Location=%s"),
 			*GetName(), *BaseLocation.ToCompactString());
 
-		return BaseLocation + FVector(0, 0, OffsetZ);
+		return BaseLocation;
 	}
 }
 

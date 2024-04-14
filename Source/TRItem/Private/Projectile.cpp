@@ -15,8 +15,6 @@
 #include "TRItemLogging.h"
 #include "VisualLogger/VisualLogger.h"
 
-#include "Utils/CollisionUtils.h"
-
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
 
@@ -309,7 +307,7 @@ bool AProjectile::ApplyDamageTo(AActor* OtherActor, const FHitResult& Hit, APawn
 		UGameplayStatics::ApplyRadialDamageWithFalloff(
 			this, ProjectileDamageParams.MaxDamageAmount, ProjectileDamageParams.MinDamageAmount,
 			Hit.ImpactPoint, ProjectileDamageParams.DamageInnerRadius, ProjectileDamageParams.DamageOuterRadius,
-			ProjectileDamageParams.DamageFalloff, nullptr, IgnoreActors, this, InstigatorController, TR::CollisionChannel::ExplosionDamageTraceType);
+			ProjectileDamageParams.DamageFalloff, nullptr, IgnoreActors, this, InstigatorController);
 
 		UE_VLOG_LOCATION(this, LogTRItem, Log, Hit.ImpactPoint, ProjectileDamageParams.DamageInnerRadius, FColor::Red, TEXT(""),
 			*GetName(), *LoggingUtils::GetName(InstigatingPawn), *LoggingUtils::GetName(OtherActor));
@@ -420,9 +418,11 @@ FVector AProjectile::GetGroundLocation() const
 	if (World)
 	{
 		FHitResult Hit;
+		FCollisionQueryParams Params;
+		Params.AddIgnoredActor(this);
 
-		if (World->LineTraceSingleByObjectType(Hit, CurrentLocation, CurrentLocation - FVector(0, 0, 10000),
-			TR::CollisionChannel::GroundObjectType))
+		if (World->LineTraceSingleByChannel(Hit, CurrentLocation, CurrentLocation - FVector(0, 0, 10000),
+			ECollisionChannel::ECC_Visibility, Params))
 		{
 			return Hit.Location;
 		}

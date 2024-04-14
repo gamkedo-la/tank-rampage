@@ -116,7 +116,6 @@ void UProjectileWeapon::BeginDestroy()
 	Super::BeginDestroy();
 
 	ClearProjectileTimer();
-	UnregisterActorLifecycleEvents();
 }
 
 void UProjectileWeapon::ClearProjectileTimer()
@@ -148,15 +147,40 @@ void UProjectileWeapon::UpdateHomingTargets(AProjectile& Projectile)
 
 	if (HomingTargetLastUpdateTime < 0)
 	{
-		InitializeHomingTargets();
+		TArray<AActor*> Actors;
+		for (const auto& Class : HomingTargetClasses)
+		{
+			// Actors gets reset inside the function call
+			UGameplayStatics::GetAllActorsOfClassWithTag(this, Class, TR::Tags::Alive, Actors);
+			AvailableHomingTargets.Append(Actors);
+
+			UE_VLOG_UELOG(GetOuter(), LogTRItem, Verbose, TEXT("%s: UpdateHomingTarget - Init - Found %d actor%s that were alive with class %s"),
+				*GetName(), Actors.Num(), LoggingUtils::Pluralize(Actors.Num()), *LoggingUtils::GetName(Class));
+		}
+
+		// Don't try to aim toward self
+		AvailableHomingTargets.Remove(GetOwner());
 
 		HomingTargetLastUpdateTime = CurrentTimeSeconds;
+
+		UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s: UpdateHomingTarget - Init - Found %d total target%s"),
+			*GetName(), AvailableHomingTargets.Num(), LoggingUtils::Pluralize(Actors.Num()));
 	}
 	else if (CurrentTimeSeconds - HomingTargetLastUpdateTime >= HomingTargetsUpdateFrequency)
 	{
-		RemoveDeadHomingTargets();
+		for (auto It = AvailableHomingTargets.CreateIterator(); It; ++It)
+		{
+			auto Actor = *It;
+			if (!IsValid(Actor) || Actor->ActorHasTag(TR::Tags::Dead))
+			{
+				It.RemoveCurrent();
+			}
+		}
 
 		HomingTargetLastUpdateTime = CurrentTimeSeconds;
+
+		UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s: UpdateHomingTarget - Removed dead actors - %d target%s remaining"),
+			*GetName(), AvailableHomingTargets.Num(), LoggingUtils::Pluralize(AvailableHomingTargets.Num()));
 	}
 }
 
@@ -235,125 +259,4 @@ void UProjectileWeapon::OnHomingTargetSelected(AProjectile* InProjectile, AActor
 			Projectile->AddAvailableHomingTarget(PreviousHomingTarget);
 		}
 	}
-}
-
-void UProjectileWeapon::OnSpawnActor(AActor* Actor)
-{
-	if (!Actor)
-	{
-		return;
-	}
-
-	const bool bInTargetClasses = HomingTargetClasses.ContainsByPredicate([Class = Actor->GetClass()](const auto& TargetClass)
-	{
-		return Class->IsChildOf(TargetClass);
-	});
-
-	if (!bInTargetClasses)
-	{
-		return;
-	}
-
-	// Spawn Actor called in deferred spawning before FinishSpawningActor is called (meaning before BeginPlay called on actor)
-	// Wait for next tick
-	auto World = GetWorld();
-	check(World);
-
-	FTimerHandle TimerHandle;
-	World->GetTimerManager().SetTimer(TimerHandle, FTimerDelegate::CreateWeakLambda(this, [Actor,this]()
-	{
-		this->OnActorReady(Actor);
-	}), 0.2f, false);
-}
-
-void UProjectileWeapon::OnActorReady(AActor* Actor)
-{
-	if (!IsValid(Actor) || !Actor->ActorHasTag(TR::Tags::Alive))
-	{
-		return;
-	}
-
-	bool bExisting{};
-	AvailableHomingTargets.Add(Actor, &bExisting);
-
-	if (!bExisting)
-	{
-		UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s: OnActorBeginPlay - Added actor %s - %d target%s available"),
-			*GetName(), *LoggingUtils::GetName(Actor), AvailableHomingTargets.Num(), LoggingUtils::Pluralize(AvailableHomingTargets.Num()));
-	}
-}
-
-void UProjectileWeapon::OnDestroyActor(AActor* Actor)
-{
-	const bool bRemoved = AvailableHomingTargets.Remove(Actor) > 0;
-
-	if (bRemoved)
-	{
-		UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s: OnDestroyActor - Removed dead actor %s - %d target%s available"),
-			*GetName(), *LoggingUtils::GetName(Actor), AvailableHomingTargets.Num(), LoggingUtils::Pluralize(AvailableHomingTargets.Num()));
-	}
-}
-
-void UProjectileWeapon::InitializeHomingTargets()
-{
-	TArray<AActor*> Actors;
-	for (const auto& Class : HomingTargetClasses)
-	{
-		// Actors gets reset inside the function call
-		UGameplayStatics::GetAllActorsOfClassWithTag(this, Class, TR::Tags::Alive, Actors);
-		AvailableHomingTargets.Append(Actors);
-
-		UE_VLOG_UELOG(GetOuter(), LogTRItem, Verbose, TEXT("%s: InitializeHomingTargets - Found %d actor%s that were alive with class %s"),
-			*GetName(), Actors.Num(), LoggingUtils::Pluralize(Actors.Num()), *LoggingUtils::GetName(Class));
-	}
-
-	// Don't try to aim toward self
-	AvailableHomingTargets.Remove(GetOwner());
-
-	UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s: InitializeHomingTargets - %d target%s available"),
-		*GetName(), AvailableHomingTargets.Num(), LoggingUtils::Pluralize(Actors.Num()));
-
-	RegisterActorLifecycleEvents();
-}
-
-void UProjectileWeapon::RemoveDeadHomingTargets()
-{
-	// Explicitly look for dead actors in case they aren't removed from the world
-	bool bRemoved{};
-	for (auto It = AvailableHomingTargets.CreateIterator(); It; ++It)
-	{
-		auto Actor = *It;
-		if (!IsValid(Actor) || Actor->ActorHasTag(TR::Tags::Dead))
-		{
-			bRemoved = true;
-			It.RemoveCurrent();
-		}
-	}
-
-	if (bRemoved)
-	{
-		UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s: UpdateHomingTarget - Removed dead actors - %d target%s available"),
-			*GetName(), AvailableHomingTargets.Num(), LoggingUtils::Pluralize(AvailableHomingTargets.Num()));
-	}
-}
-
-void UProjectileWeapon::RegisterActorLifecycleEvents()
-{
-	auto World = GetWorld();
-	check(World);
-
-	OnSpawnedHandle = World->AddOnActorSpawnedHandler(FOnActorSpawned::FDelegate::CreateUObject(this, &ThisClass::OnSpawnActor));
-	OnDestroyedHandle = World->AddOnActorDestroyedHandler(FOnActorDestroyed::FDelegate::CreateUObject(this, &ThisClass::OnDestroyActor));
-}
-
-void UProjectileWeapon::UnregisterActorLifecycleEvents()
-{
-	auto World = GetWorld();
-	if (!World)
-	{
-		return;
-	}
-
-	World->RemoveOnActorSpawnedHandler(OnSpawnedHandle);
-	World->RemoveOnActorDestroyededHandler(OnDestroyedHandle);
 }
