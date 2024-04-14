@@ -14,6 +14,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Camera/CameraComponent.h"
 
+#include "Subsystems/TankEventsSubsystem.h"
+
 #include <limits>
 #include <optional>
 #include <array>
@@ -189,6 +191,11 @@ int32 AEnemySpawner::Spawn(int32 InDesiredCount, const AActor* LookAtActor, TArr
 			UE_VLOG_UELOG(this, LogTRAI, Log, TEXT("%s: Spawn - Spawned %s -> %s"), *GetName(), *SpawnClass->GetName(), *Spawned->GetName());
 			UE_VLOG_LOCATION(this, LogTRAI, Log, SpawnTransform.GetLocation(), 50.0f, FColor::Green, TEXT("Spawn %s"), *SpawnClass->GetName());
 
+			if (auto TankEventsSubsystem = World->GetSubsystem<UTankEventsSubsystem>(); ensure(TankEventsSubsystem))
+			{
+				TankEventsSubsystem->OnEnemySpawned.Broadcast(Spawned);
+			}
+
 			++SpawnedCount;
 
 			AlreadySpawned.Add(Spawned);
@@ -328,18 +335,10 @@ void AEnemySpawner::BeginPlay()
 
 	UE_VLOG_UELOG(this, LogTRAI, Log, TEXT("%s: BeginPlay - %d spawn locations found"), *GetName(), SpawnLocations.Num());
 
-	GroundSpawnPoints();
+	auto World = GetWorld();
+	check(World);
 
-#if ENABLE_VISUAL_LOG
-	if (FVisualLogger::IsRecording() && UE_LOG_ACTIVE(LogTRAI,Verbose))
-	{
-		for (auto SpawnLocation : SpawnLocations)
-		{
-			UE_VLOG_LOCATION(this, LogTRAI, Verbose, SpawnLocation->GetComponentLocation(), 50.0f, FColor::Blue, TEXT("Spawn Location"));
-		}
-	}
-
-#endif
+	World->OnWorldBeginPlay.AddUObject(this, &ThisClass::GroundSpawnPoints);
 }
 
 void AEnemySpawner::GroundSpawnPoints()
@@ -366,13 +365,7 @@ void AEnemySpawner::GroundSpawnPoint(USpawnLocationComponent& SpawnLocation)
 	const FVector TraceStart = CurrentLocation + FVector(0, 0, GroundTraceUpOffset);
 	const FVector TraceEnd = CurrentLocation - FVector(0, 0, GroundTraceDownOffset);
 
-	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(this);
-
-	FCollisionResponseParams ResponseParams;
-	ResponseParams.CollisionResponse.Pawn = ECollisionResponse::ECR_Ignore;
-
-	if (World->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECollisionChannel::ECC_Visibility, QueryParams, ResponseParams))
+	if (World->LineTraceSingleByObjectType(HitResult, TraceStart, TraceEnd, TR::CollisionChannel::GroundObjectType))
 	{
 		const auto& AdjustedLocation = HitResult.Location + HitResult.Normal * GroundSpawnOffset;
 
@@ -382,12 +375,19 @@ void AEnemySpawner::GroundSpawnPoint(USpawnLocationComponent& SpawnLocation)
 				*GetName(), *SpawnLocation.GetName(), *CurrentLocation.ToCompactString(), *AdjustedLocation.ToCompactString());
 
 			SpawnLocation.SetWorldLocation(AdjustedLocation);
+
+			UE_VLOG_LOCATION(this, LogTRAI, Verbose, SpawnLocation.GetComponentLocation(), 50.0f, FColor::Blue, TEXT("Spawn Location (Adj)"));
+		}
+		else
+		{
+			UE_VLOG_LOCATION(this, LogTRAI, Verbose, SpawnLocation.GetComponentLocation(), 50.0f, FColor::Green, TEXT("Spawn Location"));
 		}
 	}
 	else
 	{
 		UE_VLOG_LOCATION(this, LogTRAI, Warning, CurrentLocation, 100.0f, FColor::Orange, TEXT("Spawner could not find ground!"));
-		UE_VLOG_UELOG(this, LogTRAI, Warning, TEXT("%s: GroundSpawnPoint: %s - Could not find ground - no adjustment made to initial position of %s"),
+		UE_VLOG_UELOG(this, LogTRAI, Warning, 
+			TEXT("%s: GroundSpawnPoint: %s - Could not find ground (Is landscape/floor set to 'Ground' profile?) - no adjustment made to initial position of %s"),
 			*GetName(), *SpawnLocation.GetName(), *CurrentLocation.ToCompactString());
 	}
 }

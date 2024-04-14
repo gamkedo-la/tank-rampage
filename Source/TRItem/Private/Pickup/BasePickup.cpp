@@ -32,6 +32,13 @@ void ABasePickup::RegisterOverlapEvent(UPrimitiveComponent* OverlapCheckComponen
 
 void ABasePickup::MarkForDestroy()
 {
+	if (bMarkedForDestroy)
+	{
+		return;
+	}
+
+	bMarkedForDestroy = true;
+
 	GetWorldTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
 		Destroy();

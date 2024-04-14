@@ -24,6 +24,7 @@ public:
 	virtual bool CanBeActivated() const override;
 
 protected:
+
 	virtual bool DoActivation(USceneComponent& ActivationReferenceComponent, const FName& ActivationSocketName) override;
 	virtual void BeginDestroy() override;
 
@@ -38,6 +39,17 @@ private:
 	void OnProjectileDestroyed(AActor* Actor);
 
 	void OnHomingTargetSelected(AProjectile* Projectile, AActor* Target);
+
+	void OnSpawnActor(AActor* Actor);
+	void OnActorReady(AActor* Actor);
+	void OnDestroyActor(AActor* Actor);
+
+	void InitializeHomingTargets();
+	void RemoveDeadHomingTargets();
+
+	void RegisterActorLifecycleEvents();
+	void UnregisterActorLifecycleEvents();
+
 
 protected:
 	UPROPERTY(Category = "Firing", EditDefaultsOnly, BlueprintReadWrite)
@@ -120,6 +132,9 @@ private:
 	bool bIsFiring{};
 
 	FTimerHandle LaunchDelayTimerHandle{};
+
+	FDelegateHandle OnSpawnedHandle{};
+	FDelegateHandle OnDestroyedHandle{};
 
 	UPROPERTY(Transient)
 	TSet<AActor*> AvailableHomingTargets{};

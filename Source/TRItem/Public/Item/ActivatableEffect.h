@@ -16,5 +16,33 @@ class TRITEM_API UActivatableEffect : public UItem
 
 public:
 	UActivatableEffect();
+
+	UFUNCTION(BlueprintPure)
+	bool IsActive() const;
+
+	UFUNCTION(BlueprintPure)
+	float GetActivationTimeRemaining() const;
+
+	UFUNCTION(BlueprintPure)
+	float GetActivationPercentRemaining() const;
+
+protected:
+	UPROPERTY(Category = "Config", EditDefaultsOnly, BlueprintReadWrite)
+	float DurationSeconds{ 5.0f };
 	
 };
+
+#pragma region Inline Definitions
+
+inline bool UActivatableEffect::IsActive() const
+{
+	return GetActivationTimeRemaining() > 0;
+}
+
+inline float UActivatableEffect::GetActivationPercentRemaining() const
+{
+	const auto TimeRemaining = GetActivationTimeRemaining();
+	return TimeRemaining > 0.0f ? TimeRemaining / DurationSeconds : 0.0f;
+}
+
+#pragma endregion Inline Definitions
