@@ -54,7 +54,10 @@ namespace TR
 	/**
 	 *
 	 */
-	template<typename T, typename TDefaultValueFunc = decltype([]() { return T{}; }) > requires CircularBufferConcept<T, TDefaultValueFunc>
+	template<typename T, 
+			 typename TDefaultValueFunc = decltype([]() { return T{}; }),
+		     typename TDefaultThresholdFunc = decltype([](const T& t) { return FMath::Abs(t); })
+	> requires CircularBufferConcept<T, TDefaultValueFunc>
 	class TTimedCircularBuffer
 	{
 	public:
@@ -80,7 +83,7 @@ namespace TR
 		T Average() const requires CircularBufferAverageConcept<T>;
 		T Sum() const requires CircularBufferSumConcept<T>;
 
-		template<typename TThreshold, typename TFunc = decltype([](const T& t) -> TThreshold { return FMath::Abs(t); })>
+		template<typename TThreshold, typename TFunc = TDefaultThresholdFunc>
 		bool IsZero(const TThreshold& Threshold = {}, const TFunc& Func = {}) const
 			requires CircularBufferSumConcept<T> && CircularBufferMangitudeConcept<T, TFunc, TThreshold>;
 
@@ -105,20 +108,20 @@ namespace TR
 {
 #pragma region Inline Definitions
 
-	template<typename T, typename TDefaultValueFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
-	inline bool TTimedCircularBuffer<T, TDefaultValueFunc>::IsEmpty() const
+	template<typename T, typename TDefaultValueFunc, typename TDefaultThresholdFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
+	inline bool TTimedCircularBuffer<T, TDefaultValueFunc, TDefaultThresholdFunc>::IsEmpty() const
 	{
 		return Count == 0;
 	}
 
-	template<typename T, typename TDefaultValueFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
-	inline bool TTimedCircularBuffer<T, TDefaultValueFunc>::IsFull() const
+	template<typename T, typename TDefaultValueFunc, typename TDefaultThresholdFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
+	inline bool TTimedCircularBuffer<T, TDefaultValueFunc, TDefaultThresholdFunc>::IsFull() const
 	{
 		return Count >= Capacity();
 	}
 	 
-	template<typename T, typename TDefaultValueFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
-	inline void TTimedCircularBuffer<T, TDefaultValueFunc>::Add(T&& Value) requires std::movable<T>
+	template<typename T, typename TDefaultValueFunc, typename TDefaultThresholdFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
+	inline void TTimedCircularBuffer<T, TDefaultValueFunc, TDefaultThresholdFunc>::Add(T&& Value) requires std::movable<T>
 	{
 		Buffer[NextIndex()] = std::move(Value);
 		++Count;
@@ -126,59 +129,59 @@ namespace TR
 		// This is merely theoretical and actual usage will never overflow
 	}
 
-	template<typename T, typename TDefaultValueFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
-	inline void TTimedCircularBuffer<T, TDefaultValueFunc>::Add(const T& Value) requires std::assignable_from<T&, T>
+	template<typename T, typename TDefaultValueFunc, typename TDefaultThresholdFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
+	inline void TTimedCircularBuffer<T, TDefaultValueFunc, TDefaultThresholdFunc>::Add(const T& Value) requires std::assignable_from<T&, T>
 	{
 		Buffer[NextIndex()] = Value;
 		++Count;
 	}
 
-	template<typename T, typename TDefaultValueFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
-	inline void TTimedCircularBuffer<T, TDefaultValueFunc>::Clear()
+	template<typename T, typename TDefaultValueFunc, typename TDefaultThresholdFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
+	inline void TTimedCircularBuffer<T, TDefaultValueFunc, TDefaultThresholdFunc>::Clear()
 	{
 		Count = 0;
 	}
 
-	template<typename T, typename TDefaultValueFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
-	inline uint32 TTimedCircularBuffer<T, TDefaultValueFunc>::NextIndex() const
+	template<typename T, typename TDefaultValueFunc, typename TDefaultThresholdFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
+	inline uint32 TTimedCircularBuffer<T, TDefaultValueFunc, TDefaultThresholdFunc>::NextIndex() const
 	{
 		return Count % Capacity();
 	}
 
-	template<typename T, typename TDefaultValueFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
+	template<typename T, typename TDefaultValueFunc, typename TDefaultThresholdFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
 	template<typename TThreshold, typename TFunc>
-	inline bool TTimedCircularBuffer<T, TDefaultValueFunc>::IsZero(const TThreshold& Threshold, const TFunc& Func) const
+	inline bool TTimedCircularBuffer<T, TDefaultValueFunc, TDefaultThresholdFunc>::IsZero(const TThreshold& Threshold, const TFunc& Func) const
 		requires CircularBufferSumConcept<T>&& CircularBufferMangitudeConcept<T, TFunc, TThreshold>
 	{
 		return Func(Sum()) <= Threshold;
 	}
 
-	template<typename T, typename TDefaultValueFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
-	inline T TTimedCircularBuffer<T, TDefaultValueFunc>::Average() const requires CircularBufferAverageConcept<T>
+	template<typename T, typename TDefaultValueFunc, typename TDefaultThresholdFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
+	inline T TTimedCircularBuffer<T, TDefaultValueFunc, TDefaultThresholdFunc>::Average() const requires CircularBufferAverageConcept<T>
 	{
 		const auto NumElements = Size();
 		return NumElements > 0 ? Sum() / NumElements : (TDefaultValueFunc{})();
 	}
 
-	template<typename T, typename TDefaultValueFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
-	inline uint32 TTimedCircularBuffer<T, TDefaultValueFunc>::Capacity() const
+	template<typename T, typename TDefaultValueFunc, typename TDefaultThresholdFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
+	inline uint32 TTimedCircularBuffer<T, TDefaultValueFunc, TDefaultThresholdFunc>::Capacity() const
 	{
 		return Buffer.Num();
 	}
 
-	template<typename T, typename TDefaultValueFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
-	inline uint32 TTimedCircularBuffer<T, TDefaultValueFunc>::Size() const
+	template<typename T, typename TDefaultValueFunc, typename TDefaultThresholdFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
+	inline uint32 TTimedCircularBuffer<T, TDefaultValueFunc, TDefaultThresholdFunc>::Size() const
 	{
 		return FMath::Min(Count, Capacity());
 	}
 
-	template<typename T, typename TDefaultValueFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
-	inline TTimedCircularBuffer<T, TDefaultValueFunc>::TTimedCircularBuffer() : TTimedCircularBuffer(1) {}
+	template<typename T, typename TDefaultValueFunc, typename TDefaultThresholdFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
+	inline TTimedCircularBuffer<T, TDefaultValueFunc, TDefaultThresholdFunc>::TTimedCircularBuffer() : TTimedCircularBuffer(1) {}
 
 #pragma endregion Inline Definitions
 
-	template<typename T, typename TDefaultValueFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
-	TTimedCircularBuffer<T, TDefaultValueFunc>::TTimedCircularBuffer(float MeasurementIntervalSeconds, float ExpectedAddRateSeconds)
+	template<typename T, typename TDefaultValueFunc, typename TDefaultThresholdFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
+	TTimedCircularBuffer<T, TDefaultValueFunc, TDefaultThresholdFunc>::TTimedCircularBuffer(float MeasurementIntervalSeconds, float ExpectedAddRateSeconds)
 	{
 		const auto BufferSize = FMath::CeilToInt32(MeasurementIntervalSeconds / ExpectedAddRateSeconds);
 
@@ -188,16 +191,16 @@ namespace TR
 		Buffer.AddZeroed(BufferSize);
 	}
 
-	template<typename T, typename TDefaultValueFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
-	TTimedCircularBuffer<T, TDefaultValueFunc>::TTimedCircularBuffer(int32 NumSamples)
+	template<typename T, typename TDefaultValueFunc, typename TDefaultThresholdFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
+	TTimedCircularBuffer<T, TDefaultValueFunc, TDefaultThresholdFunc>::TTimedCircularBuffer(int32 NumSamples)
 	{
 		checkf(NumSamples > 0, TEXT("NumSamples=%d"), NumSamples);
 
 		Buffer.AddZeroed(NumSamples);
 	}
 
-	template<typename T, typename TDefaultValueFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
-	T TTimedCircularBuffer<T, TDefaultValueFunc>::Sum() const requires CircularBufferSumConcept<T>
+	template<typename T, typename TDefaultValueFunc, typename TDefaultThresholdFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
+	T TTimedCircularBuffer<T, TDefaultValueFunc, TDefaultThresholdFunc>::Sum() const requires CircularBufferSumConcept<T>
 	{
 		T SumValue{ (TDefaultValueFunc{})()};
 
@@ -209,8 +212,8 @@ namespace TR
 		return SumValue;
 	}
 
-	template<typename T, typename TDefaultValueFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
-	void TTimedCircularBuffer<T, TDefaultValueFunc>::ClearAndResize(int32 NewNumSamples)
+	template<typename T, typename TDefaultValueFunc, typename TDefaultThresholdFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
+	void TTimedCircularBuffer<T, TDefaultValueFunc, TDefaultThresholdFunc>::ClearAndResize(int32 NewNumSamples)
 	{
 		checkf(NewNumSamples > 0, TEXT("NewNumSamples=%d"), NewNumSamples);
 

@@ -89,7 +89,11 @@ private:
 	
 private:
 	
-	using FVectorBuffer = TR::TTimedCircularBuffer < FVector, decltype([]() { return FVector{ ForceInitToZero }; }) > ;
+	using FVectorBuffer = TR::TTimedCircularBuffer <
+		FVector,
+		decltype([]() { return FVector{ ForceInitToZero }; }),
+		decltype([](const FVector& V) { return FMath::Max3(FMath::Abs(V.X), FMath::Abs(V.Y), FMath::Abs(V.Z)); })
+	> ;
 	mutable FVectorBuffer AimDirectionBuffer;
 
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
