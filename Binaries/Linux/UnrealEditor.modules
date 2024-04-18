@@ -1,0 +1,15 @@
+{
+	"BuildId": "d7303168-f90e-4379-ad59-65ea82a2bd18",
+	"Modules": 
+	{
+		"TRAI": "libUnrealEditor-TRAI.so",
+		"TRCore": "libUnrealEditor-TRCore.so",
+		"TRGameplayMechanics": "libUnrealEditor-TRGameplayMechanics.so",
+		"TRItem": "libUnrealEditor-TRItem.so",
+		"TRPlayer": "libUnrealEditor-TRPlayer.so",
+		"TRSettings": "libUnrealEditor-TRSettings.so",
+		"TRTank": "libUnrealEditor-TRTank.so",
+		"TRUI": "libUnrealEditor-TRUI.so",
+		"TankRampage": "libUnrealEditor-TankRampage.so"
+	}
+}
