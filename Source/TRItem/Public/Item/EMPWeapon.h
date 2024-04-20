@@ -11,6 +11,7 @@
 class UAbilitySystemComponent;
 class UNiagaraSystem;
 class UNiagaraComponent;
+class USoundBase;
 
 
 USTRUCT()
@@ -43,6 +44,7 @@ private:
 	void ScheduleStunRemoval(float DeltaTime);
 
 	void PlayActivationVfx();
+	void PlaySfxAtActorLocation(USoundBase* Sound) const;
 
 	void ApplyEffectToEnemy(AActor* Enemy, float EffectEndGameTimeSeconds, const FGameplayTagContainer& DebuffTagsContainer);
 
@@ -80,4 +82,7 @@ private:
 
 	UPROPERTY(Category = "Effects | Enemy", EditDefaultsOnly)
 	FName EnemyRadiusName{ TEXT("Radius") };
+
+	UPROPERTY(Category = "Audio | Activation", EditDefaultsOnly)
+	TObjectPtr<USoundBase> ActivationSfx{};
 };

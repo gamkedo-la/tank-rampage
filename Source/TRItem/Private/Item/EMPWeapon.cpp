@@ -12,12 +12,15 @@
 
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Components/AudioComponent.h"
 
 #include <limits>
 
 bool UEMPWeapon::DoActivation(USceneComponent& ActivationReferenceComponent, const FName& ActivationSocketName)
 {
 	PlayActivationVfx();
+	PlaySfxAtActorLocation(ActivationSfx);
 
 	auto AffectedEnemies = SweepForAffectedEnemies();
 
@@ -277,3 +280,39 @@ UNiagaraComponent* UEMPWeapon::PlayAffectedEnemyVfx(AActor* Enemy)
 }
 
 #pragma endregion Niagara Vfx
+
+void UEMPWeapon::PlaySfxAtActorLocation(USoundBase* Sound) const
+{
+	if (!ensure(Sound))
+	{
+		return;
+	}
+
+	auto ComponentOwner = GetOwner();
+	if (!ensure(ComponentOwner))
+	{
+		return;
+	}
+
+	// The owner of the audio component is derived from the world context object and this will control the sound concurrency
+	auto SpawnedAudioComponent = UGameplayStatics::SpawnSoundAtLocation(
+		ComponentOwner,
+		Sound,
+		ComponentOwner->GetActorLocation(), ComponentOwner->GetActorRotation()
+	);
+
+	if (!SpawnedAudioComponent)
+	{
+		// This is not an error condition as the component may not spawn if the sound is not audible, for example it attenuates below a threshold based on distance
+		UE_VLOG_UELOG(this, LogTRItem, Log,
+			TEXT("%s-%s: PlaySfxAtActorLocation - Unable to spawn audio component for sfx=%s"),
+			*GetName(), *LoggingUtils::GetName(GetOwner()), *Sound->GetName());
+		return;
+	}
+
+	UE_VLOG_UELOG(this, LogTRItem, Log,
+		TEXT("%s-%s: PlaySfxAtActorLocation - Playing sfx=%s"),
+		*GetName(), *LoggingUtils::GetName(GetOwner()), *Sound->GetName());
+
+	SpawnedAudioComponent->bAutoDestroy = true;
+}
