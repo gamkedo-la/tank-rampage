@@ -109,6 +109,8 @@ bool UItem::Activate(USceneComponent* ActivationReferenceComponent, const FName&
 
 	LastActivationTimeSeconds = World->GetTimeSeconds();
 
+	RegisterCooldownTimer();
+
 	return true;
 }
 
@@ -136,6 +138,13 @@ void UItem::Initialize(APawn* InOwner, const FItemConfigData& ItemConfigData)
 
 	NativeInitialize(ItemConfigData);
 	BlueprintInitialize(ItemConfigData);
+}
+
+void UItem::BeginDestroy()
+{
+	Super::BeginDestroy();
+
+	UnregisterCooldownTimer();
 }
 
 void UItem::SetLevel(int32 Level)
@@ -176,3 +185,49 @@ void UItem::NativeToString(FString& str) const
 {
 	str.Appendf(TEXT("Level %d; CooldownTime=%.1fs"), GetLevel(), GetCooldownTimeRemaining());
 }
+
+#pragma region Cooldown Notify
+
+void UItem::RegisterCooldownTimer()
+{
+	if (!bRequestsCooldownNotify || CooldownTimeSeconds <= 0)
+	{
+		return;
+	}
+
+	UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s-%s: RegisterCooldownTimer: CooldownTime=%fs"),
+		*LoggingUtils::GetName(GetOuter()), *GetName(), CooldownTimeSeconds);
+
+	auto World = GetWorld();
+	check(World);
+
+	World->GetTimerManager().SetTimer(CooldownTimerHandle, this, &ThisClass::NotifyCooldownComplete, CooldownTimeSeconds);
+}
+
+void UItem::UnregisterCooldownTimer()
+{
+	if (!bRequestsCooldownNotify)
+	{
+		return;
+	}
+
+	if (auto World = GetWorld(); World)
+	{
+		World->GetTimerManager().ClearTimer(CooldownTimerHandle);
+	}
+	else
+	{
+		CooldownTimerHandle.Invalidate();
+	}
+}
+
+void UItem::NotifyCooldownComplete()
+{
+	UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s-%s: NotifyCooldownComplete"),
+		*LoggingUtils::GetName(GetOuter()), *GetName());
+
+	OnCooldownComplete();
+	BlueprintCooldownComplete();
+}
+
+#pragma endregion Cooldown Notify

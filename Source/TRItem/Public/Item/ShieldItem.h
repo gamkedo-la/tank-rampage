@@ -6,6 +6,8 @@
 #include "Item/PassiveEffect.h"
 #include "ShieldItem.generated.h"
 
+class USoundBase;
+
 /**
  * 
  */
@@ -15,11 +17,15 @@ class TRITEM_API UShieldItem : public UPassiveEffect
 	GENERATED_BODY()
 
 public:
+	UShieldItem();
+
 	virtual bool CanBeActivated() const override;
 
 protected:
 	virtual void NativeInitialize(const FItemConfigData& ItemConfigData) override;
 	virtual bool DoActivation(USceneComponent& ActivationReferenceComponent, const FName& ActivationSocketName) override;
+
+	virtual void OnCooldownComplete() override;
 
 private:
 
@@ -27,7 +33,12 @@ private:
 
 	void Recharge();
 
+	void PlayActivationSfx(USoundBase* Sound) const;
+
 private:
 
 	int32 TimesUsed{};
+
+	UPROPERTY(Category = "Audio | Activation", EditDefaultsOnly)
+	TObjectPtr<USoundBase> ActivationSfx{};
 };

@@ -100,6 +100,26 @@ protected:
 
 	float GetLastActivationTimeSeconds() const;
 
+	/*
+	* Set bRequestsCooldownNotify to true to enable this callback.
+	*/
+	UFUNCTION(BlueprintImplementableEvent)
+	void BlueprintCooldownComplete();
+
+	/*
+	 * Set bRequestsCooldownNotify to true to enable this callback.
+    */
+	virtual void OnCooldownComplete() {}
+
+	virtual void BeginDestroy() override;
+
+private:
+	void RegisterCooldownTimer();
+	void UnregisterCooldownTimer();
+
+	UFUNCTION()
+	void NotifyCooldownComplete();
+
 protected:
 
 	UPROPERTY(Category = "Cooldown", BlueprintReadWrite)
@@ -107,6 +127,9 @@ protected:
 
 	UPROPERTY(Category = "Config", EditDefaultsOnly)
 	EItemType ItemType{ EItemType::Max };
+
+	UPROPERTY(Category = "Notification", EditDefaultsOnly)
+	bool bRequestsCooldownNotify{};
 
 private:
 	float LastActivationTimeSeconds{ -1.0f };
@@ -121,6 +144,8 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<APawn> Owner{};
+
+	FTimerHandle CooldownTimerHandle{};
 };
 
 #pragma region Inline Definitions

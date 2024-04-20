@@ -8,9 +8,23 @@
 #include "TRItemLogging.h"
 #include "VisualLogger/VisualLogger.h"
 
+#include "Kismet/GameplayStatics.h"
+#include "Components/AudioComponent.h"
+
+#include "Kismet/GameplayStatics.h"
+#include "Components/AudioComponent.h"
+
+
+UShieldItem::UShieldItem()
+{
+	bRequestsCooldownNotify = true;
+}
+
 bool UShieldItem::CanBeActivated() const
 {
 	// Use inherited top-level item class functionality that checks for cooldown
+	// "Activation" here is used for refilling the shield and the cooldown period is the waiting time before the shield is ready again
+	// So this is the reverse of how cooldown works with most other items because "Activation" is effectively engaging the cooldown period
 	return UItem::CanBeActivated();
 }
 
@@ -43,6 +57,13 @@ bool UShieldItem::DoActivation(USceneComponent& ActivationReferenceComponent, co
 	CurrentValue = MaxValue;
 
 	return true;
+}
+
+void UShieldItem::OnCooldownComplete()
+{
+	Super::OnCooldownComplete();
+
+	PlayActivationSfx(ActivationSfx);
 }
 
 float UShieldItem::OnCalculateDamage(float Damage, const AActor* DamagedActor, const AController* InstigatedBy, const AActor* DamageCauser)
@@ -82,5 +103,45 @@ float UShieldItem::OnCalculateDamage(float Damage, const AActor* DamagedActor, c
 
 void UShieldItem::Recharge()
 {
+	// Guaranteed to succeed since it is called from OnCalculateDamage after checking if can be activated
 	ActivateOnRootComponent();
+}
+
+void UShieldItem::PlayActivationSfx(USoundBase* Sound) const
+{
+	if (!ensure(Sound))
+	{
+		return;
+	}
+
+	auto ComponentOwner = GetOwner();
+	if (!ensure(ComponentOwner))
+	{
+		return;
+	}
+
+	// The owner of the audio component is derived from the world context object and this will control the sound concurrency
+	auto SpawnedAudioComponent = UGameplayStatics::SpawnSoundAttached(
+		Sound,
+		ComponentOwner->GetRootComponent(),
+		NAME_None,
+		FVector::ZeroVector,
+		EAttachLocation::KeepRelativeOffset,
+		true
+	);
+
+	if (!SpawnedAudioComponent)
+	{
+		// This is not an error condition as the component may not spawn if the sound is not audible, for example it attenuates below a threshold based on distance
+		UE_VLOG_UELOG(this, LogTRItem, Log,
+			TEXT("%s-%s: PlayActivationSfx - Unable to spawn audio component for sfx=%s"),
+			*GetName(), *LoggingUtils::GetName(GetOwner()), *Sound->GetName());
+		return;
+	}
+
+	UE_VLOG_UELOG(this, LogTRItem, Log,
+		TEXT("%s-%s: PlayActivationSfx - Playing sfx=%s"),
+		*GetName(), *LoggingUtils::GetName(GetOwner()), *Sound->GetName());
+
+	SpawnedAudioComponent->bAutoDestroy = true;
 }
