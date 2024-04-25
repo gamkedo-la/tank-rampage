@@ -6,7 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "SpringWheel.generated.h"
 
-class UStaticMeshComponent;
+class USphereComponent;
 class UPhysicsConstraintComponent;
 
 UCLASS()
@@ -26,8 +26,14 @@ private:
 private:
 
 	UPROPERTY(Category = "Components", VisibleDefaultsOnly)
-	TObjectPtr<UPhysicsConstraintComponent> MassWheelConstraint{};
+	TObjectPtr<UPhysicsConstraintComponent> MassAxleConstraint{};
 
 	UPROPERTY(Category = "Components", VisibleDefaultsOnly)
-	TObjectPtr<UStaticMeshComponent> Wheel{};
+	TObjectPtr<USphereComponent> WheelComponent{};
+
+	UPROPERTY(Category = "Components", VisibleDefaultsOnly)
+	TObjectPtr<USphereComponent> AxleComponent{};
+
+	UPROPERTY(Category = "Components", VisibleDefaultsOnly)
+	TObjectPtr<UPhysicsConstraintComponent> AxleWheelConstraint{};
 };

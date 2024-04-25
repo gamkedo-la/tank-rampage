@@ -3,7 +3,7 @@
 
 #include "Suspension/SpringWheel.h"
 
-#include "Components/StaticMeshComponent.h"
+#include "Components/SphereComponent.h"
 #include "PhysicsEngine/PhysicsConstraintComponent.h"
 
 #include "TRTankLogging.h"
@@ -15,10 +15,18 @@ ASpringWheel::ASpringWheel()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	RootComponent = MassWheelConstraint = CreateDefaultSubobject<UPhysicsConstraintComponent>(TEXT("MassWheelConstraint"));
+	// Note that renaming the subobject itself is not supported with core redirects
+	RootComponent = MassAxleConstraint = CreateDefaultSubobject<UPhysicsConstraintComponent>(TEXT("MassWheelConstraint"));
 
-	Wheel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Wheel"));
-	Wheel->SetupAttachment(MassWheelConstraint);
+	// Needed to rename because details panel was blank after changing UStaticMeshComponent->USphereComponent so needed to "reset it"
+	AxleComponent = CreateDefaultSubobject<USphereComponent>(TEXT("Axle"));
+	AxleComponent->SetupAttachment(MassAxleConstraint);
+
+	WheelComponent = CreateDefaultSubobject<USphereComponent>(TEXT("Wheel"));
+	WheelComponent->SetupAttachment(AxleComponent);
+
+	AxleWheelConstraint = CreateDefaultSubobject<UPhysicsConstraintComponent>(TEXT("AxleWheelConstraint"));
+	AxleWheelConstraint->SetupAttachment(AxleComponent);
 }
 
 // Called when the game starts or when spawned
@@ -35,7 +43,9 @@ void ASpringWheel::SetupConstraint()
 	{
 		if (auto ParentPrimitiveComponent = AttachParent->FindComponentByClass<UPrimitiveComponent>(); ParentPrimitiveComponent)
 		{
-			MassWheelConstraint->SetConstrainedComponents(ParentPrimitiveComponent, NAME_None, Wheel, NAME_None);
+			MassAxleConstraint->SetConstrainedComponents(ParentPrimitiveComponent, NAME_None, AxleComponent, NAME_None);
+			AxleWheelConstraint->SetConstrainedComponents(AxleComponent, NAME_None, WheelComponent, NAME_None);
+
 			UE_VLOG_UELOG(AttachParent, LogTRTank, Log, TEXT("%s: SetupConstraint - Attached to parent %s on %s"), *GetName(), *AttachParent->GetName(), *ParentPrimitiveComponent->GetName());
 		}
 		else
