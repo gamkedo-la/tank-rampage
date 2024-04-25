@@ -19,9 +19,6 @@ ASpringWheel::ASpringWheel()
 
 	Wheel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Wheel"));
 	Wheel->SetupAttachment(MassWheelConstraint);
-
-	Mass = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mass"));
-	Mass->SetupAttachment(MassWheelConstraint);
 }
 
 // Called when the game starts or when spawned
@@ -29,12 +26,25 @@ void ASpringWheel::BeginPlay()
 {
 	Super::BeginPlay();
 
+	SetupConstraint();
+}
+
+void ASpringWheel::SetupConstraint()
+{
 	if (auto AttachParent = GetAttachParentActor(); AttachParent)
 	{
-		UE_VLOG_UELOG(AttachParent, LogTRTank, Log, TEXT("%s: Attached to parent %s"), *GetName(), *AttachParent->GetName());
+		if (auto ParentPrimitiveComponent = AttachParent->FindComponentByClass<UPrimitiveComponent>(); ParentPrimitiveComponent)
+		{
+			MassWheelConstraint->SetConstrainedComponents(ParentPrimitiveComponent, NAME_None, Wheel, NAME_None);
+			UE_VLOG_UELOG(AttachParent, LogTRTank, Log, TEXT("%s: SetupConstraint - Attached to parent %s on %s"), *GetName(), *AttachParent->GetName(), *ParentPrimitiveComponent->GetName());
+		}
+		else
+		{
+			UE_VLOG_UELOG(AttachParent, LogTRTank, Warning, TEXT("%s: SetupConstraint - Attached to parent %s has no primitive components!"), *GetName(), *AttachParent->GetName());
+		}
 	}
 	else
 	{
-		UE_VLOG_UELOG(this, LogTRTank, Warning, TEXT("%s: Is not attached to another actor!"), *GetName());
+		UE_VLOG_UELOG(this, LogTRTank, Warning, TEXT("%s: SetupConstraint - Is not attached to another actor!"), *GetName());
 	}
 }

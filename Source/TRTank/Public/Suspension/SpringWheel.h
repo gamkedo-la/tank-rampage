@@ -21,13 +21,13 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
+	void SetupConstraint();
+
+private:
 
 	UPROPERTY(Category = "Components", VisibleDefaultsOnly)
 	TObjectPtr<UPhysicsConstraintComponent> MassWheelConstraint{};
 
 	UPROPERTY(Category = "Components", VisibleDefaultsOnly)
 	TObjectPtr<UStaticMeshComponent> Wheel{};
-
-	UPROPERTY(Category = "Components", VisibleDefaultsOnly)
-	TObjectPtr<UStaticMeshComponent> Mass{};
 };
