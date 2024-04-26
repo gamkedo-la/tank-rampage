@@ -5,6 +5,8 @@
 
 #include "TankSockets.h"
 #include "AbilitySystem/TRGameplayTags.h"
+#include "Suspension/SpringWheel.h"
+#include "Components/SpawnPoint.h"
 
 #include "Logging/LoggingUtils.h"
 #include "TRTankLogging.h"
@@ -48,11 +50,22 @@ void UTankTrackComponent::InitializeComponent()
 void UTankTrackComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	auto World = GetWorld();
+	check(World);
+
+	// Next tick as the wheels get spawned on begin play
+	World->GetTimerManager().SetTimerForNextTick(this, &ThisClass::InitWheels);
 }
 
 void UTankTrackComponent::SetThrottle(float InThrottle)
 {
 	CurrentThrottle = FMath::Clamp(InThrottle + CurrentThrottle, -1.0f, 1.0f);
+
+	if (HasSuspension() && IsGrounded())
+	{
+		DriveTrackWithSuspension(CurrentThrottle);
+	}
 }
 
 bool UTankTrackComponent::IsGrounded() const
@@ -87,14 +100,21 @@ void UTankTrackComponent::DescribeSelfToVisLog(FVisualLogEntry* Snapshot) const
 	FVisualLogStatusCategory Category;
 	Category.Category = TEXT("Tank Track Component");
 
+	const bool bSuspension = HasSuspension();
+
 	Category.Add(TEXT("MaxDrivingForceMultiplier"), FString::Printf(TEXT("%.1f"), GetAdjustedMaxDrivingForce() / TrackMaxDrivingForce));
+	Category.Add(TEXT("Suspension"), LoggingUtils::GetBoolString(bSuspension));
+	if (bSuspension)
+	{
+		Category.Add(TEXT("Wheels"), FString::Printf(TEXT("%d"), Wheels.Num()));
+	}
 
 	Snapshot->Status.Add(Category);
 }
 
 #endif
 
-void UTankTrackComponent::DriveTrack(float Throttle)
+void UTankTrackComponent::DriveTrackNoSuspension( float Throttle)
 {
 	const auto& ForceLocation = GetSocketLocation(TankSockets::TreadThrottle);
 	auto ForceRotation = GetSocketTransform(TankSockets::TreadThrottle, ERelativeTransformSpace::RTS_Component).GetRotation();
@@ -116,11 +136,38 @@ void UTankTrackComponent::DriveTrack(float Throttle)
 		return;
 	}
 
-	UE_LOG(LogTRTank, VeryVerbose, TEXT("%s-%s: SetThrottle: %f"),
-		*LoggingUtils::GetName(GetOwner()), *GetName(), Throttle);
 	TR::DebugUtils::DrawForceAtLocation(RootComponent, ForceApplied, ForceLocation);
 
 	RootComponent->AddForceAtLocation(ForceApplied, ForceLocation);
+
+	UE_LOG(LogTRTank, VeryVerbose, TEXT("%s-%s: DriveTrackNoSuspension: Throttle=%f; ForceApplied=%s; ForceLocation=%s"),
+		*LoggingUtils::GetName(GetOwner()), *GetName(), Throttle, *ForceApplied.ToCompactString(), *ForceLocation.ToCompactString());
+
+	// Slippage correction
+	ApplySidewaysForce(GetWorld()->GetDeltaSeconds());
+}
+
+void UTankTrackComponent::DriveTrackWithSuspension(float Throttle)
+{
+	const auto ForceApplied = CurrentThrottle * GetAdjustedMaxDrivingForce();
+
+	checkf(!Wheels.IsEmpty(), TEXT("%s: DriveTrackWithSuspension called with no wheels!"), *GetName());
+
+	const auto ForcePerWheels = ForceApplied / Wheels.Num();
+
+	for (const auto Wheel : Wheels)
+	{
+		check(Wheel);
+		Wheel->AddDrivingForce(ForcePerWheels);
+	}
+
+	UE_LOG(LogTRTank, VeryVerbose, TEXT("%s-%s: DriveTrackWithSuspension: Throttle=%f; Wheels=%d; ForcePerWheels=%f"),
+		*LoggingUtils::GetName(GetOwner()), *GetName(), Throttle, Wheels.Num(), ForcePerWheels);
+}
+
+bool UTankTrackComponent::HasSuspension() const
+{
+	return !Wheels.IsEmpty();
 }
 
 float UTankTrackComponent::GetAdjustedMaxDrivingForce() const
@@ -132,6 +179,47 @@ float UTankTrackComponent::GetAdjustedMaxDrivingForce() const
 		*LoggingUtils::GetName(GetOwner()), *GetName(), DrivingForceMultiplier, AdjustedMaxDrivingForce);
 
 	return AdjustedMaxDrivingForce;
+}
+
+void UTankTrackComponent::InitWheels()
+{
+	Wheels = GetWheels();
+
+	UE_VLOG_UELOG(GetOwner(), LogTRTank, Log, TEXT("%s: InitWheels: Found %d wheel%s"), *GetName(), Wheels.Num(), LoggingUtils::Pluralize(Wheels.Num()));
+
+	// We do not need tick when driving with suspension
+	if (HasSuspension())
+	{
+		// Disabling tick if we don't want to draw it to visualize the COM
+#if !TR_DEBUG_ENABLED
+		SetComponentTickEnabled(false);
+#endif
+	}
+}
+
+TArray<ASpringWheel*> UTankTrackComponent::GetWheels() const
+{
+	TArray<USceneComponent*> ChildComponents;
+	GetChildrenComponents(true, ChildComponents);
+
+	TArray<ASpringWheel*> DiscoveredWheels;
+
+	// Wheels are spawned by the spawn point child components
+	for (auto Component : ChildComponents)
+	{
+		auto WheelSpawner = Cast<USpawnPoint>(Component);
+		if (!WheelSpawner)
+		{
+			continue;
+		}
+
+		if (auto Wheel = Cast<ASpringWheel>(WheelSpawner->GetSpawnedActor()); Wheel)
+		{
+			DiscoveredWheels.Add(Wheel);
+		}
+	}
+
+	return DiscoveredWheels;
 }
 
 void UTankTrackComponent::ApplySidewaysForce(float DeltaTime)
@@ -177,11 +265,13 @@ void UTankTrackComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 
 	TR::DebugUtils::DrawCenterOfMass(Cast<UPrimitiveComponent>(GetOwner()->GetRootComponent()));
 
-	if(IsGrounded())
+	if (!HasSuspension())
 	{
-		DriveTrack(CurrentThrottle);
-		ApplySidewaysForce(GetWorld()->GetDeltaSeconds());
-	}
+		if (IsGrounded())
+		{
+			DriveTrackNoSuspension(CurrentThrottle);
+		}
 
-	CurrentThrottle = 0;
+		CurrentThrottle = 0;
+	}
 }

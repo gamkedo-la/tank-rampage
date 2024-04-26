@@ -39,5 +39,5 @@ void USpawnPoint::BeginPlay()
 
 	Actor->AttachToComponent(this, FAttachmentTransformRules::KeepWorldTransform);
 
-	UGameplayStatics::FinishSpawningActor(Actor, SpawnTransform);
+	SpawnedActor = UGameplayStatics::FinishSpawningActor(Actor, SpawnTransform);
 }

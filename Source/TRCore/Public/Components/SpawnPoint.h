@@ -15,10 +15,24 @@ class TRCORE_API USpawnPoint : public USceneComponent
 public:	
 	USpawnPoint();
 
+	AActor* GetSpawnedActor() const;
+
 protected:
 	virtual void BeginPlay() override;
 
 private:
 	UPROPERTY(Category="Spawn", EditDefaultsOnly)
 	TSubclassOf<AActor> ActorToSpawn{};
+
+	UPROPERTY(Transient)
+	TObjectPtr<AActor> SpawnedActor{};
 };
+
+#pragma region Inline Definitions
+
+FORCEINLINE AActor* USpawnPoint::GetSpawnedActor() const
+{
+	return SpawnedActor;
+}
+
+#pragma endregion Inline Definitions

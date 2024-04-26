@@ -29,6 +29,13 @@ ASpringWheel::ASpringWheel()
 	AxleWheelConstraint->SetupAttachment(AxleComponent);
 }
 
+void ASpringWheel::AddDrivingForce(float ForceMagnitude)
+{
+	UE_VLOG_UELOG(GetLogContext(), LogTRTank, VeryVerbose, TEXT("%s-%s: AddDrivingForce: %f"), *GetName(), *LoggingUtils::GetName(AttachParent));
+
+	WheelComponent->AddForce(AxleComponent->GetForwardVector() * ForceMagnitude);
+}
+
 // Called when the game starts or when spawned
 void ASpringWheel::BeginPlay()
 {
@@ -39,22 +46,53 @@ void ASpringWheel::BeginPlay()
 
 void ASpringWheel::SetupConstraint()
 {
-	if (auto AttachParent = GetAttachParentActor(); AttachParent)
+	AttachParent = GetAttachParentActor();
+
+	if (AttachParent)
 	{
 		if (auto ParentPrimitiveComponent = AttachParent->FindComponentByClass<UPrimitiveComponent>(); ParentPrimitiveComponent)
 		{
 			MassAxleConstraint->SetConstrainedComponents(ParentPrimitiveComponent, NAME_None, AxleComponent, NAME_None);
 			AxleWheelConstraint->SetConstrainedComponents(AxleComponent, NAME_None, WheelComponent, NAME_None);
 
-			UE_VLOG_UELOG(AttachParent, LogTRTank, Log, TEXT("%s: SetupConstraint - Attached to parent %s on %s"), *GetName(), *AttachParent->GetName(), *ParentPrimitiveComponent->GetName());
+			UE_VLOG_UELOG(GetLogContext(), LogTRTank, Log, TEXT("%s: SetupConstraint - Attached to parent %s on %s"), *GetName(), *AttachParent->GetName(), *ParentPrimitiveComponent->GetName());
 		}
 		else
 		{
-			UE_VLOG_UELOG(AttachParent, LogTRTank, Warning, TEXT("%s: SetupConstraint - Attached to parent %s has no primitive components!"), *GetName(), *AttachParent->GetName());
+			UE_VLOG_UELOG(GetLogContext(), LogTRTank, Warning, TEXT("%s: SetupConstraint - Attached to parent %s has no primitive components!"), *GetName(), *AttachParent->GetName());
 		}
 	}
 	else
 	{
-		UE_VLOG_UELOG(this, LogTRTank, Warning, TEXT("%s: SetupConstraint - Is not attached to another actor!"), *GetName());
+		UE_VLOG_UELOG(GetLogContext(), LogTRTank, Warning, TEXT("%s: SetupConstraint - Is not attached to another actor!"), *GetName());
 	}
 }
+
+const UObject* ASpringWheel::GetLogContext() const
+{
+	return AttachParent ? AttachParent.Get() : this;
+}
+
+#pragma region Visual Logger
+
+#if ENABLE_VISUAL_LOG
+
+void ASpringWheel::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
+{
+	auto World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	const auto CurrentTimeSeconds = World->GetTimeSeconds();
+
+	// Get reference to the current category
+	const int32 CatIndex = Snapshot->Status.AddZeroed();
+	FVisualLogStatusCategory& Category = Snapshot->Status[CatIndex];
+	Category.Category = FString::Printf(TEXT("Wheel (%s)"), *GetName());
+}
+
+#endif
+
+#pragma endregion Visual Logger

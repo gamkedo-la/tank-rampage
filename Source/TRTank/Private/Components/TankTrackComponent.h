@@ -6,6 +6,8 @@
 #include "Components/StaticMeshComponent.h"
 #include "TankTrackComponent.generated.h"
 
+class ASpringWheel;
+
 /**
  * Tank track is used to set maximum driving force, and to apply forces to the tank.
  */
@@ -39,9 +41,16 @@ protected:
 
 private:
 
-	void DriveTrack(float Throttle);
-
 	float GetAdjustedMaxDrivingForce() const;
+
+	void InitWheels();
+
+	void DriveTrackNoSuspension(float Throttle);
+	void DriveTrackWithSuspension( float Throttle);
+
+	bool HasSuspension() const;
+
+	TArray<ASpringWheel*> GetWheels() const;
 
 private:
 
@@ -49,4 +58,7 @@ private:
 	float TrackMaxDrivingForce{ 4.0e5f };
 
 	float CurrentThrottle{};
+
+	UPROPERTY(Transient)
+	TArray<ASpringWheel*> Wheels;
 };
