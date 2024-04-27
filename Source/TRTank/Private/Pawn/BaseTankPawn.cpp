@@ -16,6 +16,8 @@
 #include "Camera/CameraComponent.h"
 #include "Components/StaticMeshComponent.h"
 
+#include "Kismet/GameplayStatics.h"
+
 #include "TankSockets.h"
 #include "Item/Weapon.h"
 #include "Item/ItemInventory.h"
@@ -30,6 +32,8 @@
 #include "AbilitySystem/TRAttributeSet.h"
 
 #include "TRTags.h"
+
+#include <limits>
 
 namespace
 {
@@ -151,6 +155,19 @@ float ABaseTankPawn::InternalTakeRadialDamage(float Damage, FRadialDamageEvent c
 float ABaseTankPawn::AdjustDamage(float Damage, AController* EventInstigator, AActor* DamageCauser) const
 {
 	return CalculateAdjustedDamage(Damage, this, EventInstigator, DamageCauser);
+}
+
+void ABaseTankPawn::Kill()
+{
+	if (!HealthComponent)
+	{
+		return;
+	}
+
+	UE_VLOG_UELOG(this, LogTRTank, Log, TEXT("%s: Kill"), *GetName());
+
+	// overkill to make sure tank doesn't survive
+	UGameplayStatics::ApplyPointDamage(this, std::numeric_limits<float>::max() / 2, -GetActorForwardVector(), {}, nullptr, this, nullptr);
 }
 
 void ABaseTankPawn::UpdateSpringArmTickEnabled()
@@ -295,6 +312,13 @@ void ABaseTankPawn::TurnRight(float Throw)
 {
 	check(TankMovementComponent);
 	TankMovementComponent->TurnRight(Throw);
+}
+
+void ABaseTankPawn::FellOutOfWorld(const UDamageType& dmgType)
+{
+	UE_VLOG_UELOG(this, LogTRTank, Display, TEXT("%s: FellOutOfWorld"), *GetName());
+
+	Kill();
 }
 
 #pragma region Visual Logger

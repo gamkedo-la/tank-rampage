@@ -68,6 +68,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void TurnRight(float Throw);
 
+	virtual void FellOutOfWorld(const class UDamageType& dmgType) override;
+
 	UTankAimingComponent* GetTankAimingComponent() const;
 	virtual UHealthComponent* GetHealthComponent() const override;
 
@@ -99,6 +101,11 @@ private:
 	void InitializeAttributes();
 
 	float AdjustDamage(float Damage, AController* EventInstigator, AActor* DamageCauser) const;
+
+#if WITH_EDITOR
+	UFUNCTION(CallInEditor)
+#endif
+	void Kill();
 
 protected:
 
