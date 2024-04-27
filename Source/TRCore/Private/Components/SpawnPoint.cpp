@@ -18,6 +18,11 @@ void USpawnPoint::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (!bEnabled)
+	{
+		return;
+	}
+
 	if (!ensure(ActorToSpawn))
 	{
 		return;

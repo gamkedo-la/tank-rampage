@@ -28,9 +28,16 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	virtual void Tick(float DeltaTime) override;
 private:
 	void SetupConstraint();
 	const UObject* GetLogContext() const;
+
+	bool IsGrounded() const;
+
+	void ApplyDrivingForce();
+
+	void SetupTickDependencies();
 
 private:
 
@@ -48,4 +55,9 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<AActor> AttachParent{};
+
+	UPROPERTY(EditDefaultsOnly, Category = Driving)
+	float GroundTraceExtent{ 20 };
+
+	float CurrentForce{};
 };

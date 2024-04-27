@@ -62,9 +62,10 @@ void UTankTrackComponent::SetThrottle(float InThrottle)
 {
 	CurrentThrottle = FMath::Clamp(InThrottle + CurrentThrottle, -1.0f, 1.0f);
 
-	if (HasSuspension() && IsGrounded())
+	if (HasSuspension())
 	{
 		DriveTrackWithSuspension(CurrentThrottle);
+		CurrentThrottle = 0;
 	}
 }
 
@@ -82,9 +83,10 @@ bool UTankTrackComponent::IsGrounded() const
 	FHitResult HitResult;
 
 	const auto& UpVector = GetUpVector();
+	const auto& ReferenceLocation = GetComponentLocation();
 
-	const auto StartLocation = GetComponentLocation() + UpVector * 20;
-	const auto EndLocation = GetComponentLocation() - UpVector * 20;
+	const auto StartLocation = ReferenceLocation + UpVector * GroundTraceExtent;
+	const auto EndLocation = ReferenceLocation - UpVector * GroundTraceExtent;
 
 	return World->LineTraceTestByChannel(
 		StartLocation,
@@ -110,6 +112,15 @@ void UTankTrackComponent::DescribeSelfToVisLog(FVisualLogEntry* Snapshot) const
 	}
 
 	Snapshot->Status.Add(Category);
+
+	// Need to grab wheel snapshot after adding the category
+	if (bSuspension)
+	{
+		for (auto Wheel : Wheels)
+		{
+			Wheel->GrabDebugSnapshot(Snapshot);
+		}
+	}
 }
 
 #endif
@@ -265,7 +276,7 @@ void UTankTrackComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 
 	TR::DebugUtils::DrawCenterOfMass(Cast<UPrimitiveComponent>(GetOwner()->GetRootComponent()));
 
-	if (!HasSuspension())
+	if (!FMath::IsNearlyZero(CurrentThrottle) && !HasSuspension())
 	{
 		if (IsGrounded())
 		{

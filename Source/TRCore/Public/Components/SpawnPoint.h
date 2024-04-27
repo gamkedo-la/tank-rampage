@@ -24,6 +24,9 @@ private:
 	UPROPERTY(Category="Spawn", EditDefaultsOnly)
 	TSubclassOf<AActor> ActorToSpawn{};
 
+	UPROPERTY(Category = "Spawn", EditDefaultsOnly)
+	bool bEnabled { true };
+
 	UPROPERTY(Transient)
 	TObjectPtr<AActor> SpawnedActor{};
 };

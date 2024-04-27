@@ -37,7 +37,7 @@ protected:
 	virtual void InitializeComponent() override;
 
 	void ApplySidewaysForce(float DeltaTime);
-	void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction);
+	void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 private:
 
@@ -56,6 +56,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = Throttle)
 	float TrackMaxDrivingForce{ 4.0e5f };
+
+	UPROPERTY(EditDefaultsOnly, Category = Throttle)
+	float GroundTraceExtent{ 20 };
 
 	float CurrentThrottle{};
 
