@@ -12,7 +12,6 @@
 #include "Logging/LoggingUtils.h"
 #include "VisualLogger/VisualLogger.h"
 
-// Sets default values
 ASpringWheel::ASpringWheel()
 {
 	PrimaryActorTick.bCanEverTick = true;
