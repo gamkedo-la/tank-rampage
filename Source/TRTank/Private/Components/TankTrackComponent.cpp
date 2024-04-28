@@ -45,6 +45,10 @@ void UTankTrackComponent::InitializeComponent()
 	{
 		UE_VLOG_UELOG(GetOwner(), LogTRTank, Error, TEXT("%s-%s: Owner does not have a UMovementComponent available"), *LoggingUtils::GetName(GetOwner()), *GetName());
 	}
+
+	ThrottleBuffer.ClearAndResize(ThrottleSampleTime * 60);
+	PositionBuffer.ClearAndResize(ThrottleSampleTime * 60);
+	bStuckBoostActive = false;
 }
 
 void UTankTrackComponent::BeginPlay()
@@ -184,7 +188,8 @@ bool UTankTrackComponent::HasSuspension() const
 float UTankTrackComponent::GetAdjustedMaxDrivingForce() const
 {
 	const auto DrivingForceMultiplier = TR::GameplayTags::GetAttributeMultiplierFromTag(GetOwner(), TR::GameplayTags::SpeedMultiplier);
-	const auto AdjustedMaxDrivingForce = DrivingForceMultiplier * TrackMaxDrivingForce;
+	const auto StuckBoostMultiplier = (bStuckBoostActive ? ThrottleBoostMultiplier : 1.0f);
+	const auto AdjustedMaxDrivingForce = DrivingForceMultiplier * StuckBoostMultiplier * TrackMaxDrivingForce;
 
 	UE_LOG(LogTRTank, VeryVerbose, TEXT("%s-%s: GetAdjustedMaxDrivingForce: multiplier=%f; AdjustedMaxDrivingForce=%f"),
 		*LoggingUtils::GetName(GetOwner()), *GetName(), DrivingForceMultiplier, AdjustedMaxDrivingForce);
@@ -233,6 +238,63 @@ TArray<ASpringWheel*> UTankTrackComponent::GetWheels() const
 	return DiscoveredWheels;
 }
 
+void UTankTrackComponent::CheckStuck()
+{
+	// TODO: Do this in separate component and apply to both tracks
+	ThrottleBuffer.Add(CurrentThrottle);
+	PositionBuffer.Add(GetComponentLocation());
+
+	bStuckBoostActive = IsStuck();
+}
+
+bool UTankTrackComponent::IsStuck() const
+{
+	if (!ThrottleBuffer.IsFull())
+	{
+		UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: Stuck=FALSE - insufficient samples"), *LoggingUtils::GetName(GetOwner()), *GetName());
+		return false;
+	}
+
+	check(PositionBuffer.IsFull());
+
+	const auto ThrottleAverage = ThrottleBuffer.Average();
+
+	if (FMath::Abs(ThrottleAverage) < ThrottleStuckDetectionThreshold)
+	{
+		UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: Stuck=FALSE - Abs(ThrottleAverage=%f) is below threshold=%f"), *LoggingUtils::GetName(GetOwner()), *GetName(),
+			ThrottleAverage,
+			ThrottleStuckDetectionThreshold);
+
+		return false;
+	}
+
+	// check position threshold
+	const auto DeltaSize = PositionBuffer.Delta().SizeSquared();
+
+	const bool bStuck = DeltaSize < FMath::Square(StuckDisplacementThreshold);
+
+	if (bStuck)
+	{
+		UE_VLOG_UELOG(GetOwner(), LogTRTank, Log, TEXT("%s-%s: Stuck=TRUE - Abs(ThrottleAverage=%f) is above threshold=%f and PositionDelta=%fm < Threshold=%fm"),
+			*LoggingUtils::GetName(GetOwner()), *GetName(),
+			ThrottleAverage,
+			ThrottleStuckDetectionThreshold,
+			FMath::Sqrt(DeltaSize) / 100,
+			StuckDisplacementThreshold / 100);
+	}
+	else
+	{
+		UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: Stuck=FALSE - Abs(ThrottleAverage=%f) is above threshold=%f but PositionDelta=%fm >= Threshold=%fm"),
+			*LoggingUtils::GetName(GetOwner()), *GetName(),
+			ThrottleAverage,
+			ThrottleStuckDetectionThreshold,
+			FMath::Sqrt(DeltaSize) / 100,
+			StuckDisplacementThreshold / 100)
+	}
+
+	return bStuck;
+}
+
 void UTankTrackComponent::ApplySidewaysForce(float DeltaTime)
 {
 	const auto RootComponent = Cast<UPrimitiveComponent>(GetOwner()->GetRootComponent());
@@ -275,6 +337,8 @@ void UTankTrackComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	TR::DebugUtils::DrawCenterOfMass(Cast<UPrimitiveComponent>(GetOwner()->GetRootComponent()));
+
+	CheckStuck();
 
 	if (!FMath::IsNearlyZero(CurrentThrottle) && !HasSuspension())
 	{

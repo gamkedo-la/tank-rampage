@@ -30,6 +30,14 @@ namespace TR
 	};
 
 	template<typename T>
+	concept CircularBufferDifferenceConcept = requires(T t1, T t2)
+	{
+		{
+			t1 - t2
+		} -> std::convertible_to<T>;
+	};
+
+	template<typename T>
 	concept CircularBufferAverageConcept = CircularBufferSumConcept<T> &&
 		requires(T t, std::uint32_t N)
 	{
@@ -82,6 +90,7 @@ namespace TR
 
 		T Average() const requires CircularBufferAverageConcept<T>;
 		T Sum() const requires CircularBufferSumConcept<T>;
+		T Delta() const requires CircularBufferDifferenceConcept<T>;
 
 		template<typename TThreshold, typename TFunc = TDefaultThresholdFunc>
 		bool IsZero(const TThreshold& Threshold = {}, const TFunc& Func = {}) const
@@ -210,6 +219,36 @@ namespace TR
 		}
 
 		return SumValue;
+	}
+
+	template<typename T, typename TDefaultValueFunc, typename TDefaultThresholdFunc> requires CircularBufferConcept<T, TDefaultValueFunc>
+	T TTimedCircularBuffer<T, TDefaultValueFunc, TDefaultThresholdFunc>::Delta() const requires CircularBufferDifferenceConcept<T>
+	{
+		uint32 MinIndex, MaxIndex, Len;
+
+		if (IsFull())
+		{
+			MinIndex = NextIndex();
+			MaxIndex = MinIndex > 0 ? MinIndex - 1 : Capacity() - 1;
+			Len = Capacity();
+		}
+		else
+		{
+			MinIndex = 0;
+			Len = Size();
+			MaxIndex = Len - 1;
+		}
+
+		if (Len == 0)
+		{
+			return TDefaultValueFunc{}();
+		}
+		else if (Len == 1)
+		{
+			return Buffer[MinIndex];
+		}
+
+		return Buffer[MaxIndex] - Buffer[MinIndex];
 	}
 
 	template<typename T, typename TDefaultValueFunc, typename TDefaultThresholdFunc> requires CircularBufferConcept<T, TDefaultValueFunc>

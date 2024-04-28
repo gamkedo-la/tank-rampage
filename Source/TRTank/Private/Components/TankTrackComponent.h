@@ -4,6 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "Components/StaticMeshComponent.h"
+
+#include "Containers/TimedCircularBuffer.h"
+
 #include "TankTrackComponent.generated.h"
 
 class ASpringWheel;
@@ -52,6 +55,9 @@ private:
 
 	TArray<ASpringWheel*> GetWheels() const;
 
+	void CheckStuck();
+	bool IsStuck() const;
+
 private:
 
 	UPROPERTY(EditDefaultsOnly, Category = Throttle)
@@ -64,4 +70,26 @@ private:
 
 	UPROPERTY(Transient)
 	TArray<ASpringWheel*> Wheels;
+
+	using FVectorBuffer = TR::TTimedCircularBuffer <
+		FVector,
+		decltype([]() { return FVector{ ForceInitToZero }; }),
+		decltype([](const FVector& V) { return FMath::Max3(FMath::Abs(V.X), FMath::Abs(V.Y), FMath::Abs(V.Z)); })
+	> ;
+	FVectorBuffer PositionBuffer;
+	TR::TTimedCircularBuffer<float> ThrottleBuffer;
+
+	UPROPERTY(EditDefaultsOnly, Category = Stuck)
+	float ThrottleSampleTime{ 3.0f };
+
+	UPROPERTY(EditDefaultsOnly, Category = Stuck)
+	float ThrottleBoostMultiplier{ 6.0f };
+
+	UPROPERTY(EditDefaultsOnly, Category = Stuck)
+	float ThrottleStuckDetectionThreshold{ 0.5f };
+
+	UPROPERTY(EditDefaultsOnly, Category = Stuck)
+	float StuckDisplacementThreshold{ 100.0f };
+
+	bool bStuckBoostActive{};
 };
