@@ -55,8 +55,15 @@ private:
 
 	TArray<ASpringWheel*> GetWheels() const;
 
-	void CheckStuck();
+	// Stuck Detection
+	void InitStuckDetection();
+	bool ShouldCheckForBeingStuck() const;
+	void CalculateStuck();
+	void SampleStuckBuffers();
 	bool IsStuck() const;
+	bool StuckBeyondResetThreshold() const;
+	void ResetTankTransform();
+	void ResetStuckBuffers();
 
 private:
 
@@ -79,21 +86,36 @@ private:
 	FVectorBuffer PositionBuffer;
 	TR::TTimedCircularBuffer<float> ThrottleBuffer;
 
+	/* Tick rate for stuck detection. Set to 0 to use the component tick and < 0 to disable. */
 	UPROPERTY(EditDefaultsOnly, Category = Stuck)
+	float StuckCheckInterval{ 0.1f };
+	
+	/* Amount of time to sample for stuck detection. */
+	UPROPERTY(EditDefaultsOnly, Category = Stuck, meta = (ClampMin = "1.0"))
 	float ThrottleSampleTime{ 3.0f };
 
-	UPROPERTY(EditDefaultsOnly, Category = Stuck)
+	/* Multiplier on current throttle to give tank a boost when detected as stuck */
+	UPROPERTY(EditDefaultsOnly, Category = Stuck, meta = (ClampMin = "2.0"))
 	float ThrottleBoostMultiplier{ 6.0f };
 
-	UPROPERTY(EditDefaultsOnly, Category = Stuck)
+	/* Minimum average throttle over sampling interval in order for stuck detection to be active. */
+	UPROPERTY(EditDefaultsOnly, Category = Stuck, meta = (ClampMin = "0.1"))
 	float ThrottleStuckDetectionThreshold{ 0.5f };
 
-	UPROPERTY(EditDefaultsOnly, Category = Stuck)
+	/* Minimum displacement when above throttle threshold to detect not being stuck. */
+	UPROPERTY(EditDefaultsOnly, Category = Stuck, meta = (ClampMin = "0.0"))
 	float StuckDisplacementThreshold{ 100.0f };
 
+	/* Amount of time that elapses after being stuck before tank is reset. 
+	*  To disable this behavior set to <= 0.
+	*/
 	UPROPERTY(EditDefaultsOnly, Category = Stuck)
-	float StuckThresholdResetThresholdTime{ 5.0f };
+	float StuckResetThresholdTime{ 5.0f };
 
-	bool bStuckBoostActive{};
+	float CalculatedStuckCheckInterval{};
 	float LastStuckTime{ -1.0f };
+	float LastStuckCheckTime{ -1.0f };
+
+	bool bStuckCheckingEnabled{};
+	bool bStuckBoostActive{};
 };

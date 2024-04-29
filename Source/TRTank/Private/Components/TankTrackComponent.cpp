@@ -18,6 +18,20 @@
 
 #include "GameFramework/MovementComponent.h" 
 
+DEFINE_VLOG_EVENT(EventTankStuck, Display, "Stuck")
+
+namespace
+{
+	struct FResetGroundInfo
+	{
+		TR::CollisionUtils::FGroundData GroundData;
+		float ResetAdditionalZOffset;
+	};
+
+	TOptional<FResetGroundInfo> GetResetGroundInfo(const AActor& Actor, const UObject* Context);
+	std::tuple<FVector,float> GetFuzzyResetPosition(const AActor& Actor);
+}
+
 UTankTrackComponent::UTankTrackComponent()
 {
 	bWantsInitializeComponent = true;
@@ -48,9 +62,7 @@ void UTankTrackComponent::InitializeComponent()
 		UE_VLOG_UELOG(GetOwner(), LogTRTank, Error, TEXT("%s-%s: Owner does not have a UMovementComponent available"), *LoggingUtils::GetName(GetOwner()), *GetName());
 	}
 
-	ThrottleBuffer.ClearAndResize(ThrottleSampleTime * 60);
-	PositionBuffer.ClearAndResize(ThrottleSampleTime * 60);
-	bStuckBoostActive = false;
+	InitStuckDetection();
 }
 
 void UTankTrackComponent::BeginPlay()
@@ -240,14 +252,62 @@ TArray<ASpringWheel*> UTankTrackComponent::GetWheels() const
 	return DiscoveredWheels;
 }
 
-void UTankTrackComponent::CheckStuck()
+void UTankTrackComponent::InitStuckDetection()
 {
+	bStuckBoostActive = false;
+
+	if (StuckCheckInterval >= 0)
+	{
+		bStuckCheckingEnabled = true;
+		CalculatedStuckCheckInterval = StuckCheckInterval > 0 ? StuckCheckInterval : (PrimaryComponentTick.TickInterval > 0 ? PrimaryComponentTick.TickInterval : 1 / 60.0f);
+
+		const int32 NumSamples = ThrottleSampleTime / CalculatedStuckCheckInterval;
+		ThrottleBuffer.ClearAndResize(NumSamples);
+		PositionBuffer.ClearAndResize(NumSamples);
+
+		UE_VLOG_UELOG(GetOwner(), LogTRTank, Log, TEXT("%s-%s: InitStuckDetection - Enabled: CalculatedStuckCheckInterval=%f; NumSamples=%d; StuckResetThresholdTime=%f"),
+			*LoggingUtils::GetName(GetOwner()), *GetName(), CalculatedStuckCheckInterval, NumSamples, StuckResetThresholdTime);
+	}
+	else
+	{
+		bStuckCheckingEnabled = false;
+
+		UE_VLOG_UELOG(GetOwner(), LogTRTank, Log, TEXT("%s-%s: InitStuckDetection - Disabled"),
+			*LoggingUtils::GetName(GetOwner()), *GetName());
+	}
+}
+
+bool UTankTrackComponent::ShouldCheckForBeingStuck() const
+{
+	if (!bStuckCheckingEnabled)
+	{
+		return false;
+	}
+
+	if (LastStuckCheckTime < 0)
+	{
+		return true;
+	}
+
 	auto World = GetWorld();
 	check(World);
 
+	const auto CurrentTimeSeconds = World->GetTimeSeconds();
+	const auto DeltaTime = CurrentTimeSeconds - LastStuckCheckTime;
+
+	return DeltaTime >= CalculatedStuckCheckInterval;
+}
+
+void UTankTrackComponent::CalculateStuck()
+{
 	// TODO: Do this in separate component and apply to both tracks
-	ThrottleBuffer.Add(CurrentThrottle);
-	PositionBuffer.Add(GetComponentLocation());
+
+	auto World = GetWorld();
+	check(World);
+
+	LastStuckCheckTime = World->GetTimeSeconds();
+
+	SampleStuckBuffers();
 
 	const bool bIsStuck = IsStuck();
 
@@ -255,39 +315,18 @@ void UTankTrackComponent::CheckStuck()
 	{
 		LastStuckTime = World->GetTimeSeconds();
 	}
-	// Stuck so long, try to reset the tank
-	else if (bIsStuck && StuckThresholdResetThresholdTime > 0 && (World->GetTimeSeconds() - LastStuckTime > StuckThresholdResetThresholdTime))
+	else if (bIsStuck && StuckBeyondResetThreshold())
 	{
-		auto Owner = GetOwner();
-		check(Owner);
-
-		if (auto GroundData = TR::CollisionUtils::GetGroundData(*Owner); GroundData)
-		{
-			// Spawn randomly within actor bounds
-			const auto& TankBounds = TR::CollisionUtils::GetAABB(*Owner);
-
-			FVector Center, Extent;
-			TankBounds.GetCenterAndExtents(Center, Extent);
-			Center = GroundData->Location;
-
-			const auto RespawnExtent = FBox::BuildAABB(Center, Extent);
-			const auto GroundZ = GroundData->Location.Z;
-
-			GroundData->Location = FMath::RandPointInBox(RespawnExtent);
-			// Move Z location up more
-			GroundData->Location.Z = GroundZ + Extent.Z * 2;
-
-			TR::CollisionUtils::ResetActorToGround(*GroundData, *Owner);
-
-			// Reset all the stuck characteristics
-			LastStuckTime = -1;
-			ThrottleBuffer.Clear();
-			PositionBuffer.Clear();
-		}
+		ResetTankTransform();
 	}
 
 	bStuckBoostActive = bIsStuck;
+}
 
+void UTankTrackComponent::SampleStuckBuffers()
+{
+	ThrottleBuffer.Add(CurrentThrottle);
+	PositionBuffer.Add(GetComponentLocation());
 }
 
 bool UTankTrackComponent::IsStuck() const
@@ -302,7 +341,6 @@ bool UTankTrackComponent::IsStuck() const
 
 	// check position threshold
 	const auto DeltaSize = PositionBuffer.Delta().SizeSquared();
-	
 	
 	if (DeltaSize > FMath::Square(StuckDisplacementThreshold))
 	{
@@ -336,6 +374,37 @@ bool UTankTrackComponent::IsStuck() const
 		ThrottleStuckDetectionThreshold);
 
 	return true;
+}
+
+bool UTankTrackComponent::StuckBeyondResetThreshold() const
+{
+	auto World = GetWorld();
+	check(World);
+
+	return StuckResetThresholdTime > 0 && (World->GetTimeSeconds() - LastStuckTime > StuckResetThresholdTime);
+}
+
+void UTankTrackComponent::ResetTankTransform()
+{
+	auto Owner = GetOwner();
+	check(Owner);
+
+	if (auto GroundResetData = GetResetGroundInfo(*Owner, this); GroundResetData)
+	{
+		UE_VLOG_EVENT_WITH_DATA(Owner, EventTankStuck);
+		UE_VLOG_LOCATION(Owner, LogTRTank, Log, Owner->GetActorLocation(), 25.0f, FColor::Yellow, TEXT("OriginalLocation"));
+		UE_VLOG_LOCATION(Owner, LogTRTank, Log, GroundResetData->GroundData.Location, 25.0f, FColor::Green, TEXT("ResetLocation"));
+
+		TR::CollisionUtils::ResetActorToGround(GroundResetData->GroundData, *Owner, GroundResetData->ResetAdditionalZOffset);
+		ResetStuckBuffers();
+	}
+}
+
+void UTankTrackComponent::ResetStuckBuffers()
+{
+	LastStuckTime = -1;
+	ThrottleBuffer.Clear();
+	PositionBuffer.Clear();
 }
 
 void UTankTrackComponent::ApplySidewaysForce(float DeltaTime)
@@ -381,7 +450,10 @@ void UTankTrackComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 
 	TR::DebugUtils::DrawCenterOfMass(Cast<UPrimitiveComponent>(GetOwner()->GetRootComponent()));
 
-	CheckStuck();
+	if (ShouldCheckForBeingStuck())
+	{
+		CalculateStuck();
+	}
 
 	if (!FMath::IsNearlyZero(CurrentThrottle) && !HasSuspension())
 	{
@@ -391,5 +463,64 @@ void UTankTrackComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 		}
 
 		CurrentThrottle = 0;
+	}
+}
+
+namespace
+{
+	TOptional<FResetGroundInfo> GetResetGroundInfo(const AActor& Actor, const UObject* Context)
+	{
+		using namespace TR;
+
+		// First attempt to randomly offset the reset location
+		const auto [FuzzyResetPosition, ActorHalfHeight] = GetFuzzyResetPosition(Actor);
+
+		auto GroundData = CollisionUtils::GetGroundData(Actor, FuzzyResetPosition);
+		if (!GroundData)
+		{
+			UE_VLOG_UELOG(&Actor, LogTRTank, Log,
+				TEXT("GetResetGroundInfo - %s-%s: Could not determine ground location at offset position=%s"),
+				*Actor.GetName(), *LoggingUtils::GetName(Context), *FuzzyResetPosition.ToCompactString());
+			UE_VLOG_LOCATION(&Actor, LogTRTank, Log, FuzzyResetPosition, 25.0f, FColor::Red, TEXT("FuzzyResetPosition"));
+
+			// try the actor location
+			GroundData = CollisionUtils::GetGroundData(Actor);
+		}
+
+		if (!GroundData)
+		{
+			UE_VLOG_UELOG(&Actor, LogTRTank, Warning,
+				TEXT("GetResetGroundInfo - %s-%s: Could not determine ground location"),
+				*Actor.GetName(), *LoggingUtils::GetName(Context));
+
+			return {};
+		}
+
+		// Adjust the position up a bit to give the tank more momentum to get unstuck
+		return FResetGroundInfo
+		{
+			.GroundData = *GroundData,
+			.ResetAdditionalZOffset = ActorHalfHeight
+		};
+	}
+
+	std::tuple<FVector, float> GetFuzzyResetPosition(const AActor& Actor)
+	{
+		// Get randomly within actor bounds
+		const auto& TankBounds = TR::CollisionUtils::GetAABB(Actor);
+
+		FVector Center, Extent;
+		TankBounds.GetCenterAndExtents(Center, Extent);
+
+		// Move up a bit so we are less likely to hit an obstacle
+		Center.Z += Extent.Z;
+
+		const auto RespawnExtent = FBox::BuildAABB(Center, Extent);
+
+		return
+		{
+			FMath::RandPointInBox(RespawnExtent),
+			Extent.Z
+		};
 	}
 }

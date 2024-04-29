@@ -62,7 +62,7 @@ float TR::CollisionUtils::GetActorHalfHeight(const AActor& Actor)
 	return BoxExtent.Z;
 }
 
-TOptional<CollisionUtils::FGroundData> TR::CollisionUtils::GetGroundData(const AActor& Actor)
+TOptional<CollisionUtils::FGroundData> TR::CollisionUtils::GetGroundData(const AActor& Actor, const TOptional<FVector>& PositionOverride)
 {
 	auto World = Actor.GetWorld();
 	if (!World)
@@ -74,7 +74,7 @@ TOptional<CollisionUtils::FGroundData> TR::CollisionUtils::GetGroundData(const A
 	FCollisionQueryParams CollisionQueryParams;
 	CollisionQueryParams.AddIgnoredActor(&Actor);
 
-	const auto& TargetLocation = Actor.GetActorLocation();
+	const auto& TargetLocation = PositionOverride ? *PositionOverride : Actor.GetActorLocation();
 
 	const auto TraceStart = TargetLocation + FVector(0, 0, GetActorHalfHeight(Actor));
 	const auto TraceEnd = TargetLocation - FVector(0, 0, 1000);
@@ -88,10 +88,6 @@ TOptional<CollisionUtils::FGroundData> TR::CollisionUtils::GetGroundData(const A
 		ECollisionChannel::ECC_Visibility,
 		CollisionQueryParams))
 	{
-		UE_VLOG_UELOG(&Actor, LogCore, Warning,
-			TEXT("TankUtils::GetGroundData-%s: IsActorFlippedOver: Could not determine ground location"),
-			*Actor.GetName());
-
 		return {};
 	}
 
@@ -102,12 +98,14 @@ TOptional<CollisionUtils::FGroundData> TR::CollisionUtils::GetGroundData(const A
 	};
 }
 
-void TR::CollisionUtils::ResetActorToGround(const FGroundData& GroundData, AActor& Actor)
+void TR::CollisionUtils::ResetActorToGround(const FGroundData& GroundData, AActor& Actor, float AdditionalZOffset)
 {
 	const FRotator GroundRotation = GroundData.Normal.ToOrientationRotator();
 
 	const FRotator ResetRotation(90 - GroundRotation.Pitch, Actor.GetActorRotation().Yaw, 0);
-	const FVector ResetLocation = GroundData.Location + GroundData.Normal * GetActorHalfHeight(Actor);
+
+	const auto OffsetHeight = GetActorHalfHeight(Actor) + AdditionalZOffset;
+	const FVector ResetLocation = GroundData.Location + GroundData.Normal * OffsetHeight;
 
 	Actor.SetActorTransform(FTransform(ResetRotation, ResetLocation), false, nullptr, ETeleportType::ResetPhysics);
 }

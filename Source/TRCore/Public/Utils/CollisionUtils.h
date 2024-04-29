@@ -19,9 +19,9 @@ namespace TR::CollisionUtils
 
 	TRCORE_API float GetActorHalfHeight(const AActor& Actor);
 
-	TRCORE_API TOptional<FGroundData> GetGroundData(const AActor& Actor);
+	TRCORE_API TOptional<FGroundData> GetGroundData(const AActor& Actor, const TOptional<FVector>& PositionOverride = {});
 
-	TRCORE_API void ResetActorToGround(const FGroundData& GroundData, AActor& Actor);
+	TRCORE_API void ResetActorToGround(const FGroundData& GroundData, AActor& Actor, float AdditionalZOffset = 0.0f);
 }
 
 namespace TR::CollisionChannel
