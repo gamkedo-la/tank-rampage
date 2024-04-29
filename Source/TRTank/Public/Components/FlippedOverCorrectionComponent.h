@@ -6,6 +6,10 @@
 #include "Components/ActorComponent.h"
 #include "FlippedOverCorrectionComponent.generated.h"
 
+namespace TR::CollisionUtils
+{
+	struct FGroundData;
+}
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TRTANK_API UFlippedOverCorrectionComponent : public UActorComponent
@@ -32,18 +36,11 @@ protected:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 private:
-	struct FGroundData
-	{
-		FVector Location;
-		FVector Normal;
-	};
 
-	bool IsActorFlippedOver(FGroundData& GroundData) const;
+	bool IsActorFlippedOver(TR::CollisionUtils::FGroundData& GroundData) const;
 	bool IsActorAboveSpeedThreshold() const;
 
-	float GetActorHalfHeight() const;
-
-	void ResetActorToGround(const FGroundData& GroundData);
+	void ResetActorToGround(const TR::CollisionUtils::FGroundData& GroundData);
 
 private:
 	/**

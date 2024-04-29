@@ -3,6 +3,8 @@
 
 #include "Components/FlippedOverCorrectionComponent.h"
 
+#include "Utils/CollisionUtils.h"
+
 #include "TRTankLogging.h"
 #include "Logging/LoggingUtils.h"
 #include "VisualLogger/VisualLogger.h"
@@ -37,7 +39,7 @@ void UFlippedOverCorrectionComponent::TickComponent(float DeltaTime, ELevelTick 
 	auto World = GetWorld();
 	check(World);
 
-	FGroundData GroundData;
+	TR::CollisionUtils::FGroundData GroundData;
 
 	const auto bFlippedOverThisFrame = IsActorFlippedOver(GroundData);
 
@@ -68,31 +70,14 @@ void UFlippedOverCorrectionComponent::TickComponent(float DeltaTime, ELevelTick 
 	}
 }
 
-bool UFlippedOverCorrectionComponent::IsActorFlippedOver(FGroundData& GroundData) const
+bool UFlippedOverCorrectionComponent::IsActorFlippedOver(TR::CollisionUtils::FGroundData& GroundData) const
 {
-	auto World = GetWorld();
-	check(World);
-
 	const auto MyActor = GetOwner();
 	check(MyActor);
 
-	// Find elevation at TargetLocation
-	FCollisionQueryParams CollisionQueryParams;
-	CollisionQueryParams.AddIgnoredActor(MyActor);
+	const auto GroundDataOptional = TR::CollisionUtils::GetGroundData(*MyActor);
 
-	const auto& TargetLocation = MyActor->GetActorLocation();
-
-	const auto TraceStart = TargetLocation + FVector(0, 0, GetActorHalfHeight());
-	const auto TraceEnd = TargetLocation - FVector(0, 0, 1000);
-
-	FHitResult HitResult;
-
-	if (!World->LineTraceSingleByChannel(
-		HitResult,
-		TraceStart,
-		TraceEnd,
-		ECollisionChannel::ECC_Visibility,
-		CollisionQueryParams))
+	if (!GroundDataOptional)
 	{
 		UE_VLOG_UELOG(GetOwner(), LogTRTank, Warning,
 			TEXT("%s-%s: IsActorFlippedOver: Could not determine ground location"),
@@ -101,11 +86,9 @@ bool UFlippedOverCorrectionComponent::IsActorFlippedOver(FGroundData& GroundData
 		return false;
 	}
 
+	GroundData = *GroundDataOptional;
+
 	const FVector& VehicleUpVector = MyActor->GetActorUpVector();
-
-	GroundData.Location = HitResult.Location;
-	GroundData.Normal = HitResult.Normal;
-
 	const auto DotProduct = VehicleUpVector | GroundData.Normal;
 
 	const float Angle = FMath::Abs(FMath::RadiansToDegrees(FMath::Acos(DotProduct)));
@@ -115,8 +98,8 @@ bool UFlippedOverCorrectionComponent::IsActorFlippedOver(FGroundData& GroundData
 		TEXT("%s-%s: IsActorFlippedOver: %s: Angle=%f"),
 		*GetName(), *LoggingUtils::GetName(GetOwner()), LoggingUtils::GetBoolString(bIsCurrentlyFlippedOver), Angle);
 
-	UE_VLOG_ARROW(GetOwner(), LogTRTank, Log, HitResult.Location, HitResult.Location + 100.0f * HitResult.Normal, FColor::Red, TEXT("World Up"));
-	UE_VLOG_ARROW(GetOwner(), LogTRTank, Log, HitResult.Location, HitResult.Location + 100.0f * VehicleUpVector, FColor::Red, TEXT("Actor Up"));
+	UE_VLOG_ARROW(GetOwner(), LogTRTank, Log, GroundData.Location, GroundData.Location + 100.0f * GroundData.Normal, FColor::Red, TEXT("World Up"));
+	UE_VLOG_ARROW(GetOwner(), LogTRTank, Log, GroundData.Location, GroundData.Location + 100.0f * VehicleUpVector, FColor::Red, TEXT("Actor Up"));
 
 	return bIsCurrentlyFlippedOver;
 }
@@ -137,32 +120,18 @@ bool UFlippedOverCorrectionComponent::IsActorAboveSpeedThreshold() const
 	return false;
 }
 
-float UFlippedOverCorrectionComponent::GetActorHalfHeight() const
-{
-	FVector ActorOrigin, BoxExtent;
-
-	GetOwner()->GetActorBounds(true, ActorOrigin, BoxExtent, false);
-
-	return BoxExtent.Z;
-}
-
-void UFlippedOverCorrectionComponent::ResetActorToGround(const FGroundData& GroundData)
+void UFlippedOverCorrectionComponent::ResetActorToGround(const TR::CollisionUtils::FGroundData& GroundData)
 {
 	auto MyActor = GetOwner();
 	check(MyActor);
 
-	const FRotator GroundRotation = GroundData.Normal.ToOrientationRotator();
-
-	const FRotator ResetRotation(90 - GroundRotation.Pitch, MyActor->GetActorRotation().Yaw, 0);
-	const FVector ResetLocation = GroundData.Location + GroundData.Normal * GetActorHalfHeight();
-
-	MyActor->SetActorTransform(FTransform(ResetRotation, ResetLocation), false, nullptr, ETeleportType::ResetPhysics);
+	TR::CollisionUtils::ResetActorToGround(GroundData, *MyActor);
 
 	UE_VLOG_EVENT_WITH_DATA(GetOwner(), EventActorFlippedOver);
-	UE_VLOG_LOCATION(GetOwner(), LogTRTank, Log, ResetLocation, 50.0f, FColor::Red, TEXT("Flip Reset"));
-	UE_VLOG_ARROW(GetOwner(), LogTRTank, Log, ResetLocation, ResetLocation + GroundData.Normal * 200.0f, FColor::Red, TEXT("Flip Dir"));
+	UE_VLOG_LOCATION(GetOwner(), LogTRTank, Log, MyActor->GetActorLocation(), 50.0f, FColor::Red, TEXT("Flip Reset"));
+	UE_VLOG_ARROW(GetOwner(), LogTRTank, Log, MyActor->GetActorLocation(), MyActor->GetActorLocation() + GroundData.Normal * 200.0f, FColor::Red, TEXT("Flip Dir"));
 	UE_VLOG_UELOG(GetOwner(), LogTRTank, Log, TEXT("%s-%s: ResetActorToGround - ResetLocation=%s; ResetRotation=%s"),
-		*GetName(), *LoggingUtils::GetName(GetOwner()), *ResetLocation.ToCompactString(), *ResetRotation.ToCompactString());
+		*GetName(), *LoggingUtils::GetName(GetOwner()), *MyActor->GetActorLocation().ToCompactString(), *MyActor->GetActorRotation().ToCompactString());
 
 	bIsFlippedOver = false;
 }

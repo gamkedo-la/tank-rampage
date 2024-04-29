@@ -8,6 +8,10 @@
 #include "TRCoreLogging.h"
 #include "Logging/LoggingUtils.h"
 
+#include "VisualLogger/VisualLogger.h"
+
+using namespace TR;
+
 namespace
 {
 	FBox DefaultGetAABB(const AActor& Actor);
@@ -47,6 +51,65 @@ FBox TR::CollisionUtils::GetAABB(const USceneComponent& Component)
 	}
 
 	return Component.CalcLocalBounds().GetBox();
+}
+
+float TR::CollisionUtils::GetActorHalfHeight(const AActor& Actor)
+{
+	FVector ActorOrigin, BoxExtent;
+
+	Actor.GetActorBounds(true, ActorOrigin, BoxExtent, false);
+
+	return BoxExtent.Z;
+}
+
+TOptional<CollisionUtils::FGroundData> TR::CollisionUtils::GetGroundData(const AActor& Actor)
+{
+	auto World = Actor.GetWorld();
+	if (!World)
+	{
+		return {};
+	}
+
+	// Find elevation at TargetLocation
+	FCollisionQueryParams CollisionQueryParams;
+	CollisionQueryParams.AddIgnoredActor(&Actor);
+
+	const auto& TargetLocation = Actor.GetActorLocation();
+
+	const auto TraceStart = TargetLocation + FVector(0, 0, GetActorHalfHeight(Actor));
+	const auto TraceEnd = TargetLocation - FVector(0, 0, 1000);
+
+	FHitResult HitResult;
+
+	if (!World->LineTraceSingleByChannel(
+		HitResult,
+		TraceStart,
+		TraceEnd,
+		ECollisionChannel::ECC_Visibility,
+		CollisionQueryParams))
+	{
+		UE_VLOG_UELOG(&Actor, LogCore, Warning,
+			TEXT("TankUtils::GetGroundData-%s: IsActorFlippedOver: Could not determine ground location"),
+			*Actor.GetName());
+
+		return {};
+	}
+
+	return FGroundData
+	{
+		.Location = HitResult.Location,
+		.Normal = HitResult.Normal
+	};
+}
+
+void TR::CollisionUtils::ResetActorToGround(const FGroundData& GroundData, AActor& Actor)
+{
+	const FRotator GroundRotation = GroundData.Normal.ToOrientationRotator();
+
+	const FRotator ResetRotation(90 - GroundRotation.Pitch, Actor.GetActorRotation().Yaw, 0);
+	const FVector ResetLocation = GroundData.Location + GroundData.Normal * GetActorHalfHeight(Actor);
+
+	Actor.SetActorTransform(FTransform(ResetRotation, ResetLocation), false, nullptr, ETeleportType::ResetPhysics);
 }
 
 namespace

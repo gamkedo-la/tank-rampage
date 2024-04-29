@@ -8,6 +8,8 @@
 #include "Suspension/SpringWheel.h"
 #include "Components/SpawnPoint.h"
 
+#include "Utils/CollisionUtils.h"
+
 #include "Logging/LoggingUtils.h"
 #include "TRTankLogging.h"
 
@@ -240,11 +242,52 @@ TArray<ASpringWheel*> UTankTrackComponent::GetWheels() const
 
 void UTankTrackComponent::CheckStuck()
 {
+	auto World = GetWorld();
+	check(World);
+
 	// TODO: Do this in separate component and apply to both tracks
 	ThrottleBuffer.Add(CurrentThrottle);
 	PositionBuffer.Add(GetComponentLocation());
 
-	bStuckBoostActive = IsStuck();
+	const bool bIsStuck = IsStuck();
+
+	if (!bStuckBoostActive && bIsStuck)
+	{
+		LastStuckTime = World->GetTimeSeconds();
+	}
+	// Stuck so long, try to reset the tank
+	else if (bIsStuck && StuckThresholdResetThresholdTime > 0 && (World->GetTimeSeconds() - LastStuckTime > StuckThresholdResetThresholdTime))
+	{
+		auto Owner = GetOwner();
+		check(Owner);
+
+		if (auto GroundData = TR::CollisionUtils::GetGroundData(*Owner); GroundData)
+		{
+			// Spawn randomly within actor bounds
+			const auto& TankBounds = TR::CollisionUtils::GetAABB(*Owner);
+
+			FVector Center, Extent;
+			TankBounds.GetCenterAndExtents(Center, Extent);
+			Center = GroundData->Location;
+
+			const auto RespawnExtent = FBox::BuildAABB(Center, Extent);
+			const auto GroundZ = GroundData->Location.Z;
+
+			GroundData->Location = FMath::RandPointInBox(RespawnExtent);
+			// Move Z location up more
+			GroundData->Location.Z = GroundZ + Extent.Z * 2;
+
+			TR::CollisionUtils::ResetActorToGround(*GroundData, *Owner);
+
+			// Reset all the stuck characteristics
+			LastStuckTime = -1;
+			ThrottleBuffer.Clear();
+			PositionBuffer.Clear();
+		}
+	}
+
+	bStuckBoostActive = bIsStuck;
+
 }
 
 bool UTankTrackComponent::IsStuck() const
@@ -257,42 +300,42 @@ bool UTankTrackComponent::IsStuck() const
 
 	check(PositionBuffer.IsFull());
 
+	// check position threshold
+	const auto DeltaSize = PositionBuffer.Delta().SizeSquared();
+	
+	
+	if (DeltaSize > FMath::Square(StuckDisplacementThreshold))
+	{
+		UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: Stuck=FALSE - PositionDelta=%fm >= Threshold=%fm"),
+			*LoggingUtils::GetName(GetOwner()), *GetName(),
+			FMath::Sqrt(DeltaSize) / 100,
+			StuckDisplacementThreshold / 100);
+
+		return false;
+	}
+
 	const auto ThrottleAverage = ThrottleBuffer.Average();
 
 	if (FMath::Abs(ThrottleAverage) < ThrottleStuckDetectionThreshold)
 	{
-		UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: Stuck=FALSE - Abs(ThrottleAverage=%f) is below threshold=%f"), *LoggingUtils::GetName(GetOwner()), *GetName(),
+		UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: Stuck=FALSE - PositionDelta=%fm >= Threshold=%fm but Abs(ThrottleAverage=%f) is below threshold=%f"),
+			*LoggingUtils::GetName(GetOwner()), *GetName(),
+			FMath::Sqrt(DeltaSize) / 100,
+			StuckDisplacementThreshold / 100,
 			ThrottleAverage,
 			ThrottleStuckDetectionThreshold);
 
 		return false;
 	}
 
-	// check position threshold
-	const auto DeltaSize = PositionBuffer.Delta().SizeSquared();
+	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: Stuck=TRUE - PositionDelta=%fm < Threshold=%fm and Abs(ThrottleAverage=%f) is above threshold=%f"),
+		*LoggingUtils::GetName(GetOwner()), *GetName(),
+		FMath::Sqrt(DeltaSize) / 100,
+		StuckDisplacementThreshold / 100,
+		ThrottleAverage,
+		ThrottleStuckDetectionThreshold);
 
-	const bool bStuck = DeltaSize < FMath::Square(StuckDisplacementThreshold);
-
-	if (bStuck)
-	{
-		UE_VLOG_UELOG(GetOwner(), LogTRTank, Log, TEXT("%s-%s: Stuck=TRUE - Abs(ThrottleAverage=%f) is above threshold=%f and PositionDelta=%fm < Threshold=%fm"),
-			*LoggingUtils::GetName(GetOwner()), *GetName(),
-			ThrottleAverage,
-			ThrottleStuckDetectionThreshold,
-			FMath::Sqrt(DeltaSize) / 100,
-			StuckDisplacementThreshold / 100);
-	}
-	else
-	{
-		UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: Stuck=FALSE - Abs(ThrottleAverage=%f) is above threshold=%f but PositionDelta=%fm >= Threshold=%fm"),
-			*LoggingUtils::GetName(GetOwner()), *GetName(),
-			ThrottleAverage,
-			ThrottleStuckDetectionThreshold,
-			FMath::Sqrt(DeltaSize) / 100,
-			StuckDisplacementThreshold / 100)
-	}
-
-	return bStuck;
+	return true;
 }
 
 void UTankTrackComponent::ApplySidewaysForce(float DeltaTime)

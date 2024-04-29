@@ -91,5 +91,9 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Stuck)
 	float StuckDisplacementThreshold{ 100.0f };
 
+	UPROPERTY(EditDefaultsOnly, Category = Stuck)
+	float StuckThresholdResetThresholdTime{ 5.0f };
+
 	bool bStuckBoostActive{};
+	float LastStuckTime{ -1.0f };
 };
