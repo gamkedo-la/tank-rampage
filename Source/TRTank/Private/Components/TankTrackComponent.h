@@ -47,6 +47,7 @@ private:
 	float GetAdjustedMaxDrivingForce() const;
 
 	void InitWheels();
+	void InitTrackWheels();
 
 	void DriveTrackNoSuspension(float Throttle);
 	void DriveTrackWithSuspension( float Throttle);
@@ -65,13 +66,32 @@ private:
 	void ResetTankTransform();
 	void ResetStuckBuffers();
 
+	bool ShouldRecalculateGrounded() const;
+	void CalculateGrounded();
+	bool IsGroundedFallback() const;
+
+	bool IsGroundedLocation(const FVector& WorldLocation, const FVector& WorldUpVector) const;
+
+	void DriveTrackNoSuspension(float Throttle, const FName& ForceSocket, UPrimitiveComponent& PrimitiveComponent, float ForceMultiplier);
+
 private:
+
+	struct FTrackWheel
+	{
+		FName SocketName{};
+		bool bGrounded{};
+	};
+
+	TArray<FTrackWheel> TrackWheels{};
 
 	UPROPERTY(EditDefaultsOnly, Category = Throttle)
 	float TrackMaxDrivingForce{ 4.0e5f };
 
 	UPROPERTY(EditDefaultsOnly, Category = Throttle)
-	float GroundTraceExtent{ 20 };
+	float GroundTraceExtent{ 20.0f };
+
+	UPROPERTY(EditDefaultsOnly, Category = Throttle)
+	float GroundTraceInterval{ 0.1f };
 
 	float CurrentThrottle{};
 
@@ -115,6 +135,7 @@ private:
 	float CalculatedStuckCheckInterval{};
 	float LastStuckTime{ -1.0f };
 	float LastStuckCheckTime{ -1.0f };
+	float LastGroundTraceTime{ -1.0f };
 
 	bool bStuckCheckingEnabled{};
 	bool bStuckBoostActive{};

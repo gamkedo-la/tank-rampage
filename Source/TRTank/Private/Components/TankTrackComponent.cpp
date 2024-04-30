@@ -22,6 +22,8 @@ DEFINE_VLOG_EVENT(EventTankStuck, Display, "Stuck")
 
 namespace
 {
+	const FString TrackWheelSocketNamePrefix = "Wheel_";
+
 	struct FResetGroundInfo
 	{
 		TR::CollisionUtils::FGroundData GroundData;
@@ -63,6 +65,7 @@ void UTankTrackComponent::InitializeComponent()
 	}
 
 	InitStuckDetection();
+	InitTrackWheels();
 }
 
 void UTankTrackComponent::BeginPlay()
@@ -80,6 +83,8 @@ void UTankTrackComponent::SetThrottle(float InThrottle)
 {
 	CurrentThrottle = FMath::Clamp(InThrottle + CurrentThrottle, -1.0f, 1.0f);
 
+	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: SetThrottle: %f"), *LoggingUtils::GetName(GetOwner()), *GetName(), CurrentThrottle);
+
 	if (HasSuspension())
 	{
 		DriveTrackWithSuspension(CurrentThrottle);
@@ -89,28 +94,12 @@ void UTankTrackComponent::SetThrottle(float InThrottle)
 
 bool UTankTrackComponent::IsGrounded() const
 {
-	auto World = GetWorld();
-	if (!World)
+	if (TrackWheels.IsEmpty())
 	{
-		return false;
+		return IsGroundedFallback();
 	}
 
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(GetOwner());
-
-	FHitResult HitResult;
-
-	const auto& UpVector = GetUpVector();
-	const auto& ReferenceLocation = GetComponentLocation();
-
-	const auto StartLocation = ReferenceLocation + UpVector * GroundTraceExtent;
-	const auto EndLocation = ReferenceLocation - UpVector * GroundTraceExtent;
-
-	return World->LineTraceTestByChannel(
-		StartLocation,
-		EndLocation,
-		ECollisionChannel::ECC_Visibility,
-		Params);
+	return TrackWheels.ContainsByPredicate([](const auto& Wheel) { return Wheel.bGrounded;  });
 }
 
 #if ENABLE_VISUAL_LOG
@@ -123,6 +112,7 @@ void UTankTrackComponent::DescribeSelfToVisLog(FVisualLogEntry* Snapshot) const
 	const bool bSuspension = HasSuspension();
 
 	Category.Add(TEXT("MaxDrivingForceMultiplier"), FString::Printf(TEXT("%.1f"), GetAdjustedMaxDrivingForce() / TrackMaxDrivingForce));
+	Category.Add(TEXT("Grounded"), LoggingUtils::GetBoolString(IsGrounded()));
 	Category.Add(TEXT("Suspension"), LoggingUtils::GetBoolString(bSuspension));
 	if (bSuspension)
 	{
@@ -143,19 +133,8 @@ void UTankTrackComponent::DescribeSelfToVisLog(FVisualLogEntry* Snapshot) const
 
 #endif
 
-void UTankTrackComponent::DriveTrackNoSuspension( float Throttle)
+void UTankTrackComponent::DriveTrackNoSuspension(float Throttle)
 {
-	const auto& ForceLocation = GetSocketLocation(TankSockets::TreadThrottle);
-	auto ForceRotation = GetSocketTransform(TankSockets::TreadThrottle, ERelativeTransformSpace::RTS_Component).GetRotation();
-	if (Throttle < 0)
-	{
-		ForceRotation = ForceRotation.Inverse();
-	}
-
-	const auto& AdjustedLocalForward = ForceRotation.GetForwardVector();
-	const auto& ForceDirection = GetComponentToWorld().TransformVector(AdjustedLocalForward);
-	const auto ForceApplied = ForceDirection * Throttle * GetAdjustedMaxDrivingForce();
-
 	auto RootComponent = Cast<UPrimitiveComponent>(GetOwner()->GetRootComponent());
 
 	if (!RootComponent)
@@ -165,15 +144,59 @@ void UTankTrackComponent::DriveTrackNoSuspension( float Throttle)
 		return;
 	}
 
-	TR::DebugUtils::DrawForceAtLocation(RootComponent, ForceApplied, ForceLocation);
+	if (!TrackWheels.IsEmpty())
+	{
+		int32 GroundedCount = 0;
+		for (const auto& Wheel : TrackWheels)
+		{
+			if (Wheel.bGrounded)
+			{
+				++GroundedCount;
+			}
+		}
 
-	RootComponent->AddForceAtLocation(ForceApplied, ForceLocation);
+		// Should never enter this function without at least one grounded wheel
+		checkf(GroundedCount, TEXT("Entered DriveTrackNoSuspension when not grounded!"));
 
-	UE_LOG(LogTRTank, VeryVerbose, TEXT("%s-%s: DriveTrackNoSuspension: Throttle=%f; ForceApplied=%s; ForceLocation=%s"),
-		*LoggingUtils::GetName(GetOwner()), *GetName(), Throttle, *ForceApplied.ToCompactString(), *ForceLocation.ToCompactString());
+		const auto WheelMultiplier = 1.0f / FMath::Max(GroundedCount, TrackWheels.Num() * 0.5f);
+
+		for (const auto& Wheel : TrackWheels)
+		{
+			if (Wheel.bGrounded)
+			{
+				DriveTrackNoSuspension(Throttle, Wheel.SocketName, *RootComponent, WheelMultiplier);
+			}
+		}
+	}
+	else
+	{
+		// Old system
+		DriveTrackNoSuspension(Throttle, TankSockets::TreadThrottle, *RootComponent, 1.0f);
+	}
 
 	// Slippage correction
 	ApplySidewaysForce(GetWorld()->GetDeltaSeconds());
+}
+
+void UTankTrackComponent::DriveTrackNoSuspension(float Throttle, const FName& ForceSocket, UPrimitiveComponent& PrimitiveComponent, float ForceMultiplier)
+{
+	const auto& ForceLocation = GetSocketLocation(ForceSocket);
+	auto ForceRotation = GetSocketTransform(ForceSocket, ERelativeTransformSpace::RTS_Component).GetRotation();
+	if (Throttle < 0)
+	{
+		ForceRotation = ForceRotation.Inverse();
+	}
+
+	const auto& AdjustedLocalForward = ForceRotation.GetForwardVector();
+	const auto& ForceDirection = GetComponentToWorld().TransformVector(AdjustedLocalForward);
+	const auto ForceApplied = ForceDirection * Throttle * GetAdjustedMaxDrivingForce() * ForceMultiplier;
+
+	TR::DebugUtils::DrawForceAtLocation(&PrimitiveComponent, ForceApplied, ForceLocation);
+
+	PrimitiveComponent.AddForceAtLocation(ForceApplied, ForceLocation);
+
+	UE_LOG(LogTRTank, VeryVerbose, TEXT("%s-%s: DriveTrackNoSuspension: ForceSocket=%s; Throttle=%f; ForceApplied=%s; ForceLocation=%s"),
+		*LoggingUtils::GetName(GetOwner()), *GetName(), *ForceSocket.ToString(), Throttle, *ForceApplied.ToCompactString(), *ForceLocation.ToCompactString());
 }
 
 void UTankTrackComponent::DriveTrackWithSuspension(float Throttle)
@@ -216,15 +239,25 @@ void UTankTrackComponent::InitWheels()
 	Wheels = GetWheels();
 
 	UE_VLOG_UELOG(GetOwner(), LogTRTank, Log, TEXT("%s: InitWheels: Found %d wheel%s"), *GetName(), Wheels.Num(), LoggingUtils::Pluralize(Wheels.Num()));
+}
 
-	// We do not need tick when driving with suspension
-	if (HasSuspension())
+void UTankTrackComponent::InitTrackWheels()
+{
+	const TArray<FName> AllSocketNames = GetAllSocketNames();
+
+	for (const auto& SocketName : AllSocketNames)
 	{
-		// Disabling tick if we don't want to draw it to visualize the COM
-#if !TR_DEBUG_ENABLED
-		SetComponentTickEnabled(false);
-#endif
+		const FString SocketString = SocketName.ToString();
+		if (SocketString.StartsWith(TrackWheelSocketNamePrefix))
+		{
+			TrackWheels.Add(FTrackWheel
+			{
+				.SocketName = SocketName
+			});
+		}
 	}
+
+	UE_VLOG_UELOG(GetOwner(), LogTRTank, Log, TEXT("%s: InitTrackWheels: Found %d virtual wheel%s"), *GetName(), TrackWheels.Num(), LoggingUtils::Pluralize(TrackWheels.Num()));
 }
 
 TArray<ASpringWheel*> UTankTrackComponent::GetWheels() const
@@ -407,6 +440,82 @@ void UTankTrackComponent::ResetStuckBuffers()
 	PositionBuffer.Clear();
 }
 
+bool UTankTrackComponent::ShouldRecalculateGrounded() const
+{
+	const auto World = GetWorld();
+	check(World);
+
+	return !HasSuspension() && !TrackWheels.IsEmpty() && (LastGroundTraceTime < 0 || (World->GetTimeSeconds() - LastGroundTraceTime >= GroundTraceInterval));
+}
+
+void UTankTrackComponent::CalculateGrounded()
+{
+	const auto World = GetWorld();
+	check(World);
+
+	LastGroundTraceTime = World->GetTimeSeconds();
+
+	for (auto& Wheel : TrackWheels)
+	{
+		const auto& Transform = GetSocketTransform(Wheel.SocketName);
+
+		Wheel.bGrounded = IsGroundedLocation(Transform.GetLocation(), Transform.GetRotation().GetUpVector());
+	}
+}
+
+bool UTankTrackComponent::IsGroundedFallback() const
+{
+	return IsGroundedLocation(GetComponentLocation(), GetUpVector());
+}
+
+bool UTankTrackComponent::IsGroundedLocation(const FVector& WorldLocation, const FVector& WorldUpVector) const
+{
+	auto World = GetWorld();
+	if (!World)
+	{
+		return false;
+	}
+
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(GetOwner());
+
+	const auto StartLocation = WorldLocation + WorldUpVector * GroundTraceExtent;
+	const auto EndLocation = WorldLocation - WorldUpVector * GroundTraceExtent;
+
+#if ENABLE_VISUAL_LOG
+
+	if (FVisualLogger::IsRecording())
+	{
+		FHitResult HitResult;
+
+		const bool bResult = World->LineTraceSingleByChannel(
+			HitResult,
+			StartLocation,
+			EndLocation,
+			ECollisionChannel::ECC_Visibility,
+			Params);
+
+		if (bResult)
+		{
+			UE_VLOG_SEGMENT(GetOwner(), LogTRTank, Verbose, StartLocation, HitResult.Location, FColor::Green, TEXT("Ground"));
+			UE_VLOG_BOX(GetOwner(), LogTRTank, Verbose, FBox::BuildAABB(HitResult.Location, FVector{ 5.0f, 5.0f, 5.0f }), FColor::Red, TEXT(""));
+		}
+		else
+		{
+			UE_VLOG_SEGMENT(GetOwner(), LogTRTank, Verbose, StartLocation, EndLocation, FColor::Red, TEXT("No Ground"));
+		}
+
+		return bResult;
+	}
+#endif
+
+		return World->LineTraceTestByChannel(
+			StartLocation,
+			EndLocation,
+			ECollisionChannel::ECC_Visibility,
+			Params);
+}
+
 void UTankTrackComponent::ApplySidewaysForce(float DeltaTime)
 {
 	const auto RootComponent = Cast<UPrimitiveComponent>(GetOwner()->GetRootComponent());
@@ -449,6 +558,11 @@ void UTankTrackComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	TR::DebugUtils::DrawCenterOfMass(Cast<UPrimitiveComponent>(GetOwner()->GetRootComponent()));
+
+	if (ShouldRecalculateGrounded())
+	{
+		CalculateGrounded();
+	}
 
 	if (ShouldCheckForBeingStuck())
 	{
