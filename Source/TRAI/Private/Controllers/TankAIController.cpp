@@ -7,6 +7,8 @@
 #include "Components/TankAimingComponent.h"
 #include "Components/HealthComponent.h"
 
+#include "Subsystems/TankAISharedStateSubsystem.h"
+
 #include "Kismet/GameplayStatics.h" 
 #include "TRAILogging.h"
 #include "Logging/LoggingUtils.h"
@@ -25,63 +27,6 @@ ATankAIController::ATankAIController()
 	PrimaryActorTick.bCanEverTick = true;
 }
 
-ABaseTankPawn* ATankAIController::GetControlledTank() const
-{
-	return Cast<ABaseTankPawn>(GetPawn());
-}
-
-void ATankAIController::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-	auto World = GetWorld();
-	const auto NowSeconds = World->GetTimeSeconds();
-
-	if (!World || NowSeconds < StartDelayTime)
-	{
-		return;
-	}
-
-	auto PlayerTank = GetPlayerTank();
-	auto ControlledTank = GetControlledTank();
-
-	if (!PlayerTank || !ControlledTank)
-	{
-		return;
-	}
-
-	FTankAIContext AIContext
-	{
-		.MyTank = *ControlledTank,
-		.PlayerTank = *PlayerTank
-	};
-
-	if (!IsPlayerInRange(AIContext))
-	{
-		FirstInRangeTime = TargetingErrorLastTime = -1;
-		return;
-	}
-	else if (FirstInRangeTime < 0)
-	{
-		FirstInRangeTime = NowSeconds;
-	}
-
-	if (NowSeconds - FirstInRangeTime < ReactionTime)
-	{
-		return;
-	}
-
-	if (NowSeconds - TargetingErrorLastTime >= TargetingErrorResetTime)
-	{
-		InitTargetingError(AIContext);
-		TargetingErrorLastTime = NowSeconds;
-	}
-	
-	MoveTowardPlayer(AIContext);
-
-	AimAtPlayerTank(AIContext);
-	Fire(AIContext);
-}
 
 void ATankAIController::BeginPlay()
 {
@@ -90,6 +35,159 @@ void ATankAIController::BeginPlay()
 	// Do alternate checks for line of sight
 	bLOSflag = true;
 	bSkipExtraLOSChecks = false;
+}
+
+void ATankAIController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+
+	auto Tank = GetControlledTank();
+	if (!ensure(Tank))
+	{
+		return;
+	}
+
+	// Give AI a basic item
+	Tank->GetItemInventory()->AddItemByName(TR::ItemNames::MainGunName);
+
+	Tank->GetHealthComponent()->OnHealthChanged.AddDynamic(this, &ThisClass::OnHealthChanged);
+}
+
+void ATankAIController::OnUnPossess()
+{
+	auto Tank = GetControlledTank();
+
+	Super::OnUnPossess();
+
+	if (Tank)
+	{
+		// Clear inventory when possessed by player as player start pawn is first possessed by AI and then possessed by player
+		Tank->GetItemInventory()->Clear();
+		Tank->GetHealthComponent()->OnHealthChanged.RemoveDynamic(this, &ThisClass::OnHealthChanged);
+	}
+}
+
+void ATankAIController::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	ExecuteAI();
+}
+
+void ATankAIController::ExecuteAI()
+{
+	auto World = GetWorld();
+	check(World);
+
+	const auto AIContextOptional = GetAIContext();
+
+	if (!AIContextOptional)
+	{
+		return;
+	}
+
+	const auto& AIContext = *AIContextOptional;
+
+	if (AIContext.NowSeconds < StartDelayTime)
+	{
+		return;
+	}
+
+	if (!IsPlayerInRange(AIContext))
+	{
+		ResetState();
+		return;
+	}
+
+	bHasLOS = HasLineOfSight(AIContext);
+	bInInfaredRange = IsInInfaredRange(AIContext);
+
+	// We are out of range but may have a reported position by another AI that is relevant to move toward
+	if (!bInInfaredRange && !bHasLOS)
+	{
+		InitReportedPositionReactTimeIfApplicable(AIContext);
+
+		if (ShouldMoveTowardReportedPosition(AIContext))
+		{
+			UE_VLOG_LOCATION(this, LogTRAI, VeryVerbose, AIContext.AISubsystem.LastPlayerSeenLocation, 25.0f, FColor::Yellow, TEXT("Last Known Player Loc"));
+			MoveTowardPlayer(AIContext);
+		}
+
+		return;
+	}
+
+	// Directly perceived player either through direct line of sight or infared
+	// Only aim and fire if have LOS
+
+	if (!PassesDirectPerceptionReactionTimeDelay())
+	{
+		return;
+	}
+
+	UpdateSharedPerceptionState(AIContext);
+
+	MoveTowardPlayer(AIContext);
+
+	if (bHasLOS)
+	{
+		InitTargetErrorIfApplicable(AIContext);
+		AimAtPlayerTank(AIContext);
+		Fire(AIContext);
+	}
+}
+
+void ATankAIController::InitReportedPositionReactTimeIfApplicable(const FTankAIContext& AIContext)
+{
+	if (ReportedPositionReactTime < 0)
+	{
+		ReportedPositionReactTime = FMath::FRandRange(
+			AIContext.NowSeconds + ReportedPositionMinDelayTime,
+			AIContext.NowSeconds + ReportedPositionMaxDelayTime);
+	}
+}
+
+void ATankAIController::InitTargetErrorIfApplicable(const FTankAIContext& AIContext)
+{
+	if (AIContext.NowSeconds - TargetingErrorLastTime >= TargetingErrorResetTime)
+	{
+		InitTargetingError(AIContext);
+		TargetingErrorLastTime = AIContext.NowSeconds;
+	}
+}
+
+void ATankAIController::ResetState()
+{
+	FirstInRangeTime = TargetingErrorLastTime = ReportedPositionReactTime = -1;
+	bHasLOS = bInInfaredRange = false;
+	ShotsFired = 0;
+}
+
+void ATankAIController::UpdateSharedPerceptionState(const FTankAIContext& AIContext) const
+{
+	AIContext.AISubsystem.LastPlayerSeenLocation = AIContext.PlayerTank.GetActorLocation();
+	AIContext.AISubsystem.LastPlayerSeenTime = AIContext.NowSeconds;
+
+	UE_VLOG_LOCATION(this, LogTRAI, VeryVerbose, AIContext.AISubsystem.LastPlayerSeenLocation, 25.0f, FColor::Green, TEXT("Current Player Loc"));
+}
+
+bool ATankAIController::PassesDirectPerceptionReactionTimeDelay()
+{
+	auto World = GetWorld();
+	check(World);
+
+	const auto NowSeconds = World->GetTimeSeconds();
+
+	if (FirstInRangeTime < 0)
+	{
+		FirstInRangeTime = NowSeconds;
+	}
+
+	return NowSeconds - FirstInRangeTime >= ReactionTime;
+}
+
+ABaseTankPawn* ATankAIController::GetControlledTank() const
+{
+	return Cast<ABaseTankPawn>(GetPawn());
 }
 
 ABaseTankPawn* ATankAIController::GetPlayerTank() const
@@ -149,14 +247,41 @@ void ATankAIController::AimAtPlayerTank(const FTankAIContext& AIContext)
 	AITank.AimAt(AimingData);
 }
 
+TOptional<ATankAIController::FTankAIContext> ATankAIController::GetAIContext() const
+{
+	auto PlayerTank = GetPlayerTank();
+	auto ControlledTank = GetControlledTank();
+
+	if (!PlayerTank || !ControlledTank)
+	{
+		return {};
+	}
+
+	auto World = GetWorld();
+	check(World);
+
+	auto AISubsystem = World->GetSubsystem<UTankAISharedStateSubsystem>();
+	if (!ensure(AISubsystem))
+	{
+		return {};
+	}
+
+	return FTankAIContext
+	{
+		.MyTank = *ControlledTank,
+		.PlayerTank = *PlayerTank,
+		.AISubsystem = *AISubsystem,
+		.NowSeconds = World->GetTimeSeconds(),
+		.DistSqToPlayer = ControlledTank->GetSquaredDistanceTo(PlayerTank)
+	};
+}
+
 bool ATankAIController::MoveTowardPlayer(const FTankAIContext& AIContext)
 {
 	const auto MinMoveDistance = MinMoveDistanceMeters * 100;
 
-	const auto& PlayerTank = AIContext.PlayerTank;
 	const auto& AITank = AIContext.MyTank;
-
-	const auto& TargetLocation = PlayerTank.GetActorLocation();
+	const auto& TargetLocation = AIContext.AISubsystem.LastPlayerSeenLocation;
 
 	const bool bShouldMove = FVector::DistSquared(AITank.GetActorLocation(), TargetLocation) > FMath::Square(MinMoveDistance);
 
@@ -170,16 +295,27 @@ bool ATankAIController::MoveTowardPlayer(const FTankAIContext& AIContext)
 	return true;
 }
 
-bool ATankAIController::IsPlayerInRange(const FTankAIContext& AIContext) const
+bool ATankAIController::ShouldMoveTowardReportedPosition(const FTankAIContext& AIContext) const
 {
-	const bool bInRangeByDistance = AIContext.MyTank.GetSquaredDistanceTo(&AIContext.PlayerTank) <= FMath::Square(MaxAggroDistanceMeters * 100);
-	if (!bInRangeByDistance)
+	auto& AISubsystem = AIContext.AISubsystem;
+
+	if (AISubsystem.LastPlayerSeenTime < 0)
 	{
 		return false;
 	}
 
-	// Do alternate checks so multiple line trace points are used for reference
-	return LineOfSightTo(&AIContext.PlayerTank, FVector::ZeroVector, true);
+	// Still waiting to process the information
+	if (AIContext.NowSeconds > ReportedPositionReactTime)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+bool ATankAIController::IsPlayerInRange(const FTankAIContext& AIContext) const
+{
+	return AIContext.DistSqToPlayer <= FMath::Square(MaxAggroDistanceMeters * 100);
 }
 
 void ATankAIController::InitTargetingError(const FTankAIContext& AIContext)
@@ -228,34 +364,15 @@ void ATankAIController::OnHealthChanged(UHealthComponent* HealthComponent, float
 	}
 }
 
-void ATankAIController::OnPossess(APawn* InPawn)
+bool ATankAIController::HasLineOfSight(const FTankAIContext& AIContext) const
 {
-	Super::OnPossess(InPawn);
-
-	auto Tank = GetControlledTank();
-	if (!ensure(Tank))
-	{
-		return;
-	}
-
-	// Give AI a basic item
-	Tank->GetItemInventory()->AddItemByName(TR::ItemNames::MainGunName);
-
-	Tank->GetHealthComponent()->OnHealthChanged.AddDynamic(this, &ThisClass::OnHealthChanged);
+	// Do alternate checks so multiple line trace points are used for reference
+	return LineOfSightTo(&AIContext.PlayerTank, FVector::ZeroVector, true);
 }
 
-void ATankAIController::OnUnPossess()
+bool ATankAIController::IsInInfaredRange(const FTankAIContext& AIContext) const
 {
-	auto Tank = GetControlledTank();
-
-	Super::OnUnPossess();
-
-	if (Tank)
-	{
-		// Clear inventory when possessed by player as player start pawn is first possessed by AI and then possessed by player
-		Tank->GetItemInventory()->Clear();
-		Tank->GetHealthComponent()->OnHealthChanged.RemoveDynamic(this, &ThisClass::OnHealthChanged);
-	}
+	return AIContext.DistSqToPlayer <= FMath::Square(MaxInfaredDistanceMeters * 100);
 }
 
 #if ENABLE_VISUAL_LOG
@@ -266,6 +383,26 @@ void ATankAIController::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
 	auto& Category = Snapshot->Status[0];
 
 	Category.Add(TEXT("Shots Fired"), FString::Printf(TEXT("%d"), ShotsFired));
+	Category.Add(TEXT("HasLOS"), LoggingUtils::GetBoolString(bHasLOS));
+	Category.Add(TEXT("InInfaredRange"), LoggingUtils::GetBoolString(bInInfaredRange));
+
+	if (auto AISubsystem = GetWorld()->GetSubsystem<UTankAISharedStateSubsystem>(); AISubsystem)
+	{
+		if (AISubsystem->LastPlayerSeenTime >= 0)
+		{
+			Category.Add(TEXT("LastPlayerSeenTime"), FString::Printf(TEXT("%.1f"), AISubsystem->LastPlayerSeenTime));
+			Category.Add(TEXT("LastPlayerPosition"),  AISubsystem->LastPlayerSeenLocation.ToCompactString());
+		}
+		else
+		{
+			Category.Add(TEXT("LastPlayerSeenTime"), TEXT("N/A"));
+			Category.Add(TEXT("LastPlayerPosition"), TEXT("N/A"));
+		}
+	}
+
+	Category.Add(TEXT("FirstInRangeTime"), FString::Printf(TEXT("%.1f"), FirstInRangeTime));
+	Category.Add(TEXT("ReportedPositionReactTime"), FString::Printf(TEXT("%.1f"), ReportedPositionReactTime));
+	Category.Add(TEXT("TargetingErrorLastTime"), FString::Printf(TEXT("%.1f"), TargetingErrorLastTime));
 	Category.Add(TEXT("Targeting Error"), TargetingError.ToCompactString());
 }
 

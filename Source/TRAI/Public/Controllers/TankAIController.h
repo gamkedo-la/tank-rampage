@@ -10,6 +10,7 @@
 
 class UCurveFloat;
 class UHealthComponent;
+class UTankAISharedStateSubsystem;
 
 /**
  * 
@@ -18,7 +19,7 @@ UCLASS()
 class TRAI_API ATankAIController : public ABaseAIController, public ITankOwner
 {
 	GENERATED_BODY()
-	
+
 public:
 
 	ATankAIController();
@@ -43,9 +44,15 @@ private:
 	{
 		ABaseTankPawn& MyTank;
 		ABaseTankPawn& PlayerTank;
+		UTankAISharedStateSubsystem& AISubsystem;
+		double NowSeconds;
+		float DistSqToPlayer;
 	};
 
 	ABaseTankPawn* GetPlayerTank() const;
+
+	TOptional<FTankAIContext> GetAIContext() const;
+	bool ShouldMoveTowardReportedPosition(const FTankAIContext& AIContext) const;
 
 	void AimAtPlayerTank(const FTankAIContext& AIContext);
 	void Fire(const FTankAIContext& AIContext);
@@ -53,14 +60,31 @@ private:
 	bool MoveTowardPlayer(const FTankAIContext& AIContext);
 	bool IsPlayerInRange(const FTankAIContext& AIContext) const;
 
+	void InitTargetErrorIfApplicable(const FTankAIContext& AIContext);
+
 	void InitTargetingError(const FTankAIContext& AIContext);
+
+	void InitReportedPositionReactTimeIfApplicable(const FTankAIContext& AIContext);
+	void ExecuteAI();
 
 	UFUNCTION()
 	void OnHealthChanged(UHealthComponent* HealthComponent, float PreviousHealthValue, float PreviousMaxHealthValue, AController* EventInstigator, AActor* ChangeCauser);
 
+	bool HasLineOfSight(const FTankAIContext& AIContext) const;
+	bool IsInInfaredRange(const FTankAIContext& AIContext) const;
+
+	void ResetState();
+	void UpdateSharedPerceptionState(const FTankAIContext& AIContext) const;
+
+	bool PassesDirectPerceptionReactionTimeDelay();
+
 private:
 	UPROPERTY(EditDefaultsOnly)
 	float MaxAggroDistanceMeters{ 100.0f };
+
+	/* AI can see through obstacles to perceive the player */
+	UPROPERTY(EditDefaultsOnly)
+	float MaxInfaredDistanceMeters{ 100.0f };
 
 	UPROPERTY(EditDefaultsOnly)
 	float MinMoveDistanceMeters{ 10.0f };
@@ -81,6 +105,15 @@ private:
 	float TargetingErrorResetTime{ 2.0f };
 
 	UPROPERTY(EditAnywhere)
+	float ReportedPositionForgetTime{ 30.0f };
+
+	UPROPERTY(EditAnywhere)
+	float ReportedPositionMinDelayTime{ 2.0f };
+
+	UPROPERTY(EditAnywhere)
+	float ReportedPositionMaxDelayTime{ 6.0f };
+
+	UPROPERTY(EditAnywhere)
 	UCurveFloat* TargetingErrorByDistanceMeters{};
 
 	UPROPERTY(EditAnywhere)
@@ -88,7 +121,11 @@ private:
 
 	float FirstInRangeTime{ -1.0f };
 	float TargetingErrorLastTime{ -1.0f };
+	float ReportedPositionReactTime{ -1.0f };
+
 	int32 ShotsFired{};
+	bool bHasLOS{};
+	bool bInInfaredRange{};
 
 	FVector TargetingError{ EForceInit::ForceInitToZero };
 };
