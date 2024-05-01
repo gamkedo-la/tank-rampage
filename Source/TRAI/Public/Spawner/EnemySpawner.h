@@ -77,7 +77,6 @@ private:
 	mutable TMap<AActor*, FVector> BoundsCache;
 
 	float LastSpawnTime{ -1.f };
-	bool bPlayerInSpawnZone{};
 
 	UPROPERTY(EditAnywhere, Category = "Spawning")
 	float MinimumDistanceFOV{};
