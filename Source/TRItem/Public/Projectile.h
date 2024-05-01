@@ -137,8 +137,14 @@ private:
 	/*
 	* If target is below the ground under the projectile, this is the maximum absolute value of the cosine of angle between projectile to ground and projectile to target. 
 	*/
-	UPROPERTY(Category = "Homing", EditDefaultsOnly)
+	UPROPERTY(Category = "Homing", EditDefaultsOnly, meta = (ClampMin = "-1.0", ClampMax = "1.0"))
 	float HomingGroundAngleCosineThreshold{ 0.85f };
+
+	/*
+	* Minimum alignment of heading to target to consider as a viable candidate so we don't accidentally shoot ourselves or make targeting too powerful.
+	*/
+	UPROPERTY(Category = "Homing", EditDefaultsOnly, meta = (ClampMin = "-1.0", ClampMax = "1.0"))
+	float HomingTargetCosineThreshold{ -0.3f };
 
 	UPROPERTY(Category = "Homing", EditDefaultsOnly)
 	float MaxZDifference{ 5000.0f };

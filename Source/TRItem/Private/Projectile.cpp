@@ -361,6 +361,8 @@ void AProjectile::RefreshHomingTarget()
 	const FVector GroundLocation = GetGroundLocation();
 	const FVector ToGroundDirection = (GroundLocation - CurrentLocation).GetSafeNormal();
 
+	const FVector& ProjectileForwardVector = GetActorForwardVector();
+
 	for (auto PotentialTarget : ProjectileHomingParams.Targets)
 	{
 		// TODO: Use gameplay tags
@@ -369,13 +371,19 @@ void AProjectile::RefreshHomingTarget()
 			continue;
 		}
 
-		++ViableCount;
-
 		// consider both distance and alignment
 		const auto& TargetLocation = PotentialTarget->GetActorLocation();
 		const auto ToTarget = TargetLocation - CurrentLocation;
 		const auto Dist = FMath::Max(0.01, ToTarget.Size());
 		const auto ToTargetDirection = ToTarget / Dist;
+		const auto ToTargetDot = ToTargetDirection | ProjectileForwardVector;
+
+		if (ToTargetDot < HomingTargetCosineThreshold)
+		{
+			continue;
+		}
+
+		++ViableCount;
 
 		if (FMath::Abs(CurrentLocation.Z - TargetLocation.Z) <= MaxZDifference && (
 			TargetLocation.Z >= GroundLocation.Z || FMath::Abs(ToTargetDirection | ToGroundDirection) <= HomingGroundAngleCosineThreshold))
