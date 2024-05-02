@@ -195,7 +195,7 @@ void UTankTrackComponent::DriveTrackNoSuspension(float Throttle, const FName& Fo
 
 	PrimitiveComponent.AddForceAtLocation(ForceApplied, ForceLocation);
 
-	UE_LOG(LogTRTank, VeryVerbose, TEXT("%s-%s: DriveTrackNoSuspension: ForceSocket=%s; Throttle=%f; ForceApplied=%s; ForceLocation=%s"),
+	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: DriveTrackNoSuspension: ForceSocket=%s; Throttle=%f; ForceApplied=%s; ForceLocation=%s"),
 		*LoggingUtils::GetName(GetOwner()), *GetName(), *ForceSocket.ToString(), Throttle, *ForceApplied.ToCompactString(), *ForceLocation.ToCompactString());
 }
 
@@ -213,7 +213,7 @@ void UTankTrackComponent::DriveTrackWithSuspension(float Throttle)
 		Wheel->AddDrivingForce(ForcePerWheels);
 	}
 
-	UE_LOG(LogTRTank, VeryVerbose, TEXT("%s-%s: DriveTrackWithSuspension: Throttle=%f; Wheels=%d; ForcePerWheels=%f"),
+	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: DriveTrackWithSuspension: Throttle=%f; Wheels=%d; ForcePerWheels=%f"),
 		*LoggingUtils::GetName(GetOwner()), *GetName(), Throttle, Wheels.Num(), ForcePerWheels);
 }
 
@@ -228,7 +228,7 @@ float UTankTrackComponent::GetAdjustedMaxDrivingForce() const
 	const auto StuckBoostMultiplier = (bStuckBoostActive ? ThrottleBoostMultiplier : 1.0f);
 	const auto AdjustedMaxDrivingForce = DrivingForceMultiplier * StuckBoostMultiplier * TrackMaxDrivingForce;
 
-	UE_LOG(LogTRTank, VeryVerbose, TEXT("%s-%s: GetAdjustedMaxDrivingForce: multiplier=%f; AdjustedMaxDrivingForce=%f"),
+	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: GetAdjustedMaxDrivingForce: multiplier=%f; AdjustedMaxDrivingForce=%f"),
 		*LoggingUtils::GetName(GetOwner()), *GetName(), DrivingForceMultiplier, AdjustedMaxDrivingForce);
 
 	return AdjustedMaxDrivingForce;
