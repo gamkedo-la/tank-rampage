@@ -518,6 +518,12 @@ bool UTankTrackComponent::IsGroundedLocation(const FVector& WorldLocation, const
 
 void UTankTrackComponent::ApplySidewaysForce(float DeltaTime)
 {
+	// Don't apply if in stuck
+	if (bStuckBoostActive)
+	{
+		return;
+	}
+
 	const auto RootComponent = Cast<UPrimitiveComponent>(GetOwner()->GetRootComponent());
 	if (!RootComponent)
 	{
