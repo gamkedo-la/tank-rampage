@@ -11,9 +11,6 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/AudioComponent.h"
 
-#include "Kismet/GameplayStatics.h"
-#include "Components/AudioComponent.h"
-
 
 UShieldItem::UShieldItem()
 {

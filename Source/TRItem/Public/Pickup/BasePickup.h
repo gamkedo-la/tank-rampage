@@ -7,6 +7,7 @@
 #include "BasePickup.generated.h"
 
 class UGameplayEffect;
+class USoundBase;
 
 UCLASS(Abstract)
 class TRITEM_API ABasePickup : public AActor
@@ -52,6 +53,8 @@ private:
 	UFUNCTION()
 	void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
+	void PlayPickupSfx();
+
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Applied Effects")
 	TSubclassOf<UGameplayEffect> InstantGameplayEffectClass;
@@ -59,6 +62,9 @@ protected:
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
 	float SpawnOffsetZ{};
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
+	TObjectPtr<USoundBase> PickupSfx{};
 
 	bool bMarkedForDestroy{};
 };

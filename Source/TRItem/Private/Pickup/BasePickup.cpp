@@ -9,6 +9,8 @@
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
+#include "Kismet/GameplayStatics.h"
+
 
 ABasePickup::ABasePickup()
 {	
@@ -37,6 +39,8 @@ void ABasePickup::MarkForDestroy()
 		return;
 	}
 
+	PlayPickupSfx();
+
 	bMarkedForDestroy = true;
 
 	GetWorldTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
@@ -60,6 +64,19 @@ void ABasePickup::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActo
 
 		ApplyEffectToTarget(Pawn, InstantGameplayEffectClass);
 	}
+}
+
+void ABasePickup::PlayPickupSfx()
+{
+	if (!PickupSfx)
+	{
+		UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s - PlayPickupSfx - No PickupSfx set"), *GetName());
+		return;
+	}
+
+	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s - PlayPickupSfx - Playing %s"), *GetName(), *PickupSfx->GetName());
+
+	UGameplayStatics::PlaySound2D(GetWorld(), PickupSfx);
 }
 
 void ABasePickup::ApplyEffectToTarget(AActor* Target, TSubclassOf<UGameplayEffect> GameplayEffectClass)
