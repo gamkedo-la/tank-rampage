@@ -34,7 +34,7 @@ void UTRGameInstance::InitLoadingScreen()
 void UTRGameInstance::InitSoundVolumes()
 {
 	auto Settings = UTRGameUserSettings::GetInstance();
-	if (!ensureMsgf(Settings, TEXT("UTRGameUserSettings was NULL")))
+	if (!ensureMsgf(Settings, TEXT("TRGameUserSettings was NULL")))
 	{
 		return;
 	}

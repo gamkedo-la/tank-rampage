@@ -20,6 +20,9 @@ public:
 	UFUNCTION(BlueprintCallable, DisplayName = "Get TR GameUserSettings", Category = "GameUserSettings")
 	static UTRGameUserSettings* GetInstance();
 
+	UFUNCTION(BlueprintPure, Category = "GameUserSettings")
+	static float GetMaxVolume();
+
 	virtual void ApplySettings(bool bCheckForCommandLineOverrides) override;
 
 	UFUNCTION(BlueprintCallable, Category = "GameUserSettings")
@@ -45,6 +48,9 @@ public:
 	mutable FOnGameUserSettingsUpdated OnGameUserSettingsUpdated {};
 
 private:
+
+	static constexpr float MaxVolume = 2.0f;
+
 	UPROPERTY(Config)
 	float MasterVolume{ 1.0f };
 
@@ -56,6 +62,11 @@ private:
 };
 
 #pragma region Inline Definitions
+
+FORCEINLINE float UTRGameUserSettings::GetMaxVolume()
+{
+	return MaxVolume;
+}
 
 FORCEINLINE UTRGameUserSettings* UTRGameUserSettings::GetInstance()
 {
