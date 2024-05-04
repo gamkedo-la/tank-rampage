@@ -117,18 +117,11 @@ void UTRGameInstance::DoLoadingScreen()
 }
 
 #if WITH_EDITOR
-FGameInstancePIEResult UTRGameInstance::InitializeForPlayInEditor(int32 PIEInstanceIndex, const FGameInstancePIEParameters& Params)
+FGameInstancePIEResult UTRGameInstance::StartPlayInEditorGameInstance(ULocalPlayer* LocalPlayer, const FGameInstancePIEParameters& Params)
 {
-	auto Result = Super::InitializeForPlayInEditor(PIEInstanceIndex, Params);
+	auto Result = Super::StartPlayInEditorGameInstance(LocalPlayer, Params);
 
-	auto World = GetWorld();
-	if (!ensure(World))
-	{
-		return Result;
-	}
-
-	// The Init function is too early in the initialization process to update sound mixes. The AudioDevice isn't yet available so wait until BeginPlay.
-	World->OnWorldBeginPlay.AddUObject(this, &ThisClass::InitSoundVolumes);
+	InitSoundVolumes();
 
 	return Result;
 }

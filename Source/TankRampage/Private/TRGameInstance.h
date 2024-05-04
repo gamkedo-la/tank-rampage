@@ -36,8 +36,7 @@ private:
 	void DoLoadingScreen();
 
 #if WITH_EDITOR
-	/* Called to initialize the game instance for PIE instances of the game */
-	virtual FGameInstancePIEResult InitializeForPlayInEditor(int32 PIEInstanceIndex, const FGameInstancePIEParameters& Params);
+	virtual FGameInstancePIEResult StartPlayInEditorGameInstance(ULocalPlayer* LocalPlayer, const FGameInstancePIEParameters& Params) override;
 #endif
 
 private:
