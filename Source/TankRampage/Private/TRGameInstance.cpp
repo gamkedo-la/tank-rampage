@@ -23,8 +23,6 @@ void UTRGameInstance::Init()
 	Super::Init();
 
 	InitLoadingScreen();
-
-	InitSoundVolumes();
 }
 
 void UTRGameInstance::InitLoadingScreen()
@@ -34,18 +32,6 @@ void UTRGameInstance::InitLoadingScreen()
 }
 
 void UTRGameInstance::InitSoundVolumes()
-{
-	auto World = GetWorld();
-	if (!ensure(World))
-	{
-		return;
-	}
-
-	// The Init function is too early in the initialization process to update sound mixes. The AudioDevice isn't yet available so wait until BeginPlay.
-	World->OnWorldBeginPlay.AddUObject(this, &ThisClass::DoInitSoundVolumes);
-}
-
-void UTRGameInstance::DoInitSoundVolumes()
 {
 	auto Settings = UTRGameUserSettings::GetInstance();
 	if (!ensureMsgf(Settings, TEXT("UTRGameUserSettings was NULL")))
@@ -115,6 +101,8 @@ void UTRGameInstance::BeginLoadingScreen(const FString& MapName)
 
 void UTRGameInstance::EndLoadingScreen(UWorld* InLoadedWorld)
 {
+	InitSoundVolumes();
+
 	UE_LOG(LogTankRampage, Display, TEXT("EndLoadingScreen: %s"), *LoggingUtils::GetName(InLoadedWorld));
 }
 
@@ -127,4 +115,22 @@ void UTRGameInstance::DoLoadingScreen()
 
 	GetMoviePlayer()->SetupLoadingScreen(LoadingScreen);
 }
+
+#if WITH_EDITOR
+FGameInstancePIEResult UTRGameInstance::InitializeForPlayInEditor(int32 PIEInstanceIndex, const FGameInstancePIEParameters& Params)
+{
+	auto Result = Super::InitializeForPlayInEditor(PIEInstanceIndex, Params);
+
+	auto World = GetWorld();
+	if (!ensure(World))
+	{
+		return Result;
+	}
+
+	// The Init function is too early in the initialization process to update sound mixes. The AudioDevice isn't yet available so wait until BeginPlay.
+	World->OnWorldBeginPlay.AddUObject(this, &ThisClass::InitSoundVolumes);
+
+	return Result;
+}
+#endif
 

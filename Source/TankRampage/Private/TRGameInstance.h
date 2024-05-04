@@ -24,7 +24,6 @@ private:
 	void InitLoadingScreen();
 
 	void InitSoundVolumes();
-	void DoInitSoundVolumes();
 
 	void ApplyMixToSoundClass(USoundClass* SoundClass, float Volume);
 
@@ -35,6 +34,11 @@ private:
 	void EndLoadingScreen(UWorld* InLoadedWorld);
 
 	void DoLoadingScreen();
+
+#if WITH_EDITOR
+	/* Called to initialize the game instance for PIE instances of the game */
+	virtual FGameInstancePIEResult InitializeForPlayInEditor(int32 PIEInstanceIndex, const FGameInstancePIEParameters& Params);
+#endif
 
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Sound")
