@@ -12,7 +12,7 @@
 /**
  * Rotates the aim to yaw the barrel toward aiming location.
  */
-UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent), HideCategories = ("Collision"))
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class UTankTurretComponent : public UStaticMeshComponent
 {
 	GENERATED_BODY()

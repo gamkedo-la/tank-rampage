@@ -12,7 +12,7 @@
 /**
  * Pitches up and down for aiming the main gun.
  */
-UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent), HideCategories = ("Collision"))
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class UTankBarrelComponent : public UStaticMeshComponent
 {
 	GENERATED_BODY()

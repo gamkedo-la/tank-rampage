@@ -413,7 +413,7 @@ void AProjectile::RefreshHomingTarget()
 				}
 			}
 
-			UE_VLOG_LOCATION(this, LogTRItem, Verbose, TargetLocation, 15.0f, FColor::Cyan, TEXT("MissileTargetScore: %f"), Score);
+			UE_VLOG_LOCATION(this, LogTRItem, Verbose, TargetLocation + FVector(0,0,100), 15.0f, FColor::Cyan, TEXT("MissileTargetScore: %f"), Score);
 			UE_VLOG_UELOG(this, LogTRItem, Verbose, TEXT("%s: RefreshHomingTarget: Target=%s; Score=%f"), *GetName(), *LoggingUtils::GetName(PotentialTarget), Score);
 		}
 	}
