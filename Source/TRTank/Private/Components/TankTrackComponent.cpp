@@ -50,6 +50,10 @@ void UTankTrackComponent::InitializeComponent()
 {
 	Super::InitializeComponent();
 
+	// Ensure first check for airborne cooldown succeeds without needing to explicitly check for < 0
+	LastAirborneTime = -CounterAirborneCooldownTime - 0.01f;
+	LastCounterTime = -CounterMangitudeMinInterval - 0.01f;
+
 	check(GetOwner());
 
 	SetNotifyRigidBodyCollision(true);
@@ -77,8 +81,25 @@ void UTankTrackComponent::NotifyRelevantTankCollision(const FHitResult& Hit, con
 		return;
 	}
 
-	// TODO: Should look for recently grounded as could have fallen from air and then don't want to counteract
-	// Do this with checking duration of grounded and consider not grounded when airborn which means IsGround is false
+	auto World = GetWorld();
+	check(World);
+
+	const auto TimeSeconds = World->GetTimeSeconds();
+
+	// countering is in cooldown and being airborne most likely not the result of the countering itself
+	const auto LastCounterDeltaTime = TimeSeconds - LastCounterTime;
+
+	if (LastCounterDeltaTime < CounterMangitudeMinInterval)
+	{
+		return;
+	}
+
+	const auto LastAirborneDeltaTime = TimeSeconds - LastAirborneTime;
+	
+	if (LastAirborneDeltaTime <= CounterAirborneCooldownTime && LastCounterDeltaTime > CounterAirborneCooldownTime)
+	{
+		return;
+	}
 
 	const auto& UpVector = GetUpVector();
 	const auto DotProduct = UpVector | Hit.Normal;
@@ -92,16 +113,6 @@ void UTankTrackComponent::NotifyRelevantTankCollision(const FHitResult& Hit, con
 	const auto ImpulseSize = NormalImpulse.Size();
 
 	if (ImpulseSize < CounterMangitudeThreshold)
-	{
-		return;
-	}
-
-	auto World = GetWorld();
-	check(World);
-
-	const auto TimeSeconds = World->GetTimeSeconds();
-
-	if (TimeSeconds - LastCounterTime < CounterMangitudeMinInterval)
 	{
 		return;
 	}
@@ -631,14 +642,25 @@ void UTankTrackComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 		CalculateGrounded();
 	}
 
+	const bool bGrounded = IsGrounded();
+
 	if (ShouldCheckForBeingStuck())
 	{
 		CalculateStuck();
 	}
 
-	if (!FMath::IsNearlyZero(CurrentThrottle) && !HasSuspension() && IsGrounded())
+	if (bGrounded && !FMath::IsNearlyZero(CurrentThrottle) && !HasSuspension())
 	{
 		DriveTrackNoSuspension(CurrentThrottle);
+	}
+
+	// update last airborne time
+	if (!bGrounded)
+	{
+		auto World = GetWorld();
+		check(World);
+
+		LastAirborneTime = World->GetTimeSeconds();
 	}
 
 	ClearThrottle();
@@ -656,6 +678,7 @@ void UTankTrackComponent::DescribeSelfToVisLog(FVisualLogEntry* Snapshot) const
 	Category.Add(TEXT("Throttle"), FString::Printf(TEXT("%.1f"), LastThrottle));
 	Category.Add(TEXT("MaxDrivingForceMultiplier"), FString::Printf(TEXT("%.1f"), GetAdjustedMaxDrivingForce() / TrackMaxDrivingForce));
 	Category.Add(TEXT("Grounded"), LoggingUtils::GetBoolString(IsGrounded()));
+	Category.Add(TEXT("LastAirborneTime"), LastAirborneTime >= 0 ? FString::Printf(TEXT("%.1f"), LastAirborneTime) : TEXT("N/A"));
 	Category.Add(TEXT("Suspension"), LoggingUtils::GetBoolString(bSuspension));
 	Category.Add(TEXT("Wheels"), FString::Printf(TEXT("%d"), bSuspension ? Wheels.Num() : TrackWheels.Num()));
 

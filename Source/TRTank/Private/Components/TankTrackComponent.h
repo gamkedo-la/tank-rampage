@@ -115,49 +115,54 @@ private:
 		FVector,
 		decltype([]() { return FVector{ ForceInitToZero }; }),
 		decltype([](const FVector& V) { return FMath::Max3(FMath::Abs(V.X), FMath::Abs(V.Y), FMath::Abs(V.Z)); })
-	> ;
+	>;
+
 	FVectorBuffer PositionBuffer;
 	TR::TTimedCircularBuffer<float> ThrottleBuffer;
 
 	/* Tick rate for stuck detection. Set to 0 to use the component tick and < 0 to disable. */
-	UPROPERTY(EditDefaultsOnly, Category = Stuck)
+	UPROPERTY(EditDefaultsOnly, Category = "Stuck")
 	float StuckCheckInterval{ 0.1f };
 	
 	/* Amount of time to sample for stuck detection. */
-	UPROPERTY(EditDefaultsOnly, Category = Stuck, meta = (ClampMin = "1.0"))
+	UPROPERTY(EditDefaultsOnly, Category = "Stuck", meta = (ClampMin = "1.0"))
 	float ThrottleSampleTime{ 3.0f };
 
 	/* Multiplier on current throttle to give tank a boost when detected as stuck */
-	UPROPERTY(EditDefaultsOnly, Category = Stuck, meta = (ClampMin = "2.0"))
+	UPROPERTY(EditDefaultsOnly, Category = "Stuck", meta = (ClampMin = "2.0"))
 	float ThrottleBoostMultiplier{ 6.0f };
 
 	/* Minimum average throttle over sampling interval in order for stuck detection to be active. */
-	UPROPERTY(EditDefaultsOnly, Category = Stuck, meta = (ClampMin = "0.1"))
+	UPROPERTY(EditDefaultsOnly, Category = "Stuck", meta = (ClampMin = "0.1"))
 	float ThrottleStuckDetectionThreshold{ 0.5f };
 
 	/* Minimum displacement when above throttle threshold to detect not being stuck. */
-	UPROPERTY(EditDefaultsOnly, Category = Stuck, meta = (ClampMin = "0.0"))
+	UPROPERTY(EditDefaultsOnly, Category = "Stuck", meta = (ClampMin = "0.0"))
 	float StuckDisplacementThreshold{ 100.0f };
 
 	/* Amount of time that elapses after being stuck before tank is reset. 
 	*  To disable this behavior set to <= 0.
 	*/
-	UPROPERTY(EditDefaultsOnly, Category = Stuck)
+	UPROPERTY(EditDefaultsOnly, Category = "Stuck")
 	float StuckResetThresholdTime{ 5.0f };
 
-	UPROPERTY(EditDefaultsOnly, Category = Stuck)
+	UPROPERTY(EditDefaultsOnly, Category = "Road Hack")
 	float RoadAlignmentCosineThreshold{ 0.75f };
 
-	UPROPERTY(EditDefaultsOnly, Category = Stuck)
+	UPROPERTY(EditDefaultsOnly, Category = "Road Hack")
 	float CounterMagnitudeMaxValue{ 5e6 };
 
-	UPROPERTY(EditDefaultsOnly, Category = Stuck)
+	UPROPERTY(EditDefaultsOnly, Category = "Road Hack")
 	float CounterMangitudeThreshold{ 1000.0f };
 
-	UPROPERTY(EditDefaultsOnly, Category = Stuck)
+	UPROPERTY(EditDefaultsOnly, Category = "Road Hack")
 	float CounterMangitudeMinInterval{ 0.2f };
 
-	float LastCounterTime{ -1.0f };
+	UPROPERTY(EditDefaultsOnly, Category = "Road Hack")
+	float CounterAirborneCooldownTime{ 5.0f };
+
+	float LastCounterTime{};
+	float LastAirborneTime{};
 
 	float CalculatedStuckCheckInterval{};
 	float LastStuckTime{ -1.0f };
