@@ -106,8 +106,8 @@ void UTankTrackComponent::NotifyRelevantTankCollision(const FHitResult& Hit, con
 		return;
 	}
 
-	UE_VLOG_UELOG(GetOwner(), LogTRTank, Warning,
-		TEXT("%s-%s: NotifyRelevantTankCollision:  Normal DotProduct=%f < RoadAlignmentCosineThreshold=(%f); NormalImpulse=%s; Hit Comp=%s;Actor=%s; ObjectType=%s"),
+	UE_VLOG_UELOG(GetOwner(), LogTRTank, Log,
+		TEXT("%s-%s: NotifyRelevantTankCollision:  Normal DotProduct=%f < RoadAlignmentCosineThreshold=(%f); NormalImpulse=%s; Component=%s;Actor=%s; ObjectType=%s"),
 		*LoggingUtils::GetName(GetOwner()), *GetName(),
 		DotProduct,
 		RoadAlignmentCosineThreshold,
@@ -118,17 +118,28 @@ void UTankTrackComponent::NotifyRelevantTankCollision(const FHitResult& Hit, con
 	);
 
 	// counteract the normal impulse at the location
-	// TODO: Possibly have a cooldown on this to avoid it pushing the tank up too much
-	//const FVector& CounterImpulseDirection = UpVector; // (UpVector + GetForwardVector()).GetSafeNormal();
-	const auto CounterImpulseMagnitude = CounterMagnitudeMaxValue; // FMath::Min(ImpulseSize * CounterMagnitudeMultiplier, CounterMagnitudeMaxValue);
-	//const FVector& CounterImpulse = CounterImpulseDirection * CounterImpulseMagnitude;
-	//const FVector& CounterImpulse = -NormalImpulse;
 
-	const auto Location = GetOwner()->GetActorLocation(); //Hit.Location
+	const auto CounterImpulseMagnitude = CounterMagnitudeMaxValue;
 
-	AddImpulseAtLocation(UpVector * CounterImpulseMagnitude, Location);
-	// Apply impulse at the track component location in direction of throttle
-	AddImpulseAtLocation(LastThrottleSign * GetOwner()->GetActorForwardVector() * CounterImpulseMagnitude, GetComponentLocation());
+	const auto UpForceLocation = GetOwner()->GetActorLocation();
+	const auto UpImpulse = UpVector * CounterImpulseMagnitude;
+	AddImpulseAtLocation(UpImpulse, UpForceLocation);
+
+	TR::DebugUtils::DrawForceAtLocation(this, UpImpulse, UpForceLocation, FColor::Orange);
+	UE_VLOG_ARROW(GetOwner(), LogTRTank, Log, UpForceLocation, UpForceLocation + UpVector * 600, FColor::Orange, TEXT("Road Correction"));
+
+	// Apply additional impulse at the track component location in direction of throttle
+	if (!FMath::IsNearlyZero(LastThrottle))
+	{
+		const auto ImpulseDirection = FMath::Sign(LastThrottle) * GetForwardVector();
+		const auto DirectionalImpulse = ImpulseDirection * CounterImpulseMagnitude;
+		const auto& DirectionalImpulseLocation = GetComponentLocation();
+
+		AddImpulseAtLocation(DirectionalImpulse, DirectionalImpulseLocation);
+
+		TR::DebugUtils::DrawForceAtLocation(this, DirectionalImpulse, DirectionalImpulseLocation, FColor::Orange);
+		UE_VLOG_ARROW(GetOwner(), LogTRTank, Log, DirectionalImpulseLocation, DirectionalImpulseLocation + ImpulseDirection * 600, FColor::Orange, TEXT("Road Correction"));
+	}
 
 	LastCounterTime = TimeSeconds;
 }
@@ -236,11 +247,6 @@ void UTankTrackComponent::DriveTrackNoSuspension(float Throttle, const FName& Fo
 void UTankTrackComponent::RecordThrottle(float Value)
 {
 	CurrentThrottle = LastThrottle = FMath::Clamp(Value + CurrentThrottle, -1.0f, 1.0f);
-
-	if (!FMath::IsNearlyZero(CurrentThrottle))
-	{
-		LastThrottleSign = CurrentThrottle > 0 ? 1 : -1;
-	}
 }
 
 void UTankTrackComponent::ClearThrottle()
@@ -648,7 +654,6 @@ void UTankTrackComponent::DescribeSelfToVisLog(FVisualLogEntry* Snapshot) const
 	const bool bSuspension = HasSuspension();
 
 	Category.Add(TEXT("Throttle"), FString::Printf(TEXT("%.1f"), LastThrottle));
-	Category.Add(TEXT("LastThrottleSign"), FString::Printf(TEXT("%d"), LastThrottleSign));
 	Category.Add(TEXT("MaxDrivingForceMultiplier"), FString::Printf(TEXT("%.1f"), GetAdjustedMaxDrivingForce() / TrackMaxDrivingForce));
 	Category.Add(TEXT("Grounded"), LoggingUtils::GetBoolString(IsGrounded()));
 	Category.Add(TEXT("Suspension"), LoggingUtils::GetBoolString(bSuspension));

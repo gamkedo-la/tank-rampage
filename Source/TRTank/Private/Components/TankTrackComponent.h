@@ -166,7 +166,6 @@ private:
 
 	float CurrentThrottle{};
 	float LastThrottle{};
-	int8 LastThrottleSign : 2 {};
 
 	bool bStuckCheckingEnabled{};
 	bool bStuckBoostActive{};
