@@ -26,31 +26,16 @@ void UTankCollisionDetectionComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// subscribe to all owner collision events
 	auto MyOwner = GetOwner();
 	check(MyOwner);
 
-	//// Need the component on other end of hit so need to subscribe to all component-level events
-	//TArray<UPrimitiveComponent*> Comps;
-	//MyOwner->GetComponents<UPrimitiveComponent>(Comps);
-	// Subscribe to OnComponentHit for each and pass the context to OnRelevantCollision
-	// 	void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit);
-
+	// subscribe to all owner collision events
+	// This will fire for all primitive components on the tank
 	MyOwner->OnActorHit.AddUniqueDynamic(this, &ThisClass::OnHit);
 }
 
 void UTankCollisionDetectionComponent::OnHit(AActor* SelfActor, AActor* OtherActor, FVector NormalImpulse, const FHitResult& Hit)
 {
-	//const auto OtherComponent = Hit.GetComponent();
-
-	//if (auto Pawn = Cast<APawn>(GetOwner()); OtherComponent && Pawn && Pawn->IsPlayerControlled())
-	//{
-	//	UE_LOG(LogTRTank, Warning, TEXT("%s: NormalImpulse=%s; Hit Comp=%s;Actor=%s; ObjectType=%s"), *GetName(),
-	//		*NormalImpulse.ToCompactString(),
-	//		*OtherComponent->GetName(), *LoggingUtils::GetName(OtherActor),
-	//		*LoggingUtils::GetName(OtherComponent->GetCollisionObjectType()));
-	//}
-
 	if (IsRelevantCollision(Hit))
 	{
 		OnRelevantCollision.Broadcast(Hit, NormalImpulse);

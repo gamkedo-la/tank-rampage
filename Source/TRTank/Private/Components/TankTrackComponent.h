@@ -29,6 +29,9 @@ public:
 	UFUNCTION(BlueprintPure)
 	bool IsGrounded() const;
 
+	UFUNCTION(BlueprintPure)
+	bool IsAirborne() const;
+
 #if ENABLE_VISUAL_LOG
 
 	void DescribeSelfToVisLog(FVisualLogEntry* Snapshot) const;
@@ -36,6 +39,9 @@ public:
 #endif
 
 	void NotifyRelevantTankCollision(const FHitResult& Hit, const FVector& NormalImpulse);
+
+	UFUNCTION(BlueprintPure)
+	float GetThrottle() const;
 
 protected:
 	virtual void BeginPlay() override;
@@ -76,12 +82,19 @@ private:
 
 	void DriveTrackNoSuspension(float Throttle, const FName& ForceSocket, UPrimitiveComponent& PrimitiveComponent, float ForceMultiplier);
 
+	void RecordThrottle(float Value);
+	void ClearThrottle();
+
 private:
 
 	struct FTrackWheel
 	{
 		FName SocketName{};
 		bool bGrounded{};
+
+		#if ENABLE_VISUAL_LOG
+			void GrabDebugSnapshot(FVisualLogEntry* Snapshot) const;
+		#endif
 	};
 
 	TArray<FTrackWheel> TrackWheels{};
@@ -94,8 +107,6 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = Throttle)
 	float GroundTraceInterval{ 0.1f };
-
-	float CurrentThrottle{};
 
 	UPROPERTY(Transient)
 	TArray<ASpringWheel*> Wheels;
@@ -138,12 +149,6 @@ private:
 	float RoadAlignmentCosineThreshold{ 0.75f };
 
 	UPROPERTY(EditDefaultsOnly, Category = Stuck)
-	float CounterDelayTime{ 0.1f };
-
-	UPROPERTY(EditDefaultsOnly, Category = Stuck)
-	float CounterMagnitudeMultiplier{ 0.2f };
-
-	UPROPERTY(EditDefaultsOnly, Category = Stuck)
 	float CounterMagnitudeMaxValue{ 5e6 };
 
 	UPROPERTY(EditDefaultsOnly, Category = Stuck)
@@ -153,11 +158,30 @@ private:
 	float CounterMangitudeMinInterval{ 0.2f };
 
 	float LastCounterTime{ -1.0f };
+
 	float CalculatedStuckCheckInterval{};
 	float LastStuckTime{ -1.0f };
 	float LastStuckCheckTime{ -1.0f };
 	float LastGroundTraceTime{ -1.0f };
 
+	float CurrentThrottle{};
+	float LastThrottle{};
+	int8 LastThrottleSign : 2 {};
+
 	bool bStuckCheckingEnabled{};
 	bool bStuckBoostActive{};
 };
+
+#pragma region Inline Definitions
+
+FORCEINLINE bool UTankTrackComponent::IsAirborne() const
+{
+	return !IsGrounded();
+}
+
+FORCEINLINE float UTankTrackComponent::GetThrottle() const
+{
+	return LastThrottle;
+}
+
+#pragma endregion Inline Definitions

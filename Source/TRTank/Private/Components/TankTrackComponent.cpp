@@ -78,6 +78,7 @@ void UTankTrackComponent::NotifyRelevantTankCollision(const FHitResult& Hit, con
 	}
 
 	// TODO: Should look for recently grounded as could have fallen from air and then don't want to counteract
+	// Do this with checking duration of grounded and consider not grounded when airborn which means IsGround is false
 
 	const auto& UpVector = GetUpVector();
 	const auto DotProduct = UpVector | Hit.Normal;
@@ -105,7 +106,7 @@ void UTankTrackComponent::NotifyRelevantTankCollision(const FHitResult& Hit, con
 		return;
 	}
 
-	UE_VLOG_UELOG(GetOwner(), LogTRTank, Log,
+	UE_VLOG_UELOG(GetOwner(), LogTRTank, Warning,
 		TEXT("%s-%s: NotifyRelevantTankCollision:  Normal DotProduct=%f < RoadAlignmentCosineThreshold=(%f); NormalImpulse=%s; Hit Comp=%s;Actor=%s; ObjectType=%s"),
 		*LoggingUtils::GetName(GetOwner()), *GetName(),
 		DotProduct,
@@ -126,25 +127,10 @@ void UTankTrackComponent::NotifyRelevantTankCollision(const FHitResult& Hit, con
 	const auto Location = GetOwner()->GetActorLocation(); //Hit.Location
 
 	AddImpulseAtLocation(UpVector * CounterImpulseMagnitude, Location);
-	AddImpulseAtLocation(GetOwner()->GetActorForwardVector() * CounterImpulseMagnitude, Location);
+	// Apply impulse at the track component location in direction of throttle
+	AddImpulseAtLocation(LastThrottleSign * GetOwner()->GetActorForwardVector() * CounterImpulseMagnitude, GetComponentLocation());
 
 	LastCounterTime = TimeSeconds;
-
-	//AddImpulseAtLocation(-NormalImpulse.GetSafeNormal() * CounterImpulseMagnitude * 0.5f, Hit.Location);
-
-	// Settle down the impulse - This results in tank flying in the air like crazy!
-
-	//const auto LocationLocal = GetComponentTransform().InverseTransformPosition(Hit.Location);
-
-	//auto Delegate = FTimerDelegate::CreateWeakLambda(this, [this, Impulse = -CounterImpulse, LocationLocal]
-	//{
-	//	const auto NewWorldLocation = this->GetComponentTransform().TransformVector(LocationLocal);
-
-	//	this->AddImpulseAtLocation(Impulse, NewWorldLocation);
-	//});
-
-	//FTimerHandle Handle;
-	//World->GetTimerManager().SetTimer(Handle, Delegate, CounterDelayTime, false);
 }
 
 void UTankTrackComponent::BeginPlay()
@@ -160,14 +146,14 @@ void UTankTrackComponent::BeginPlay()
 
 void UTankTrackComponent::SetThrottle(float InThrottle)
 {
-	CurrentThrottle = FMath::Clamp(InThrottle + CurrentThrottle, -1.0f, 1.0f);
+	RecordThrottle(InThrottle);
 
 	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: SetThrottle: %f"), *LoggingUtils::GetName(GetOwner()), *GetName(), CurrentThrottle);
 
 	if (HasSuspension())
 	{
 		DriveTrackWithSuspension(CurrentThrottle);
-		CurrentThrottle = 0;
+		ClearThrottle();
 	}
 }
 
@@ -180,37 +166,6 @@ bool UTankTrackComponent::IsGrounded() const
 
 	return TrackWheels.ContainsByPredicate([](const auto& Wheel) { return Wheel.bGrounded;  });
 }
-
-#if ENABLE_VISUAL_LOG
-
-void UTankTrackComponent::DescribeSelfToVisLog(FVisualLogEntry* Snapshot) const
-{
-	FVisualLogStatusCategory Category;
-	Category.Category = TEXT("Tank Track Component");
-
-	const bool bSuspension = HasSuspension();
-
-	Category.Add(TEXT("MaxDrivingForceMultiplier"), FString::Printf(TEXT("%.1f"), GetAdjustedMaxDrivingForce() / TrackMaxDrivingForce));
-	Category.Add(TEXT("Grounded"), LoggingUtils::GetBoolString(IsGrounded()));
-	Category.Add(TEXT("Suspension"), LoggingUtils::GetBoolString(bSuspension));
-	if (bSuspension)
-	{
-		Category.Add(TEXT("Wheels"), FString::Printf(TEXT("%d"), Wheels.Num()));
-	}
-
-	Snapshot->Status.Add(Category);
-
-	// Need to grab wheel snapshot after adding the category
-	if (bSuspension)
-	{
-		for (auto Wheel : Wheels)
-		{
-			Wheel->GrabDebugSnapshot(Snapshot);
-		}
-	}
-}
-
-#endif
 
 void UTankTrackComponent::DriveTrackNoSuspension(float Throttle)
 {
@@ -278,6 +233,26 @@ void UTankTrackComponent::DriveTrackNoSuspension(float Throttle, const FName& Fo
 		*LoggingUtils::GetName(GetOwner()), *GetName(), *ForceSocket.ToString(), Throttle, *ForceApplied.ToCompactString(), *ForceLocation.ToCompactString());
 }
 
+void UTankTrackComponent::RecordThrottle(float Value)
+{
+	CurrentThrottle = LastThrottle = FMath::Clamp(Value + CurrentThrottle, -1.0f, 1.0f);
+
+	if (!FMath::IsNearlyZero(CurrentThrottle))
+	{
+		LastThrottleSign = CurrentThrottle > 0 ? 1 : -1;
+	}
+}
+
+void UTankTrackComponent::ClearThrottle()
+{
+	// Clear "LastThrottle" one frame behind so that external dependencies can query the value
+	if (FMath::IsNearlyZero(CurrentThrottle))
+	{
+		LastThrottle = 0;
+	}
+
+	CurrentThrottle = 0;
+}
 
 void UTankTrackComponent::DriveTrackWithSuspension(float Throttle)
 {
@@ -655,16 +630,66 @@ void UTankTrackComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 		CalculateStuck();
 	}
 
-	if (!FMath::IsNearlyZero(CurrentThrottle) && !HasSuspension())
+	if (!FMath::IsNearlyZero(CurrentThrottle) && !HasSuspension() && IsGrounded())
 	{
-		if (IsGrounded())
-		{
-			DriveTrackNoSuspension(CurrentThrottle);
-		}
+		DriveTrackNoSuspension(CurrentThrottle);
+	}
 
-		CurrentThrottle = 0;
+	ClearThrottle();
+}
+
+#if ENABLE_VISUAL_LOG
+
+void UTankTrackComponent::DescribeSelfToVisLog(FVisualLogEntry* Snapshot) const
+{
+	FVisualLogStatusCategory Category;
+	Category.Category = FString::Printf(TEXT("Tank Track Component (%s)"), *GetName());
+
+	const bool bSuspension = HasSuspension();
+
+	Category.Add(TEXT("Throttle"), FString::Printf(TEXT("%.1f"), LastThrottle));
+	Category.Add(TEXT("LastThrottleSign"), FString::Printf(TEXT("%d"), LastThrottleSign));
+	Category.Add(TEXT("MaxDrivingForceMultiplier"), FString::Printf(TEXT("%.1f"), GetAdjustedMaxDrivingForce() / TrackMaxDrivingForce));
+	Category.Add(TEXT("Grounded"), LoggingUtils::GetBoolString(IsGrounded()));
+	Category.Add(TEXT("Suspension"), LoggingUtils::GetBoolString(bSuspension));
+	Category.Add(TEXT("Wheels"), FString::Printf(TEXT("%d"), bSuspension ? Wheels.Num() : TrackWheels.Num()));
+
+	Snapshot->Status.Add(Category);
+
+	// Need to grab wheel snapshot after adding the category
+	if (bSuspension)
+	{
+		for (auto Wheel : Wheels)
+		{
+			Wheel->GrabDebugSnapshot(Snapshot);
+		}
+	}
+	else
+	{
+		for (const auto& TrackWheelInfo : TrackWheels)
+		{
+			TrackWheelInfo.GrabDebugSnapshot(Snapshot);
+		}
 	}
 }
+
+void UTankTrackComponent::FTrackWheel::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
+{
+	FVisualLogStatusCategory Category;
+	Category.Category = FString::Printf(TEXT("Wheel (%s)"), *SocketName.ToString());
+
+	Category.Add(TEXT("Grounded"), LoggingUtils::GetBoolString(bGrounded));
+
+	// Push the category to correct nesting in the visual logger details panel
+	auto& StatusArray = Snapshot->Status;
+	// Should have called Snapshot->Status.Add(Category) prior to calling this member function
+	check(!StatusArray.IsEmpty());
+
+	// Nest under parent
+	StatusArray.Last().AddChild(Category);
+}
+
+#endif
 
 namespace
 {
