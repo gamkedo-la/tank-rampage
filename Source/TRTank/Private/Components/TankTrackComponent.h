@@ -35,6 +35,8 @@ public:
 
 #endif
 
+	void NotifyRelevantTankCollision(const FHitResult& Hit, const FVector& NormalImpulse);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void InitializeComponent() override;
@@ -132,6 +134,25 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Stuck)
 	float StuckResetThresholdTime{ 5.0f };
 
+	UPROPERTY(EditDefaultsOnly, Category = Stuck)
+	float RoadAlignmentCosineThreshold{ 0.75f };
+
+	UPROPERTY(EditDefaultsOnly, Category = Stuck)
+	float CounterDelayTime{ 0.1f };
+
+	UPROPERTY(EditDefaultsOnly, Category = Stuck)
+	float CounterMagnitudeMultiplier{ 0.2f };
+
+	UPROPERTY(EditDefaultsOnly, Category = Stuck)
+	float CounterMagnitudeMaxValue{ 5e6 };
+
+	UPROPERTY(EditDefaultsOnly, Category = Stuck)
+	float CounterMangitudeThreshold{ 1000.0f };
+
+	UPROPERTY(EditDefaultsOnly, Category = Stuck)
+	float CounterMangitudeMinInterval{ 0.2f };
+
+	float LastCounterTime{ -1.0f };
 	float CalculatedStuckCheckInterval{};
 	float LastStuckTime{ -1.0f };
 	float LastStuckCheckTime{ -1.0f };

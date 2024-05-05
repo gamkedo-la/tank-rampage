@@ -52,6 +52,8 @@ void UTankTrackComponent::InitializeComponent()
 
 	check(GetOwner());
 
+	SetNotifyRigidBodyCollision(true);
+
 	auto MovementComponent = GetOwner()->FindComponentByClass<UMovementComponent>();
 
 	if (MovementComponent)
@@ -66,6 +68,83 @@ void UTankTrackComponent::InitializeComponent()
 
 	InitStuckDetection();
 	InitTrackWheels();
+}
+
+void UTankTrackComponent::NotifyRelevantTankCollision(const FHitResult& Hit, const FVector& NormalImpulse)
+{
+	if (HasSuspension())
+	{
+		return;
+	}
+
+	// TODO: Should look for recently grounded as could have fallen from air and then don't want to counteract
+
+	const auto& UpVector = GetUpVector();
+	const auto DotProduct = UpVector | Hit.Normal;
+
+	if (DotProduct >= RoadAlignmentCosineThreshold)
+	{
+		return;
+	}
+
+	// check impulse size
+	const auto ImpulseSize = NormalImpulse.Size();
+
+	if (ImpulseSize < CounterMangitudeThreshold)
+	{
+		return;
+	}
+
+	auto World = GetWorld();
+	check(World);
+
+	const auto TimeSeconds = World->GetTimeSeconds();
+
+	if (TimeSeconds - LastCounterTime < CounterMangitudeMinInterval)
+	{
+		return;
+	}
+
+	UE_VLOG_UELOG(GetOwner(), LogTRTank, Log,
+		TEXT("%s-%s: NotifyRelevantTankCollision:  Normal DotProduct=%f < RoadAlignmentCosineThreshold=(%f); NormalImpulse=%s; Hit Comp=%s;Actor=%s; ObjectType=%s"),
+		*LoggingUtils::GetName(GetOwner()), *GetName(),
+		DotProduct,
+		RoadAlignmentCosineThreshold,
+		*NormalImpulse.ToCompactString(),
+		*LoggingUtils::GetName(Hit.GetComponent()),
+		*LoggingUtils::GetName(Hit.GetActor()),
+		Hit.GetComponent() ? *LoggingUtils::GetName(Hit.GetComponent()->GetCollisionObjectType()) : TEXT("NULL")
+	);
+
+	// counteract the normal impulse at the location
+	// TODO: Possibly have a cooldown on this to avoid it pushing the tank up too much
+	//const FVector& CounterImpulseDirection = UpVector; // (UpVector + GetForwardVector()).GetSafeNormal();
+	const auto CounterImpulseMagnitude = CounterMagnitudeMaxValue; // FMath::Min(ImpulseSize * CounterMagnitudeMultiplier, CounterMagnitudeMaxValue);
+	//const FVector& CounterImpulse = CounterImpulseDirection * CounterImpulseMagnitude;
+	//const FVector& CounterImpulse = -NormalImpulse;
+
+	const auto Location = GetOwner()->GetActorLocation(); //Hit.Location
+
+	AddImpulseAtLocation(UpVector * CounterImpulseMagnitude, Location);
+	AddImpulseAtLocation(GetOwner()->GetActorForwardVector() * CounterImpulseMagnitude, Location);
+
+	LastCounterTime = TimeSeconds;
+
+	//AddImpulseAtLocation(-NormalImpulse.GetSafeNormal() * CounterImpulseMagnitude * 0.5f, Hit.Location);
+
+	// Settle down the impulse - This results in tank flying in the air like crazy!
+
+	//const auto LocationLocal = GetComponentTransform().InverseTransformPosition(Hit.Location);
+
+	//auto Delegate = FTimerDelegate::CreateWeakLambda(this, [this, Impulse = -CounterImpulse, LocationLocal]
+	//{
+	//	const auto NewWorldLocation = this->GetComponentTransform().TransformVector(LocationLocal);
+
+	//	this->AddImpulseAtLocation(Impulse, NewWorldLocation);
+	//});
+
+	//FTimerHandle Handle;
+	//World->GetTimerManager().SetTimer(Handle, Delegate, CounterDelayTime, false);
 }
 
 void UTankTrackComponent::BeginPlay()
@@ -198,6 +277,7 @@ void UTankTrackComponent::DriveTrackNoSuspension(float Throttle, const FName& Fo
 	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: DriveTrackNoSuspension: ForceSocket=%s; Throttle=%f; ForceApplied=%s; ForceLocation=%s"),
 		*LoggingUtils::GetName(GetOwner()), *GetName(), *ForceSocket.ToString(), Throttle, *ForceApplied.ToCompactString(), *ForceLocation.ToCompactString());
 }
+
 
 void UTankTrackComponent::DriveTrackWithSuspension(float Throttle)
 {

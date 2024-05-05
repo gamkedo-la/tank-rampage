@@ -11,6 +11,7 @@
 #include "Components/HealthComponent.h"
 #include "Components/FlippedOverCorrectionComponent.h"
 #include "Components/TankEffectsComponent.h"
+#include "Components/TankCollisionDetectionComponent.h"
 
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
@@ -96,6 +97,7 @@ ABaseTankPawn::ABaseTankPawn()
 
 	FlippedOverCorrectionComponent = CreateDefaultSubobject<UFlippedOverCorrectionComponent>(TEXT("Flipped Over Correction Component"));
 	TankEffectsComponent = CreateDefaultSubobject<UTankEffectsComponent>(TEXT("Tank Effects"));
+	TankCollisionDetectionComponent = CreateDefaultSubobject<UTankCollisionDetectionComponent>(TEXT("Collision Detection"));
 
 	Tags.Add(TR::Tags::Tank);
 }
@@ -113,17 +115,31 @@ void ABaseTankPawn::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
-	TankAimingComponent->SetTankComponents(
-		{
-				.Barrel = TankBarrel,
-				.Turret = TankTurret
-		});
+	if (ensure(TankAimingComponent))
+	{
+		TankAimingComponent->SetTankComponents(
+			{
+					.Barrel = TankBarrel,
+					.Turret = TankTurret
+			});
+	}
 
-	TankMovementComponent->Initialize(
-		{
-			.LeftTrack = TankTreadLeft,
-			.RightTrack = TankTreadRight
-		});
+	if (ensure(TankMovementComponent))
+	{
+		TankMovementComponent->Initialize(
+			{
+				.LeftTrack = TankTreadLeft,
+				.RightTrack = TankTreadRight
+			});
+	}
+
+	if (ensureMsgf(TankCollisionDetectionComponent, TEXT("TankCollisionDetectionComponent"))
+		&& ensureMsgf(TankTreadLeft, TEXT("TankTreadLeft"))
+		&& ensureMsgf(TankTreadRight, TEXT("TankTreadRight")))
+	{
+		TankCollisionDetectionComponent->OnRelevantCollision.AddUObject(TankTreadLeft, &UTankTrackComponent::NotifyRelevantTankCollision);
+		TankCollisionDetectionComponent->OnRelevantCollision.AddUObject(TankTreadRight, &UTankTrackComponent::NotifyRelevantTankCollision);
+	}
 }
 
 // called on replicated clients and server

@@ -24,6 +24,7 @@ class UHealthComponent;
 class UItemInventory;
 class UFlippedOverCorrectionComponent;
 class UTankEffectsComponent;
+class UTankCollisionDetectionComponent;
 
 class UAbilitySystemComponent;
 class UAttributeSet;
@@ -163,6 +164,9 @@ private:
 
 	UPROPERTY(Category = "Components", VisibleDefaultsOnly)
 	TObjectPtr<UTankEffectsComponent> TankEffectsComponent{};
+
+	UPROPERTY(Category = "Components", VisibleDefaultsOnly)
+	TObjectPtr<UTankCollisionDetectionComponent> TankCollisionDetectionComponent{};
 };
 
 

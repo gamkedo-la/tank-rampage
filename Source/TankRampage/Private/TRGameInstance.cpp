@@ -33,7 +33,7 @@ void UTRGameInstance::InitLoadingScreen()
 
 void UTRGameInstance::InitSoundVolumes()
 {
-	auto Settings = UTRGameUserSettings::GetInstance();
+	const auto Settings = UTRGameUserSettings::GetInstance();
 	if (!ensureMsgf(Settings, TEXT("TRGameUserSettings was NULL")))
 	{
 		return;

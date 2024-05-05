@@ -33,6 +33,12 @@ namespace
 	const UObject* OverlapKey(const FOverlapResult& Overlap);
 
 	FBox GetObjectAABB(const UObject* Object);
+
+	// LandscapeSplineActor on Urban map cannot have object type set to "Ground" (locked in the base class) so need to filter that here
+	bool ShouldIgnoreOverlapByName(const FOverlapResult& Overlap);
+	bool ShouldIgnoreOverlapByName(const FString& ObjectName);
+
+	const TArray<FString> OverlapIgnoreNames = { "Landscape" };
 }
 
 struct FSpawnData
@@ -677,7 +683,29 @@ namespace
 		// Ignore the ground for checking for overlaps 
 		// and only consider blocks with the player tank
 		return Component->GetCollisionObjectType() == TR::CollisionChannel::GroundObjectType ||
-			Component->GetCollisionResponseToChannel(ECC_Pawn) != ECollisionResponse::ECR_Block;
+			   Component->GetCollisionResponseToChannel(ECC_Pawn) != ECollisionResponse::ECR_Block ||
+			   ShouldIgnoreOverlapByName(Overlap);
+	}
+
+	bool ShouldIgnoreOverlapByName(const FOverlapResult& Overlap)
+	{
+		const auto Actor = Overlap.GetActor();
+
+		if (Actor && ShouldIgnoreOverlapByName(Actor->GetName()))
+		{
+			return true;
+		}
+
+		const auto Component = Overlap.GetComponent();
+		return Component && ShouldIgnoreOverlapByName(Component->GetName());
+	}
+
+	inline bool ShouldIgnoreOverlapByName(const FString& ObjectName)
+	{
+		return OverlapIgnoreNames.ContainsByPredicate([&ObjectName](const auto& NameSubstring)
+		{
+			return ObjectName.Contains(NameSubstring);
+		});
 	}
 
 	inline const UObject* OverlapKey(const FOverlapResult& Overlap)
