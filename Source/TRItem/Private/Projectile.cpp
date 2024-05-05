@@ -25,6 +25,11 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/AudioComponent.h"
 
+namespace
+{
+	constexpr ECollisionChannel HomingLOSTraceChannel = TR::CollisionChannel::MissileHomingTargetTraceType;
+}
+
 AProjectile::AProjectile()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -392,14 +397,16 @@ void AProjectile::RefreshHomingTarget()
 		{
 			// ensure alignment always positive and > 0
 			const auto Alignment = (ToTargetDirection | VelocityDirection) + 1.01;
-			auto Score = Dist / FMath::Cube(Alignment);
+			const auto Score = Dist / FMath::Cube(Alignment);
 
 			if (Score < BestTarget.second)
 			{
 				// Make sure truly viable by line of sight tests
 				if (!HasLineOfSightToTarget(CurrentLocation, TargetLocation, Dist))
 				{
-					Score = FMath::Square(Score);
+					// Mark is not viable
+					--ViableCount;
+					continue;
 				}
 
 				if (Score < BestTarget.second)
@@ -408,7 +415,7 @@ void AProjectile::RefreshHomingTarget()
 				}
 			}
 
-			UE_VLOG_LOCATION(GetOwner(), LogTRItem, Verbose, TargetLocation, 15.0f, FColor::Cyan, TEXT("MissileTargetScore: %f"), Score);
+			UE_VLOG_LOCATION(this, LogTRItem, Verbose, TargetLocation, 15.0f, FColor::Cyan, TEXT("MissileTargetScore: %f"), Score);
 			UE_VLOG_UELOG(this, LogTRItem, Verbose, TEXT("%s: RefreshHomingTarget: Target=%s; Score=%f"), *GetName(), *LoggingUtils::GetName(PotentialTarget), Score);
 		}
 	}
@@ -456,8 +463,7 @@ bool AProjectile::HasLineOfSightToTarget(const FVector& StartLocation, const FVe
 
 	const auto StartLocationZOffset = StartLocation + FVector::ZAxisVector * TraceZOffset;
 
-	bool bLOS = !World->LineTraceTestByChannel(StartLocationZOffset, TargetLocation,
-		ECollisionChannel::ECC_Visibility, Params);
+	bool bLOS = !World->LineTraceTestByChannel(StartLocationZOffset, TargetLocation, HomingLOSTraceChannel, Params);
 
 	UE_VLOG_ARROW(MyOwner, LogTRItem, Verbose, StartLocationZOffset, TargetLocation, bLOS ? FColor::Green : FColor::Red, TEXT("MissileTargetTrace"));
 
@@ -471,16 +477,16 @@ bool AProjectile::HasLineOfSightToTarget(const FVector& StartLocation, const FVe
 	const auto LateralOffsetDistance = ViabilityTraceBendFactor * TargetDistance;
 	const auto RightLateralOffset = MyOwner->GetActorRightVector() * LateralOffsetDistance;
 
-	bLOS = !World->LineTraceTestByChannel(StartLocationZOffset + RightLateralOffset, TargetLocation, ECollisionChannel::ECC_Visibility, Params);
-	UE_VLOG_ARROW(MyOwner, LogTRItem, Verbose, StartLocationZOffset + RightLateralOffset, TargetLocation, bLOS ? FColor::Green : FColor::Red, TEXT("MissileTargetTrace"));
+	bLOS = !World->LineTraceTestByChannel(StartLocationZOffset + RightLateralOffset, TargetLocation, HomingLOSTraceChannel, Params);
+	UE_VLOG_ARROW(this, LogTRItem, Verbose, StartLocationZOffset + RightLateralOffset, TargetLocation, bLOS ? FColor::Green : FColor::Red, TEXT("MissileTargetTrace"));
 
 	if (bLOS)
 	{
 		return true;
 	}
 	
-	bLOS = !World->LineTraceTestByChannel(StartLocationZOffset - RightLateralOffset, TargetLocation, ECollisionChannel::ECC_Visibility, Params);
-	UE_VLOG_ARROW(MyOwner, LogTRItem, Verbose, StartLocationZOffset - RightLateralOffset, TargetLocation, bLOS ? FColor::Green : FColor::Red, TEXT("MissileTargetTrace"));
+	bLOS = !World->LineTraceTestByChannel(StartLocationZOffset - RightLateralOffset, TargetLocation, HomingLOSTraceChannel, Params);
+	UE_VLOG_ARROW(this, LogTRItem, Verbose, StartLocationZOffset - RightLateralOffset, TargetLocation, bLOS ? FColor::Green : FColor::Red, TEXT("MissileTargetTrace"));
 
 	if (bLOS)
 	{
