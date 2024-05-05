@@ -96,6 +96,8 @@ private:
 
 	void MarkForDestroy();
 
+	bool HasLineOfSightToTarget(const FVector& StartLocation, const FVector& TargetLocation, float TargetDistance) const;
+
 protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UFiredWeaponMovementComponent> ProjectileMovementComponent{};
@@ -148,6 +150,19 @@ private:
 
 	UPROPERTY(Category = "Homing", EditDefaultsOnly)
 	float MaxZDifference{ 5000.0f };
+
+	/* Scaling factor of moving the Z offset of trace up based on distance to target*/
+	UPROPERTY(Category = "Homing", EditDefaultsOnly)
+	float ViabilityLineTraceDistScaling{ 100 * 100.0f };
+
+	UPROPERTY(Category = "Homing", EditDefaultsOnly)
+	float ViabilityLineTraceMaxZOffset{ 1000.0f };
+
+	UPROPERTY(Category = "Homing", EditDefaultsOnly)
+	float ViabilityTraceBendAngleDegrees{ 20.0f };
+
+	// Angle bisector : sin (x / 2)
+	float ViabilityTraceBendFactor{};
 
 	FProjectileDamageParams ProjectileDamageParams{};
 

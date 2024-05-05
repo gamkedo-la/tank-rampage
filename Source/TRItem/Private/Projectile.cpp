@@ -346,6 +346,8 @@ void AProjectile::InitHomingInfo(const FProjectileHomingParams& InProjectileHomi
 	GetWorldTimerManager().SetTimer(HomingTargetTimerHandle, this, &AProjectile::RefreshHomingTarget,
 		ProjectileHomingParams.HomingTargetRefreshInterval, true);
 
+	ViabilityTraceBendFactor = FMath::Sin(FMath::DegreesToRadians(ViabilityTraceBendAngleDegrees) * 0.5f);
+
 	// Run also immediately
 	RefreshHomingTarget();
 }
@@ -390,12 +392,24 @@ void AProjectile::RefreshHomingTarget()
 		{
 			// ensure alignment always positive and > 0
 			const auto Alignment = (ToTargetDirection | VelocityDirection) + 1.01;
-			const auto Score = Dist / FMath::Cube(Alignment);
+			auto Score = Dist / FMath::Cube(Alignment);
 
 			if (Score < BestTarget.second)
 			{
-				BestTarget = { PotentialTarget, Score };
+				// Make sure truly viable by line of sight tests
+				if (!HasLineOfSightToTarget(CurrentLocation, TargetLocation, Dist))
+				{
+					Score = FMath::Square(Score);
+				}
+
+				if (Score < BestTarget.second)
+				{
+					BestTarget = { PotentialTarget, Score };
+				}
 			}
+
+			UE_VLOG_LOCATION(GetOwner(), LogTRItem, Verbose, TargetLocation, 15.0f, FColor::Cyan, TEXT("MissileTargetScore: %f"), Score);
+			UE_VLOG_UELOG(this, LogTRItem, Verbose, TEXT("%s: RefreshHomingTarget: Target=%s; Score=%f"), *GetName(), *LoggingUtils::GetName(PotentialTarget), Score);
 		}
 	}
 
@@ -418,6 +432,62 @@ void AProjectile::RefreshHomingTarget()
 
 	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: RefreshHomingTarget: Selected %s out of %d viable"), *GetName(), *LoggingUtils::GetName(NewHomingTarget), ViableCount);
 
+}
+
+bool AProjectile::HasLineOfSightToTarget(const FVector& StartLocation, const FVector& TargetLocation, float TargetDistance) const
+{
+	auto World = GetWorld();
+	if (!World)
+	{
+		return false;
+	}
+
+	auto MyOwner = GetOwner();
+
+	if (!IsValid(MyOwner))
+	{
+		return false;
+	}
+
+	const auto TraceZOffset = FMath::Min(ViabilityLineTraceMaxZOffset * TargetDistance / ViabilityLineTraceDistScaling, ViabilityLineTraceMaxZOffset);
+
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(MyOwner);
+
+	const auto StartLocationZOffset = StartLocation + FVector::ZAxisVector * TraceZOffset;
+
+	bool bLOS = !World->LineTraceTestByChannel(StartLocationZOffset, TargetLocation,
+		ECollisionChannel::ECC_Visibility, Params);
+
+	UE_VLOG_ARROW(MyOwner, LogTRItem, Verbose, StartLocationZOffset, TargetLocation, bLOS ? FColor::Green : FColor::Red, TEXT("MissileTargetTrace"));
+
+	if(bLOS)
+	{
+		return true;
+	}
+
+	// Do a line trace offset from left and right of owner to see if we can bend around
+	// Determine radius from lateral distance of angle bisector of central angle with the distance as the radius of the circle
+	const auto LateralOffsetDistance = ViabilityTraceBendFactor * TargetDistance;
+	const auto RightLateralOffset = MyOwner->GetActorRightVector() * LateralOffsetDistance;
+
+	bLOS = !World->LineTraceTestByChannel(StartLocationZOffset + RightLateralOffset, TargetLocation, ECollisionChannel::ECC_Visibility, Params);
+	UE_VLOG_ARROW(MyOwner, LogTRItem, Verbose, StartLocationZOffset + RightLateralOffset, TargetLocation, bLOS ? FColor::Green : FColor::Red, TEXT("MissileTargetTrace"));
+
+	if (bLOS)
+	{
+		return true;
+	}
+	
+	bLOS = !World->LineTraceTestByChannel(StartLocationZOffset - RightLateralOffset, TargetLocation, ECollisionChannel::ECC_Visibility, Params);
+	UE_VLOG_ARROW(MyOwner, LogTRItem, Verbose, StartLocationZOffset - RightLateralOffset, TargetLocation, bLOS ? FColor::Green : FColor::Red, TEXT("MissileTargetTrace"));
+
+	if (bLOS)
+	{
+		return true;
+	}
+
+	return false;
 }
 
 FVector AProjectile::GetGroundLocation() const
