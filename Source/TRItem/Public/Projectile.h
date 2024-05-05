@@ -96,7 +96,7 @@ private:
 
 	void MarkForDestroy();
 
-	bool HasLineOfSightToTarget(const FVector& StartLocation, const FVector& TargetLocation, float TargetDistance) const;
+	bool HasLineOfSightToTarget(const FVector& StartLocation, const AActor& Target, float TargetDistance) const;
 
 protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))

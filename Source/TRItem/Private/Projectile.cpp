@@ -397,16 +397,14 @@ void AProjectile::RefreshHomingTarget()
 		{
 			// ensure alignment always positive and > 0
 			const auto Alignment = (ToTargetDirection | VelocityDirection) + 1.01;
-			const auto Score = Dist / FMath::Cube(Alignment);
+			auto Score = Dist / FMath::Cube(Alignment);
 
 			if (Score < BestTarget.second)
 			{
 				// Make sure truly viable by line of sight tests
-				if (!HasLineOfSightToTarget(CurrentLocation, TargetLocation, Dist))
+				if (!HasLineOfSightToTarget(CurrentLocation, *PotentialTarget, Dist))
 				{
-					// Mark is not viable
-					--ViableCount;
-					continue;
+					Score = FMath::Square(Score);
 				}
 
 				if (Score < BestTarget.second)
@@ -441,7 +439,7 @@ void AProjectile::RefreshHomingTarget()
 
 }
 
-bool AProjectile::HasLineOfSightToTarget(const FVector& StartLocation, const FVector& TargetLocation, float TargetDistance) const
+bool AProjectile::HasLineOfSightToTarget(const FVector& StartLocation, const AActor& Target, float TargetDistance) const
 {
 	auto World = GetWorld();
 	if (!World)
@@ -455,6 +453,11 @@ bool AProjectile::HasLineOfSightToTarget(const FVector& StartLocation, const FVe
 	{
 		return false;
 	}
+
+	const auto TargetBounds = TR::CollisionUtils::GetAABB(Target);
+	FVector TargetCenter, TargetExtent;
+	TargetBounds.GetCenterAndExtents(TargetCenter, TargetExtent);
+	const auto TargetLocation = TargetCenter + FVector::ZAxisVector * TargetExtent.Z;
 
 	const auto TraceZOffset = FMath::Min(ViabilityLineTraceMaxZOffset * TargetDistance / ViabilityLineTraceDistScaling, ViabilityLineTraceMaxZOffset);
 
