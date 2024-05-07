@@ -294,14 +294,18 @@ bool UTankTrackComponent::HasSuspension() const
 	return !Wheels.IsEmpty();
 }
 
-float UTankTrackComponent::GetAdjustedMaxDrivingForce() const
+float UTankTrackComponent::GetAdjustedMaxDrivingForce(bool bLog) const
 {
 	const auto DrivingForceMultiplier = TR::GameplayTags::GetAttributeMultiplierFromTag(GetOwner(), TR::GameplayTags::SpeedMultiplier);
 	const auto StuckBoostMultiplier = (bStuckBoostActive ? ThrottleBoostMultiplier : 1.0f);
 	const auto AdjustedMaxDrivingForce = DrivingForceMultiplier * StuckBoostMultiplier * TrackMaxDrivingForce;
 
-	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: GetAdjustedMaxDrivingForce: multiplier=%f; AdjustedMaxDrivingForce=%f"),
-		*LoggingUtils::GetName(GetOwner()), *GetName(), DrivingForceMultiplier, AdjustedMaxDrivingForce);
+	// Causes a deadlock if called from GrabDebugSnapshot - cannot use the macro commands
+	if (bLog)
+	{
+		UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: GetAdjustedMaxDrivingForce: multiplier=%f; AdjustedMaxDrivingForce=%f"),
+			*LoggingUtils::GetName(GetOwner()), *GetName(), DrivingForceMultiplier, AdjustedMaxDrivingForce);
+	}
 
 	return AdjustedMaxDrivingForce;
 }
@@ -581,11 +585,11 @@ bool UTankTrackComponent::IsGroundedLocation(const FVector& WorldLocation, const
 	}
 #endif
 
-		return World->LineTraceTestByChannel(
-			StartLocation,
-			EndLocation,
-			ECollisionChannel::ECC_Visibility,
-			Params);
+	return World->LineTraceTestByChannel(
+		StartLocation,
+		EndLocation,
+		ECollisionChannel::ECC_Visibility,
+		Params);
 }
 
 void UTankTrackComponent::ApplySidewaysForce(float DeltaTime)
@@ -678,8 +682,13 @@ void UTankTrackComponent::DescribeSelfToVisLog(FVisualLogEntry* Snapshot) const
 	const bool bSuspension = HasSuspension();
 
 	Category.Add(TEXT("Throttle"), FString::Printf(TEXT("%.1f"), LastThrottle));
-	Category.Add(TEXT("MaxDrivingForceMultiplier"), FString::Printf(TEXT("%.1f"), GetAdjustedMaxDrivingForce() / TrackMaxDrivingForce));
-	Category.Add(TEXT("Grounded"), LoggingUtils::GetBoolString(IsGrounded()));
+	Category.Add(TEXT("MaxDrivingForceMultiplier"), FString::Printf(TEXT("%.1f"), GetAdjustedMaxDrivingForce(false) / TrackMaxDrivingForce));
+
+	if (!bSuspension && !TrackWheels.IsEmpty())
+	{
+		Category.Add(TEXT("Grounded"), LoggingUtils::GetBoolString(IsGrounded()));
+	}
+
 	Category.Add(TEXT("LastAirborneTime"), LastAirborneTime >= 0 ? FString::Printf(TEXT("%.1f"), LastAirborneTime) : TEXT("N/A"));
 	Category.Add(TEXT("Suspension"), LoggingUtils::GetBoolString(bSuspension));
 	Category.Add(TEXT("Wheels"), FString::Printf(TEXT("%d"), bSuspension ? Wheels.Num() : TrackWheels.Num()));

@@ -161,7 +161,8 @@ void ASpringWheel::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
 	Category.Add(TEXT("Grounded"), LoggingUtils::GetBoolString(IsGrounded()));
 	Category.Add(TEXT("CurrentForce"), FString::Printf(TEXT("%f"), CurrentForce));
 
-	UE_VLOG_LOCATION(GetLogContext(), LogTRTank, Log, WheelComponent->GetComponentLocation(), WheelComponent->GetScaledSphereRadius(), FColor::Red, TEXT(""));
+	Snapshot->AddElement(WheelComponent->GetComponentLocation(), LogTRTank.GetCategoryName(), ELogVerbosity::Log, FColor::Red, TEXT(""),
+		static_cast<uint16>(WheelComponent->GetScaledSphereRadius()));
 
 	// Push the category to correct nesting in the visual logger details panel
 	auto& StatusArray = Snapshot->Status;

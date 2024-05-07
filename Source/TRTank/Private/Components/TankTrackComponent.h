@@ -52,7 +52,7 @@ protected:
 
 private:
 
-	float GetAdjustedMaxDrivingForce() const;
+	float GetAdjustedMaxDrivingForce(bool bLog = true) const;
 
 	void InitWheels();
 	void InitTrackWheels();
