@@ -38,7 +38,7 @@ void USpawnPoint::BeginPlay()
 	if (!Actor)
 	{
 		UE_VLOG_UELOG(GetOwner(), LogTRCore, Warning, TEXT("%s-%s: Unable to spawn actor %s with transform %s"),
-			*LoggingUtils::GetName(GetOwner()), *GetName(), *GetComponentTransform().ToHumanReadableString());
+			*LoggingUtils::GetName(GetOwner()), *GetName(), *ActorToSpawn->GetName(), *GetComponentTransform().ToHumanReadableString());
 		return;
 	}
 

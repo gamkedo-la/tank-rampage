@@ -71,12 +71,12 @@ void UProjectileWeapon::LaunchProjectile(USceneComponent& ActivationReferenceCom
 
 	if (!SpawnedProjectile)
 	{
-		UE_VLOG_UELOG(GetOuter(), LogTRItem, Warning, TEXT("%s-%s: LaunchProjectile: Unable to spawn projectile %s at %s with rotation=%s"),
-			*LoggingUtils::GetName(GetOuter()), *GetName(), *LoggingUtils::GetName(ChosenWeaponProjectileClass), *SpawnLocation.ToCompactString());
+		UE_VLOG_UELOG(GetOuter(), LogTRItem, Warning, TEXT("%s-%s: LaunchProjectile: Unable to spawn projectile %s at %s with %s"),
+			*LoggingUtils::GetName(GetOuter()), *GetName(), *LoggingUtils::GetName(ChosenWeaponProjectileClass), *SpawnLocation.ToCompactString(), *SpawnRotation.ToCompactString());
 		return;
 	}
 
-	UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s-%s: LaunchProjectile: %s at %s"),
+	UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s-%s: LaunchProjectile: %s at %s with %s"),
 		*LoggingUtils::GetName(GetOuter()), *GetName(),
 		*LoggingUtils::GetName(SpawnedProjectile), *SpawnLocation.ToCompactString(), *SpawnRotation.ToCompactString());
 

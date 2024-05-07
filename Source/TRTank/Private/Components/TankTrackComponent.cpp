@@ -118,7 +118,7 @@ void UTankTrackComponent::NotifyRelevantTankCollision(const FHitResult& Hit, con
 	}
 
 	UE_VLOG_UELOG(GetOwner(), LogTRTank, Log,
-		TEXT("%s-%s: NotifyRelevantTankCollision:  Normal DotProduct=%f < RoadAlignmentCosineThreshold=(%f); NormalImpulse=%s; Component=%s;Actor=%s; ObjectType=%s"),
+		TEXT("%s-%s: NotifyRelevantTankCollision:  Normal DotProduct=%f < RoadAlignmentCosineThreshold=(%f); NormalImpulse=%s; Component=%s; Actor=%s; ObjectType=%s"),
 		*LoggingUtils::GetName(GetOwner()), *GetName(),
 		DotProduct,
 		RoadAlignmentCosineThreshold,
@@ -595,6 +595,8 @@ void UTankTrackComponent::ApplySidewaysForce(float DeltaTime)
 	{
 		return;
 	}
+
+	check(GetOwner());
 
 	const auto RootComponent = Cast<UPrimitiveComponent>(GetOwner()->GetRootComponent());
 	if (!RootComponent)

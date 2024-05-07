@@ -103,7 +103,7 @@ void ULootDropComponent::OnTankDestroyed(ABaseTankPawn* DestroyedTank, AControll
 	// Make sure destroyed tank is not the player - allow drops from AI that kill each other with friendly fire
 	if (!DestroyedTank || !DestroyedTank->GetController() || DestroyedTank->GetController()->IsPlayerController())
 	{
-		UE_VLOG_UELOG(this, LogTankRampage, Log, TEXT("%s: OnTankDestroyed - Skipping player-controlled destroyed tank"));
+		UE_VLOG_UELOG(this, LogTankRampage, Log, TEXT("%s: OnTankDestroyed - Skipping player-controlled destroyed tank"), *GetName());
 
 		return;
 	}
