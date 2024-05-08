@@ -233,6 +233,8 @@ void AProjectile::PlaySfxAtActorLocation(USoundBase* Sound) const
 		*GetName(), *LoggingUtils::GetName(GetOwner()), *Sound->GetName());
 
 	SpawnedAudioComponent->bAutoDestroy = true;
+	// Comment is misleading. bReverb == true does NOT mean to exclude it
+	SpawnedAudioComponent->bReverb = true;
 }
 
 void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
