@@ -73,7 +73,7 @@ void AProjectile::Launch(float Speed)
 	PlayFiringEffects();
 }
 
-void AProjectile::Initialize(USceneComponent& IncidentComponent, const FName& IncidentSocketName, const FProjectileDamageParams& InProjectileDamageParams, 
+void AProjectile::Initialize(USceneComponent& IncidentComponent, const FName& IncidentSocketName, const FProjectileDamageParams& InProjectileDamageParams,
 	const std::optional<FProjectileHomingParams>& InOptHomingParams)
 {
 	AttachComponent = &IncidentComponent;
@@ -106,7 +106,7 @@ void AProjectile::BeginPlay()
 		ProjectileMesh->OnComponentHit.AddDynamic(this, &AProjectile::OnHit);
 		ProjectileMesh->OnComponentBeginOverlap.AddDynamic(this, &AProjectile::OnOverlapBegin);
 	}
-	
+
 	InitDebugDraw();
 }
 
@@ -137,7 +137,18 @@ void AProjectile::PostInitializeComponents()
 void AProjectile::PlayFiringEffects()
 {
 	PlayFiringVfx();
-	PlaySfxAtActorLocation(FiringSfx);
+
+	PlaySfxAtActorLocation(GetFiringSound());
+}
+
+USoundBase* AProjectile::GetFiringSound() const
+{
+	if (IsHoming() && FiringSfxHoming)
+	{
+		return FiringSfxHoming;
+	}
+
+	return FiringSfx;
 }
 
 void AProjectile::PlayFiringVfx()
@@ -264,7 +275,7 @@ void AProjectile::OnCollision(UPrimitiveComponent* HitComponent, AActor* OtherAc
 		ExplosionForce->FireImpulse();
 
 		PlaySfxAtActorLocation(ExplosionSfx);
-		PlayHitSfx(OtherActor);
+		PlayHitSfx(OtherActor, OtherComponent, Hit);
 		PlayHitVfx();
 		ApplyPostHitEffects(Hit, ProjectileDamageParams);
 
@@ -286,17 +297,45 @@ void AProjectile::MarkForDestroy()
 	}));
 }
 
-void AProjectile::PlayHitSfx(AActor* HitActor) const
+void AProjectile::PlayHitSfx(AActor* HitActor, UPrimitiveComponent* HitComponent, const FHitResult& Hit) const
 {
 	if (!HitActor)
 	{
 		return;
 	}
 
-	if (HitActor->ActorHasTag(TR::Tags::Tank))
+	// TODO: Remove if check once finish implementing GetHitSound
+	if (auto Sound = GetHitSound(HitActor, HitComponent, Hit))
 	{
-		PlaySfxAtActorLocation(TankHitSfx);
+		PlaySfxAtActorLocation(Sound);
 	}
+}
+
+USoundBase* AProjectile::GetHitSound(AActor* HitActor, UPrimitiveComponent* HitComponent, const FHitResult& Hit) const
+{
+	if (!HitActor)
+	{
+		return nullptr;
+	}
+
+	if (TankHitPlayerSfx && IsPlayer(HitActor))
+	{
+		return TankHitPlayerSfx;
+	}
+	else if (HitActor->ActorHasTag(TR::Tags::Tank))
+	{
+		return TankHitSfx;
+	}
+
+	// TODO: Distinguish different physical material types via a Map<UPhysicalMaterial*,USoundBase*>
+	// By default play the miss SFX - See above TODO in PlayHitSfx
+	return nullptr;
+}
+
+bool AProjectile::IsPlayer(AActor* Actor) const
+{
+	auto Pawn = Cast<APawn>(Actor);
+	return Pawn && Pawn->IsPlayerControlled();
 }
 
 bool AProjectile::ApplyDamageTo(AActor* OtherActor, const FHitResult& Hit, APawn* InstigatingPawn)
@@ -424,7 +463,7 @@ void AProjectile::RefreshHomingTarget()
 	auto PreviousHomingTarget = GetCurrentHomingTargetActor();
 
 	ProjectileMovementComponent->HomingTargetComponent = GetHomingSceneComponent(NewHomingTarget);
-	ProjectileMovementComponent->bIsHomingProjectile = true;
+	ProjectileMovementComponent->bIsHomingProjectile = ProjectileMovementComponent->HomingTargetComponent != nullptr;
 
 	// Not finding a target is a valid result and should be broadcast
 	if (PreviousHomingTarget != NewHomingTarget)
@@ -500,6 +539,12 @@ bool AProjectile::HasLineOfSightToTarget(const FVector& StartLocation, const AAc
 
 	return false;
 }
+
+bool AProjectile::IsHoming() const
+{
+	return ProjectileMovementComponent->bIsHomingProjectile;
+}
+
 
 FVector AProjectile::GetGroundLocation() const
 {

@@ -72,11 +72,10 @@ private:
 
 	void PlaySfxAtActorLocation(USoundBase* Sound) const;
 
-	void PlayHitSfx(AActor* HitActor) const;
+	void PlayHitSfx(AActor* HitActor, UPrimitiveComponent* HitComponent, const FHitResult& Hit) const;
 
 	FVector GetGroundLocation() const;
 
-private:
 	UFUNCTION()
 	void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit);
 
@@ -98,6 +97,12 @@ private:
 
 	bool HasLineOfSightToTarget(const FVector& StartLocation, const AActor& Target, float TargetDistance) const;
 
+	bool IsHoming() const;
+
+	USoundBase* GetFiringSound() const;
+	USoundBase* GetHitSound(AActor* HitActor, UPrimitiveComponent* HitComponent, const FHitResult& Hit) const;
+	bool IsPlayer(AActor* Actor) const;
+
 protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UFiredWeaponMovementComponent> ProjectileMovementComponent{};
@@ -118,11 +123,17 @@ private:
 	UPROPERTY(Category = "Audio | Firing", EditDefaultsOnly)
 	TObjectPtr<USoundBase> FiringSfx{};
 
+	UPROPERTY(Category = "Audio | Firing", EditDefaultsOnly)
+	TObjectPtr<USoundBase> FiringSfxHoming{};
+
 	UPROPERTY(Category = "Audio | Hit", EditDefaultsOnly)
 	TObjectPtr<USoundBase> ExplosionSfx{};
 
 	UPROPERTY(Category = "Audio | Hit", EditDefaultsOnly)
 	TObjectPtr<USoundBase> TankHitSfx{};
+
+	UPROPERTY(Category = "Audio | Hit", EditDefaultsOnly)
+	TObjectPtr<USoundBase> TankHitPlayerSfx{};
 
 	UPROPERTY(Category = "Effects | Hit", EditDefaultsOnly)
 	TObjectPtr<UNiagaraSystem> HitVfx{};
