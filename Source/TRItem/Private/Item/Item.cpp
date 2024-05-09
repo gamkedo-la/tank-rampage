@@ -11,6 +11,9 @@
 
 #include "AbilitySystem/TRGameplayTags.h"
 
+#include "Kismet/GameplayStatics.h"
+#include "Components/AudioComponent.h"
+
 bool UItem::CanBeActivated() const
 {
 	auto World = GetWorld();
@@ -231,3 +234,86 @@ void UItem::NotifyCooldownComplete()
 }
 
 #pragma endregion Cooldown Notify
+
+#pragma region Audio
+
+UAudioComponent* UItem::PlaySfxAtActorLocation(USoundBase* Sound) const
+{
+	if (!ensure(Sound))
+	{
+		return nullptr;
+	}
+
+	auto ComponentOwner = GetOwner();
+	if (!ensure(ComponentOwner))
+	{
+		return nullptr;
+	}
+
+	// The owner of the audio component is derived from the world context object and this will control the sound concurrency
+	auto SpawnedAudioComponent = UGameplayStatics::SpawnSoundAtLocation(
+		ComponentOwner,
+		Sound,
+		ComponentOwner->GetActorLocation(), ComponentOwner->GetActorRotation()
+	);
+
+	if (!SpawnedAudioComponent)
+	{
+		// This is not an error condition as the component may not spawn if the sound is not audible, for example it attenuates below a threshold based on distance
+		UE_VLOG_UELOG(this, LogTRItem, Log,
+			TEXT("%s-%s: PlaySfxAtActorLocation - Unable to spawn audio component for sfx=%s"),
+			*GetName(), *LoggingUtils::GetName(GetOwner()), *Sound->GetName());
+		return nullptr;
+	}
+
+	UE_VLOG_UELOG(this, LogTRItem, Log,
+		TEXT("%s-%s: PlaySfxAtActorLocation - Playing sfx=%s"),
+		*GetName(), *LoggingUtils::GetName(GetOwner()), *Sound->GetName());
+
+	SpawnedAudioComponent->bAutoDestroy = true;
+
+	return SpawnedAudioComponent;
+}
+
+#pragma endregion Audio
+
+UAudioComponent* UItem::PlaySfxAttached(USoundBase* Sound) const
+{
+	if (!ensure(Sound))
+	{
+		return nullptr;
+	}
+
+	auto ComponentOwner = GetOwner();
+	if (!ensure(ComponentOwner))
+	{
+		return nullptr;
+	}
+
+	// The owner of the audio component is derived from the world context object and this will control the sound concurrency
+	auto SpawnedAudioComponent = UGameplayStatics::SpawnSoundAttached(
+		Sound,
+		ComponentOwner->GetRootComponent(),
+		NAME_None,
+		FVector::ZeroVector,
+		EAttachLocation::KeepRelativeOffset,
+		true
+	);
+
+	if (!SpawnedAudioComponent)
+	{
+		// This is not an error condition as the component may not spawn if the sound is not audible, for example it attenuates below a threshold based on distance
+		UE_VLOG_UELOG(this, LogTRItem, Log,
+			TEXT("%s-%s: PlaySfxAttached - Unable to spawn audio component for sfx=%s"),
+			*GetName(), *LoggingUtils::GetName(GetOwner()), *Sound->GetName());
+		return nullptr;
+	}
+
+	UE_VLOG_UELOG(this, LogTRItem, Log,
+		TEXT("%s-%s: PlaySfxAttached - Playing sfx=%s"),
+		*GetName(), *LoggingUtils::GetName(GetOwner()), *Sound->GetName());
+
+	SpawnedAudioComponent->bAutoDestroy = true;
+
+	return SpawnedAudioComponent;
+}

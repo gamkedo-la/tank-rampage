@@ -8,6 +8,8 @@
 
 #include "AttributeModifierEffect.generated.h"
 
+class USoundBase;
+
 /**
  * 
  */
@@ -26,6 +28,8 @@ private:
 
 	bool ApplyEffectToSelf(const FGameplayTagContainer& TagsContainer);
 
+	void PlayActivationSfx() const;
+
 protected:
 
 	/*
@@ -38,6 +42,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Effect")
 	TArray<FGameplayTag> BuffTags;
+
+	UPROPERTY(Category = "Audio | Activation", EditDefaultsOnly)
+	TObjectPtr<USoundBase> ActivationSfx{};
 
 	FTimerHandle TagExpirationHandle{};
 	int32 LastTagCount{};

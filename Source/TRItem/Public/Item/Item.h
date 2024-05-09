@@ -6,6 +6,9 @@
 #include "UObject/NoExportTypes.h"
 #include "Item.generated.h"
 
+class USoundBase;
+class UAudioComponent;
+
 UENUM(BlueprintType)
 enum class EItemType : uint8
 {
@@ -112,6 +115,13 @@ protected:
 	virtual void OnCooldownComplete() {}
 
 	virtual void BeginDestroy() override;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure = false, Category = "Audio")
+	UAudioComponent* PlaySfxAtActorLocation(USoundBase* Sound) const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure = false, Category = "Audio")
+	UAudioComponent* PlaySfxAttached(USoundBase* Sound) const;
+
 
 private:
 	void RegisterCooldownTimer();

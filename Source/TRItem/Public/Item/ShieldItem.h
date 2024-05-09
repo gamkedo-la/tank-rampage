@@ -33,8 +33,6 @@ private:
 
 	void Recharge();
 
-	void PlayActivationSfx(USoundBase* Sound) const;
-
 private:
 
 	int32 TimesUsed{};

@@ -25,7 +25,8 @@ bool UAttributeModifierEffect::DoActivation(USceneComponent& ActivationReference
 
 	ScheduleEffectRemoval();
 
-	// TODO: Play SFX and VFX
+	// TODO: Play VFX
+	PlayActivationSfx();
 
 	return true;
 }
@@ -87,4 +88,16 @@ bool UAttributeModifierEffect::ApplyEffectToSelf(const FGameplayTagContainer& Ta
 	ASC->AddLooseGameplayTags(TagsContainer, LastTagCount);
 
 	return true;
+}
+
+void UAttributeModifierEffect::PlayActivationSfx() const
+{
+	if (!ActivationSfx)
+	{
+		UE_VLOG_UELOG(GetOwner(), LogTRItem, Warning, TEXT("%s-%s: PlayActivationSfx: No ActivationSfx set!"),
+			*LoggingUtils::GetName(GetOwner()), *GetName());
+		return;
+	}
+
+	PlaySfxAttached(ActivationSfx);
 }

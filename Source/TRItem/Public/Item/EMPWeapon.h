@@ -44,7 +44,6 @@ private:
 	void ScheduleStunRemoval(float DeltaTime);
 
 	void PlayActivationVfx();
-	void PlaySfxAtActorLocation(USoundBase* Sound) const;
 
 	void ApplyEffectToEnemy(AActor* Enemy, float EffectEndGameTimeSeconds, const FGameplayTagContainer& DebuffTagsContainer);
 
