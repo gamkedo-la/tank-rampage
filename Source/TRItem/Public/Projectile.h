@@ -126,6 +126,9 @@ private:
 	TObjectPtr<USoundBase> FiringSfx{};
 
 	UPROPERTY(Category = "Audio | Firing", EditDefaultsOnly)
+	TObjectPtr<USoundBase> PlayerFiringSfx{};
+
+	UPROPERTY(Category = "Audio | Firing", EditDefaultsOnly)
 	TObjectPtr<USoundBase> FiringSfxHoming{};
 
 	UPROPERTY(Category = "Audio | Firing", EditDefaultsOnly)

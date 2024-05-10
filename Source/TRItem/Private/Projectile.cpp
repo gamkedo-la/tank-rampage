@@ -148,6 +148,11 @@ USoundBase* AProjectile::GetFiringSound() const
 		return FiringSfxHoming;
 	}
 
+	if (IsPlayer(GetOwner()) && PlayerFiringSfx)
+	{
+		return PlayerFiringSfx;
+	}
+
 	return FiringSfx;
 }
 
