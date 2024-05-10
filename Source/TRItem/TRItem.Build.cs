@@ -41,6 +41,7 @@ public class TRItem : ModuleRules
 		var enginePrivateDependencyModuleNames = new string[] 
 		{
             "Niagara",
+            "PhysicsCore",
         };
 
 		PrivateDependencyModuleNames.AddRange(enginePrivateDependencyModuleNames);

@@ -19,6 +19,7 @@ class UNiagaraSystem;
 class UNiagaraComponent;
 class USoundBase;
 class UAudioComponent;
+class UPhysicalMaterial;
 
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnHomingTargetSelected, AProjectile* /* Projectile*/, AActor* /*Target*/);
 
@@ -71,6 +72,7 @@ private:
 	void PlayFiringVfx();
 	void PlayHitVfx();
 	void StopFiringSfx();
+	void PlayExplosionSfxIfSet();
 
 	UAudioComponent* PlaySfxAtActorLocation(USoundBase* Sound) const;
 
@@ -142,6 +144,12 @@ private:
 
 	UPROPERTY(Category = "Audio | Hit", EditDefaultsOnly)
 	TObjectPtr<USoundBase> TankHitPlayerSfx{};
+
+	UPROPERTY(Category = "Audio | Hit", EditDefaultsOnly)
+	TMap<UPhysicalMaterial*, USoundBase*> PhysicalMaterialHitToSfx{};
+
+	UPROPERTY(Category = "Audio | Hit", EditDefaultsOnly)
+	TObjectPtr<USoundBase> DefaultHitSfx{};
 
 	UPROPERTY(Category = "Effects | Hit", EditDefaultsOnly)
 	TObjectPtr<UNiagaraSystem> HitVfx{};

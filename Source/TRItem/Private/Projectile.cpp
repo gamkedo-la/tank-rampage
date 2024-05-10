@@ -25,6 +25,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/AudioComponent.h"
 
+#include "PhysicalMaterials/PhysicalMaterial.h"
+
 namespace
 {
 	constexpr ECollisionChannel HomingLOSTraceChannel = TR::CollisionChannel::MissileHomingTargetTraceType;
@@ -221,6 +223,17 @@ void AProjectile::StopFiringSfx()
 	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: StopFiringSfx: %s - fade out to 0 in %fs"), *GetName(), *FiringAudioComponent->GetName(), FiringStopFadeOutTime);
 }
 
+void AProjectile::PlayExplosionSfxIfSet()
+{
+	if (!ExplosionSfx)
+	{
+		UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: PlayExplosionSfxIfSet: No specific explosionSFX set"), *GetName());
+		return;
+	}
+
+	PlaySfxAtActorLocation(ExplosionSfx);
+}
+
 void AProjectile::SetNiagaraFireEffectParameters_Implementation(UNiagaraComponent* NiagaraComponent)
 {
 	check(NiagaraComponent);
@@ -300,7 +313,8 @@ void AProjectile::OnCollision(UPrimitiveComponent* HitComponent, AActor* OtherAc
 		ExplosionForce->FireImpulse();
 
 		StopFiringSfx();
-		PlaySfxAtActorLocation(ExplosionSfx);
+
+		PlayExplosionSfxIfSet();
 		PlayHitSfx(OtherActor, OtherComponent, Hit);
 
 		PlayHitVfx();
@@ -331,11 +345,16 @@ void AProjectile::PlayHitSfx(AActor* HitActor, UPrimitiveComponent* HitComponent
 		return;
 	}
 
-	// TODO: Remove if check once finish implementing GetHitSound
-	if (auto Sound = GetHitSound(HitActor, HitComponent, Hit); Sound)
+	const auto Sound = GetHitSound(HitActor, HitComponent, Hit);
+
+	if (!Sound)
 	{
-		PlaySfxAtActorLocation(Sound);
+		UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: PlayHitSfx: No HitSFX set"), *GetName());
+
+		return;
 	}
+
+	PlaySfxAtActorLocation(Sound);
 }
 
 USoundBase* AProjectile::GetHitSound(AActor* HitActor, UPrimitiveComponent* HitComponent, const FHitResult& Hit) const
@@ -354,9 +373,25 @@ USoundBase* AProjectile::GetHitSound(AActor* HitActor, UPrimitiveComponent* HitC
 		return TankHitSfx;
 	}
 
-	// TODO: Distinguish different physical material types via a Map<UPhysicalMaterial*,USoundBase*>
-	// By default play the miss SFX - See above TODO in PlayHitSfx
-	return nullptr;
+	const auto PhysicalMaterial = Hit.PhysMaterial.Get();
+
+	if (PhysicalMaterial)
+	{
+		auto MatchedPhysicalMaterialSfx = PhysicalMaterialHitToSfx.Find(PhysicalMaterial);
+		if (MatchedPhysicalMaterialSfx)
+		{
+			const auto HitSurfaceSound = *MatchedPhysicalMaterialSfx;
+			UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: GetHitSound: Matched PhysicalMaterial=%s to HitSFX=%s"),
+				*GetName(), *PhysicalMaterial->GetName(), *LoggingUtils::GetName(HitSurfaceSound));
+
+			return HitSurfaceSound;
+		}
+	}
+
+	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: GetHitSound: Using No match to PhysicalMaterial=%s; using DefaultHitSfx=%s"),
+			*GetName(), *LoggingUtils::GetName(PhysicalMaterial), *LoggingUtils::GetName(DefaultHitSfx));
+
+	return DefaultHitSfx;
 }
 
 bool AProjectile::IsPlayer(AActor* Actor) const
