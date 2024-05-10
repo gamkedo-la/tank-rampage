@@ -215,6 +215,7 @@ int32 AEnemySpawner::Spawn(int32 InDesiredCount, const AActor* LookAtActor, TArr
 	if (SpawnedCount > 0)
 	{
 		LastSpawnTime = World->GetTimeSeconds();
+		PlaySpawnSfx();
 	}
 
 	return SpawnedCount;
@@ -465,6 +466,19 @@ FVector AEnemySpawner::GetSpawnReferenceLocation() const
 	AverageLocation /= SpawnLocations.Num();
 
 	return AverageLocation;
+}
+
+void AEnemySpawner::PlaySpawnSfx() const
+{
+	if (!SpawnSfx)
+	{
+		UE_VLOG_UELOG(this, LogTRAI, Warning, TEXT("%s - PlaySpawnSfx - No SpawnSfx set"), *GetName());
+		return;
+	}
+
+	UE_VLOG_UELOG(this, LogTRAI, Log, TEXT("%s - PlayPickupSfx - Playing %s"), *GetName(), *SpawnSfx->GetName());
+
+	UGameplayStatics::PlaySound2D(GetWorld(), SpawnSfx);
 }
 
 namespace

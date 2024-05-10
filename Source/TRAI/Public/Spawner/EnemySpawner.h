@@ -10,6 +10,7 @@
 #include "EnemySpawner.generated.h"
 
 class USpawnLocationComponent;
+class USoundBase;
 
 DECLARE_DELEGATE_RetVal_OneParam(bool, FCanSpawnEnemy, const TSubclassOf<APawn>& /*Enemy Type*/);
 
@@ -60,6 +61,8 @@ private:
 	template<typename InAllocatorType>
 	bool IsSpawnPointObstructed(UClass* SpawnClass, const FTransform& SpawnTransform, const TArray<AActor*, InAllocatorType>& SpawnedThisCycle) const;
 
+	void PlaySpawnSfx() const;
+
 
 private:
 	UPROPERTY(Transient)
@@ -73,6 +76,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Spawning")
 	TArray<TSubclassOf<APawn>> SpawningTypes;
+
+	UPROPERTY(EditAnywhere, Category = "Spawning | Audio")
+	TObjectPtr<USoundBase> SpawnSfx;
 
 	mutable TMap<AActor*, FVector> BoundsCache;
 
