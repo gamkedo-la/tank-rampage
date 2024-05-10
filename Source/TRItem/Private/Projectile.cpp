@@ -138,7 +138,7 @@ void AProjectile::PlayFiringEffects()
 {
 	PlayFiringVfx();
 
-	PlaySfxAtActorLocation(GetFiringSound());
+	FiringAudioComponent = PlaySfxAtActorLocation(GetFiringSound());
 }
 
 USoundBase* AProjectile::GetFiringSound() const
@@ -198,6 +198,24 @@ void AProjectile::PlayHitVfx()
 	SetNiagaraHitEffectParameters(NiagaraComp);
 }
 
+void AProjectile::StopFiringSfx()
+{
+	if (!IsValid(FiringAudioComponent))
+	{
+		return;
+	}
+
+	if (!FiringAudioComponent->IsPlaying())
+	{
+		UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: StopFiringSfx: %s is not playing - nothing to stop"), *GetName(), *FiringAudioComponent->GetName());
+		return;
+	}
+
+	FiringAudioComponent->FadeOut(FiringStopFadeOutTime, 0.0f);
+
+	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: StopFiringSfx: %s - fade out to 0 in %fs"), *GetName(), *FiringAudioComponent->GetName(), FiringStopFadeOutTime);
+}
+
 void AProjectile::SetNiagaraFireEffectParameters_Implementation(UNiagaraComponent* NiagaraComponent)
 {
 	check(NiagaraComponent);
@@ -219,11 +237,11 @@ void AProjectile::SetNiagaraHitEffectParameters_Implementation(UNiagaraComponent
 	}
 }
 
-void AProjectile::PlaySfxAtActorLocation(USoundBase* Sound) const
+UAudioComponent* AProjectile::PlaySfxAtActorLocation(USoundBase* Sound) const
 {
 	if (!ensure(Sound))
 	{
-		return;
+		return nullptr;
 	}
 
 	// The owner of the audio component is derived from the world context object and this will control the sound concurrency
@@ -236,7 +254,7 @@ void AProjectile::PlaySfxAtActorLocation(USoundBase* Sound) const
 		UE_VLOG_UELOG(this, LogTRItem, Log,
 			TEXT("%s-%s: PlaySfxAtActorLocation - Unable to spawn audio component for sfx=%s"),
 			*GetName(), *LoggingUtils::GetName(GetOwner()), *Sound->GetName());
-		return;
+		return nullptr;
 	}
 
 	UE_VLOG_UELOG(this, LogTRItem, Log,
@@ -246,6 +264,8 @@ void AProjectile::PlaySfxAtActorLocation(USoundBase* Sound) const
 	SpawnedAudioComponent->bAutoDestroy = true;
 	// Comment is misleading. bReverb == true does NOT mean to exclude it
 	SpawnedAudioComponent->bReverb = true;
+
+	return SpawnedAudioComponent;
 }
 
 void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
@@ -274,8 +294,10 @@ void AProjectile::OnCollision(UPrimitiveComponent* HitComponent, AActor* OtherAc
 		UE_VLOG_LOCATION(this, LogTRItem, Display, GetActorLocation(), ExplosionForce->Radius, FColor::Red, TEXT("Explosion"));
 		ExplosionForce->FireImpulse();
 
+		StopFiringSfx();
 		PlaySfxAtActorLocation(ExplosionSfx);
 		PlayHitSfx(OtherActor, OtherComponent, Hit);
+
 		PlayHitVfx();
 		ApplyPostHitEffects(Hit, ProjectileDamageParams);
 
@@ -305,7 +327,7 @@ void AProjectile::PlayHitSfx(AActor* HitActor, UPrimitiveComponent* HitComponent
 	}
 
 	// TODO: Remove if check once finish implementing GetHitSound
-	if (auto Sound = GetHitSound(HitActor, HitComponent, Hit))
+	if (auto Sound = GetHitSound(HitActor, HitComponent, Hit); Sound)
 	{
 		PlaySfxAtActorLocation(Sound);
 	}

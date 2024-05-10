@@ -18,6 +18,7 @@ class URadialForceComponent;
 class UNiagaraSystem;
 class UNiagaraComponent;
 class USoundBase;
+class UAudioComponent;
 
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnHomingTargetSelected, AProjectile* /* Projectile*/, AActor* /*Target*/);
 
@@ -69,8 +70,9 @@ private:
 	void PlayFiringEffects();
 	void PlayFiringVfx();
 	void PlayHitVfx();
+	void StopFiringSfx();
 
-	void PlaySfxAtActorLocation(USoundBase* Sound) const;
+	UAudioComponent* PlaySfxAtActorLocation(USoundBase* Sound) const;
 
 	void PlayHitSfx(AActor* HitActor, UPrimitiveComponent* HitComponent, const FHitResult& Hit) const;
 
@@ -125,6 +127,9 @@ private:
 
 	UPROPERTY(Category = "Audio | Firing", EditDefaultsOnly)
 	TObjectPtr<USoundBase> FiringSfxHoming{};
+
+	UPROPERTY(Category = "Audio | Firing", EditDefaultsOnly)
+	float FiringStopFadeOutTime{ 0.2f };
 
 	UPROPERTY(Category = "Audio | Hit", EditDefaultsOnly)
 	TObjectPtr<USoundBase> ExplosionSfx{};
@@ -192,6 +197,9 @@ private:
 	*/
 	UPROPERTY(Transient)
 	FProjectileHomingParams ProjectileHomingParams{};
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAudioComponent> FiringAudioComponent{};
 
 	FTimerHandle HomingTargetTimerHandle{};
 
