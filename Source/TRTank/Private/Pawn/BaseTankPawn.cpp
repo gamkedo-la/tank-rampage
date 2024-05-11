@@ -12,6 +12,7 @@
 #include "Components/FlippedOverCorrectionComponent.h"
 #include "Components/TankEffectsComponent.h"
 #include "Components/TankCollisionDetectionComponent.h"
+#include "Components/TankCrashComponent.h"
 
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
@@ -98,6 +99,7 @@ ABaseTankPawn::ABaseTankPawn()
 	FlippedOverCorrectionComponent = CreateDefaultSubobject<UFlippedOverCorrectionComponent>(TEXT("Flipped Over Correction Component"));
 	TankEffectsComponent = CreateDefaultSubobject<UTankEffectsComponent>(TEXT("Tank Effects"));
 	TankCollisionDetectionComponent = CreateDefaultSubobject<UTankCollisionDetectionComponent>(TEXT("Collision Detection"));
+	TankCrashComponent = CreateDefaultSubobject<UTankCrashComponent>(TEXT("Crash"));
 
 	Tags.Add(TR::Tags::Tank);
 }
@@ -316,6 +318,15 @@ void ABaseTankPawn::SetRightThrottle(float Value)
 {
 	check(TankTreadRight);
 	TankTreadRight->SetThrottle(Value);
+}
+
+FThrottleState ABaseTankPawn::GetThrottleState() const
+{
+	return FThrottleState
+	{
+		.LeftThrottle = TankTreadLeft->GetThrottle(),
+		.RightThrottle = TankTreadRight->GetThrottle()
+	};
 }
 
 void ABaseTankPawn::MoveForward(float Throw)

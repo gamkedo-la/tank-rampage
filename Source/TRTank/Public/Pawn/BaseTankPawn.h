@@ -25,11 +25,20 @@ class UItemInventory;
 class UFlippedOverCorrectionComponent;
 class UTankEffectsComponent;
 class UTankCollisionDetectionComponent;
+class UTankCrashComponent;
 
 class UAbilitySystemComponent;
 class UAttributeSet;
 class UGameplayEffect;
 
+USTRUCT(BlueprintType)
+struct FThrottleState
+{
+	GENERATED_BODY()
+
+	float LeftThrottle{};
+	float RightThrottle{};
+};
 
 UCLASS()
 class TRTANK_API ABaseTankPawn : public APawn, public IVisualLoggerDebugSnapshotInterface, public IArmedActor, public IAbilitySystemInterface, public IDamageable, public IDamageAdjustmentOwner
@@ -62,6 +71,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void SetRightThrottle(float Value);
+
+	UFUNCTION(BlueprintPure)
+	FThrottleState GetThrottleState() const;
 
 	UFUNCTION(BlueprintCallable)
 	void MoveForward(float Throw);
@@ -167,6 +179,9 @@ private:
 
 	UPROPERTY(Category = "Components", VisibleDefaultsOnly)
 	TObjectPtr<UTankCollisionDetectionComponent> TankCollisionDetectionComponent{};
+
+	UPROPERTY(Category = "Components", VisibleDefaultsOnly)
+	TObjectPtr<UTankCrashComponent> TankCrashComponent{};
 };
 
 
