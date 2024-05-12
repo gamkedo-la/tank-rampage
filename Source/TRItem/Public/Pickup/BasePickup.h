@@ -55,11 +55,19 @@ private:
 
 	void PlayPickupSfx();
 
+	void SetLifetimeIfApplicable();
+
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Applied Effects")
 	TSubclassOf<UGameplayEffect> InstantGameplayEffectClass;
 
 private:
+
+	/* How long the pickup persists after spawning.  Set to a value > 0, to limit the lifetime for spawned pickups.
+	*/
+	UPROPERTY(EditDefaultsOnly, Category = "Lifetime")
+	float LifetimeAfterSpawn{};
+
 	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
 	float SpawnOffsetZ{};
 

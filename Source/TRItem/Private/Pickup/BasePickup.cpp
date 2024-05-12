@@ -20,6 +20,8 @@ ABasePickup::ABasePickup()
 void ABasePickup::BeginPlay()
 {
 	Super::BeginPlay();
+
+	SetLifetimeIfApplicable();
 }
 
 void ABasePickup::RegisterOverlapEvent(UPrimitiveComponent* OverlapCheckComponent)
@@ -77,6 +79,19 @@ void ABasePickup::PlayPickupSfx()
 	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s - PlayPickupSfx - Playing %s"), *GetName(), *PickupSfx->GetName());
 
 	UGameplayStatics::PlaySound2D(GetWorld(), PickupSfx);
+}
+
+void ABasePickup::SetLifetimeIfApplicable()
+{
+	// bNetStartup indicates that an actor was placed in world rather than spawned so ignore placed actors
+	if (bNetStartup || LifetimeAfterSpawn <= 0)
+	{
+		return;
+	}
+
+	SetLifeSpan(LifetimeAfterSpawn);
+
+	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s - SetLifetimeIfApplicable - Destroying after %fs"), *GetName(), LifetimeAfterSpawn);
 }
 
 void ABasePickup::ApplyEffectToTarget(AActor* Target, TSubclassOf<UGameplayEffect> GameplayEffectClass)
