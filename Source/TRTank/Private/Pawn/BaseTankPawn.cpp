@@ -13,6 +13,7 @@
 #include "Components/TankEffectsComponent.h"
 #include "Components/TankCollisionDetectionComponent.h"
 #include "Components/TankCrashComponent.h"
+#include "Components/TankEngineSoundsComponent.h"
 
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
@@ -100,6 +101,7 @@ ABaseTankPawn::ABaseTankPawn()
 	TankEffectsComponent = CreateDefaultSubobject<UTankEffectsComponent>(TEXT("Tank Effects"));
 	TankCollisionDetectionComponent = CreateDefaultSubobject<UTankCollisionDetectionComponent>(TEXT("Collision Detection"));
 	TankCrashComponent = CreateDefaultSubobject<UTankCrashComponent>(TEXT("Crash"));
+	TankEngineSoundsComponent = CreateDefaultSubobject<UTankEngineSoundsComponent>(TEXT("Engine Sounds"));
 
 	Tags.Add(TR::Tags::Tank);
 }
@@ -327,6 +329,16 @@ FThrottleState ABaseTankPawn::GetThrottleState() const
 		.LeftThrottle = TankTreadLeft->GetThrottle(),
 		.RightThrottle = TankTreadRight->GetThrottle()
 	};
+}
+
+bool ABaseTankPawn::IsGrounded() const
+{
+	return TankTreadLeft->IsGrounded() && TankTreadRight->IsGrounded();
+}
+
+bool ABaseTankPawn::IsAirborne() const
+{
+	return TankTreadLeft->IsAirborne() && TankTreadRight->IsAirborne();
 }
 
 void ABaseTankPawn::MoveForward(float Throw)

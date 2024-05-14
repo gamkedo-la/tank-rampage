@@ -26,7 +26,7 @@ class UFlippedOverCorrectionComponent;
 class UTankEffectsComponent;
 class UTankCollisionDetectionComponent;
 class UTankCrashComponent;
-
+class UTankEngineSoundsComponent;
 class UAbilitySystemComponent;
 class UAttributeSet;
 class UGameplayEffect;
@@ -74,6 +74,14 @@ public:
 
 	UFUNCTION(BlueprintPure)
 	FThrottleState GetThrottleState() const;
+
+	/* Tank is grounded if both treads are on the ground */
+	UFUNCTION(BlueprintPure)
+	bool IsGrounded() const;
+	
+	/* Tank is airborne if both treads are not on the ground. */
+	UFUNCTION(BlueprintPure)
+	bool IsAirborne() const;
 
 	UFUNCTION(BlueprintCallable)
 	void MoveForward(float Throw);
@@ -182,6 +190,9 @@ private:
 
 	UPROPERTY(Category = "Components", VisibleDefaultsOnly)
 	TObjectPtr<UTankCrashComponent> TankCrashComponent{};
+
+	UPROPERTY(Category = "Components", VisibleDefaultsOnly)
+	TObjectPtr<UTankEngineSoundsComponent> TankEngineSoundsComponent{};
 };
 
 
