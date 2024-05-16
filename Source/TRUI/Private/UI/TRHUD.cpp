@@ -14,3 +14,14 @@ void ATRHUD::ShowHUD()
 
 	OnToggleHUDVisibility(bShowHUD);
 }
+
+void ATRHUD::SetHUDVisible(bool bVisible)
+{
+	if (bVisible == bShowHUD)
+	{
+		return;
+	}
+
+	// Toggles the HUD
+	ShowHUD();
+}

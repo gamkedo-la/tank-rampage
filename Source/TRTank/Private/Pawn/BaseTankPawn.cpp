@@ -190,6 +190,11 @@ void ABaseTankPawn::Kill()
 	UGameplayStatics::ApplyPointDamage(this, std::numeric_limits<float>::max() / 2, -GetActorForwardVector(), {}, nullptr, this, nullptr);
 }
 
+void ABaseTankPawn::NotifyKilled_Implementation()
+{
+	//
+}
+
 void ABaseTankPawn::UpdateSpringArmTickEnabled()
 {
 	const bool bIsLocalPlayerController = IsPlayerControlled() && IsLocallyControlled();

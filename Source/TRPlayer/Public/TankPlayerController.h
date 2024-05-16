@@ -138,4 +138,7 @@ private:
 	float WeaponScrollRetriggerDelay{ 0.25f };
 
 	float WeaponScrollLastTriggerTime{ -1.0f };
+
+	UPROPERTY(EditDefaultsOnly, Category = Input, meta = (ClampMin = "0"))
+	float LevelRestartTime{ 8.0f };
 };

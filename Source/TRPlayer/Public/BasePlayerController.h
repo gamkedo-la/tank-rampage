@@ -45,13 +45,36 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
 
+	void Spectate();
+
+	virtual void OnPossess(APawn* Pawn) override;
+
 private:
 	void InitDebugDraw();
 	void DestroyDebugDraw();
 	void SetPaused(bool bPaused);
+
+	void AddSpectatorPawn();
+	void HandleCameraAfterGameEnded();
+	void SetCameraOwnedBySpectatorPawn();
 	
 private:
+
+	UPROPERTY(Category = "Camera | Spectator", EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	float SpectatorCameraControlsDelay{ 3.0f };
+
+	UPROPERTY(Category = "Camera | Spectator", EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	float SpectatorCameraZOffset{ 300.0f };
+
+	UPROPERTY(Category = "Camera | Spectator", EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	float SpectatorCameraDistanceOffset{ 200.0f };
+
+	FTimerHandle SpectatorCameraDelayTimer{};
+
 	#if ENABLE_VISUAL_LOG
 		FTimerHandle VisualLoggerTimer{};
-#endif
+	#endif
+
+	UPROPERTY(Transient)
+	TObjectPtr<APawn> LastPossessedPawn{};
 };

@@ -47,11 +47,13 @@ void ATankPlayerController::GameHasEnded(AActor* EndGameFocus, bool bIsWinner)
 		hud->OnGameOver();
 	}
 
+	Spectate();
+
 	FTimerHandle _;
 	GetWorldTimerManager().SetTimer(_, FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
 		this->RestartLevel();
-	}), 5.0f, false);
+	}), LevelRestartTime, false);
 }
 
 void ATankPlayerController::BeginPlay()

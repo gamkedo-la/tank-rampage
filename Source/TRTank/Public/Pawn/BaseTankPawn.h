@@ -105,6 +105,9 @@ public:
 	virtual void GrabDebugSnapshot(FVisualLogEntry* Snapshot) const override;
 #endif
 
+	UFUNCTION(BlueprintNativeEvent)
+	void NotifyKilled();
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void PostInitializeComponents() override;

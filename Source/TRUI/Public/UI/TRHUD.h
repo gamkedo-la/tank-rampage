@@ -16,7 +16,13 @@ class TRUI_API ATRHUD : public AHUD
 
 public:
 
+	UFUNCTION(BlueprintImplementableEvent, Category = "UI")
+	void SetAimReticuleVisible(bool bVisible);
+
 	virtual void ShowHUD() override;
+
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	void SetHUDVisible(bool bVisible);
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "UI")
 	void OnGameOver();
