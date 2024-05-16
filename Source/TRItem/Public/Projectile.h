@@ -169,6 +169,9 @@ private:
 	UPROPERTY(Category = "Homing", EditDefaultsOnly, meta = (ClampMin = "-1.0", ClampMax = "1.0"))
 	float HomingGroundAngleCosineThreshold{ 0.85f };
 
+	UPROPERTY(Category = "Homing", EditDefaultsOnly, meta = (ClampMin = "0"))
+	float MaxHomingDistance{ 500 * 100.0f };
+
 	/*
 	* Minimum alignment of heading to target to consider as a viable candidate so we don't accidentally shoot ourselves or make targeting too powerful.
 	*/

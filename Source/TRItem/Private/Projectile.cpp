@@ -462,7 +462,7 @@ void AProjectile::InitHomingInfo(const FProjectileHomingParams& InProjectileHomi
 
 void AProjectile::RefreshHomingTarget()
 {
-	std::pair<AActor*, float> BestTarget{ nullptr, std::numeric_limits<float>::max() };
+	std::pair<AActor*, double> BestTarget{ nullptr, std::numeric_limits<double>::max() };
 	int32 ViableCount{};
 
 	const auto& CurrentLocation = GetActorLocation();
@@ -485,6 +485,12 @@ void AProjectile::RefreshHomingTarget()
 		const auto& TargetLocation = PotentialTarget->GetActorLocation();
 		const auto ToTarget = TargetLocation - CurrentLocation;
 		const auto Dist = FMath::Max(0.01, ToTarget.Size());
+
+		if (Dist > MaxHomingDistance)
+		{
+			continue;
+		}
+
 		const auto ToTargetDirection = ToTarget / Dist;
 		const auto ToTargetDot = ToTargetDirection | ProjectileForwardVector;
 
@@ -493,11 +499,11 @@ void AProjectile::RefreshHomingTarget()
 			continue;
 		}
 
-		++ViableCount;
-
 		if (FMath::Abs(CurrentLocation.Z - TargetLocation.Z) <= MaxZDifference && (
 			TargetLocation.Z >= GroundLocation.Z || FMath::Abs(ToTargetDirection | ToGroundDirection) <= HomingGroundAngleCosineThreshold))
 		{
+			++ViableCount;
+
 			// ensure alignment always positive and > 0
 			const auto Alignment = (ToTargetDirection | VelocityDirection) + 1.01;
 			auto Score = Dist / FMath::Cube(Alignment);
@@ -516,8 +522,8 @@ void AProjectile::RefreshHomingTarget()
 				}
 			}
 
-			UE_VLOG_LOCATION(this, LogTRItem, Verbose, TargetLocation + FVector(0,0,100), 15.0f, FColor::Cyan, TEXT("MissileTargetScore: %f"), Score);
-			UE_VLOG_UELOG(this, LogTRItem, Verbose, TEXT("%s: RefreshHomingTarget: Target=%s; Score=%f"), *GetName(), *LoggingUtils::GetName(PotentialTarget), Score);
+			UE_VLOG_LOCATION(this, LogTRItem, Verbose, TargetLocation + FVector(0,0,100), 15.0f, FColor::Cyan, TEXT("MissileTargetScore: %.1f"), Score);
+			UE_VLOG_UELOG(this, LogTRItem, Verbose, TEXT("%s: RefreshHomingTarget: Target=%s; Score=%.1f"), *GetName(), *LoggingUtils::GetName(PotentialTarget), Score);
 		}
 	}
 
@@ -539,7 +545,6 @@ void AProjectile::RefreshHomingTarget()
 	}
 
 	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: RefreshHomingTarget: Selected %s out of %d viable"), *GetName(), *LoggingUtils::GetName(NewHomingTarget), ViableCount);
-
 }
 
 bool AProjectile::HasLineOfSightToTarget(const FVector& StartLocation, const AActor& Target, float TargetDistance) const
@@ -571,7 +576,7 @@ bool AProjectile::HasLineOfSightToTarget(const FVector& StartLocation, const AAc
 
 	bool bLOS = !World->LineTraceTestByChannel(StartLocationZOffset, TargetLocation, HomingLOSTraceChannel, Params);
 
-	UE_VLOG_ARROW(MyOwner, LogTRItem, Verbose, StartLocationZOffset, TargetLocation, bLOS ? FColor::Green : FColor::Red, TEXT("MissileTargetTrace"));
+	UE_VLOG_ARROW(this, LogTRItem, Verbose, StartLocationZOffset, TargetLocation, bLOS ? FColor::Green : FColor::Red, TEXT("MissileTrace(D): %s"), *Target.GetName());
 
 	if(bLOS)
 	{
@@ -583,16 +588,16 @@ bool AProjectile::HasLineOfSightToTarget(const FVector& StartLocation, const AAc
 	const auto LateralOffsetDistance = ViabilityTraceBendFactor * TargetDistance;
 	const auto RightLateralOffset = MyOwner->GetActorRightVector() * LateralOffsetDistance;
 
-	bLOS = !World->LineTraceTestByChannel(StartLocationZOffset + RightLateralOffset, TargetLocation, HomingLOSTraceChannel, Params);
-	UE_VLOG_ARROW(this, LogTRItem, Verbose, StartLocationZOffset + RightLateralOffset, TargetLocation, bLOS ? FColor::Green : FColor::Red, TEXT("MissileTargetTrace"));
+	bLOS = !World->LineTraceTestByChannel(StartLocationZOffset, TargetLocation + RightLateralOffset, HomingLOSTraceChannel, Params);
+	UE_VLOG_ARROW(this, LogTRItem, Verbose, StartLocationZOffset, TargetLocation + RightLateralOffset, bLOS ? FColor::Green : FColor::Red, TEXT("MissileTargetTrace(R): %s"), *Target.GetName());
 
 	if (bLOS)
 	{
 		return true;
 	}
 	
-	bLOS = !World->LineTraceTestByChannel(StartLocationZOffset - RightLateralOffset, TargetLocation, HomingLOSTraceChannel, Params);
-	UE_VLOG_ARROW(this, LogTRItem, Verbose, StartLocationZOffset - RightLateralOffset, TargetLocation, bLOS ? FColor::Green : FColor::Red, TEXT("MissileTargetTrace"));
+	bLOS = !World->LineTraceTestByChannel(StartLocationZOffset, TargetLocation - RightLateralOffset, HomingLOSTraceChannel, Params);
+	UE_VLOG_ARROW(this, LogTRItem, Verbose, StartLocationZOffset, TargetLocation - RightLateralOffset, bLOS ? FColor::Green : FColor::Red, TEXT("MissileTargetTrace(L): %s"), *Target.GetName());
 
 	if (bLOS)
 	{
