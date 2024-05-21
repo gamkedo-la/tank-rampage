@@ -16,25 +16,38 @@ class TRUI_API UTRButton : public UButton
 {
 	GENERATED_BODY()
 
+
 protected:
 	virtual void PostInitProperties() override;
+	virtual void BeginDestroy() override;
 
 private:
 
 	void BindEvents();
 
 	UFUNCTION()
-	void DoClick();
-
-	UFUNCTION()
 	void DoHover();
 
-	void PlayAudio(USoundBase* Sound) const;
+	UFUNCTION()
+	void TickHover();
 
 protected:
-	UPROPERTY(EditAnywhere, Category = "Audio")
-	TObjectPtr<USoundBase> HoverSfx{};
+	UPROPERTY(EditAnywhere, Category = "Hover")
+	float HoverMaxScale{ 1.0f };
 
-	UPROPERTY(EditAnywhere, Category = "Audio")
-	TObjectPtr<USoundBase> ClickSfx{};
+	UPROPERTY(EditAnywhere, Category = "Hover")
+	float HoverUpdateTime{ 1 / 30.0f };
+
+	UPROPERTY(EditAnywhere, Category = "Hover")
+	float HoverScaleTime{ 1.0f };
+
+	UPROPERTY(EditAnywhere, Category = "Hover")
+	float HoverDelayTime{ 0.1f };
+
+	UPROPERTY(EditAnywhere, Category = "Hover")
+	float HoverEaseFactor{ 2.0f };
+
+	FTimerHandle HoverHandle{};
+
+	float HoverStartTime{ -1.0f };
 };

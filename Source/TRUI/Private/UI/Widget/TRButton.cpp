@@ -6,7 +6,6 @@
 #include "Logging/LoggingUtils.h"
 #include "TRUILogging.h"
 
-#include "Kismet/GameplayStatics.h"
 
 void UTRButton::PostInitProperties()
 {
@@ -22,44 +21,68 @@ void UTRButton::PostInitProperties()
 	BindEvents();
 }
 
-void UTRButton::BindEvents()
+void UTRButton::BeginDestroy()
 {
-	if (ClickSfx)
-	{
-		OnClicked.AddUniqueDynamic(this, &ThisClass::DoClick);
-	}
-	else
-	{
-		UE_LOG(LogTRUI, Warning, TEXT("%s: Has no ClickSfx!"), *GetName());
-	}
-	
-	if (HoverSfx)
-	{
-		OnHovered.AddUniqueDynamic(this, &ThisClass::DoHover);
-	}
-	else
-	{
-		UE_LOG(LogTRUI, Warning, TEXT("%s: Has no HoverSfx!"), *GetName());
-	}
-}
+	Super::BeginDestroy();
 
-void UTRButton::DoClick()
-{
-	PlayAudio(ClickSfx);
-}
-
-void UTRButton::DoHover()
-{
-	PlayAudio(HoverSfx);
-}
-
-void UTRButton::PlayAudio(USoundBase* Sound) const
-{
-	// Should never be nullptr since we checked before subscription
-	if (!ensure(Sound))
+	if (!HoverHandle.IsValid())
 	{
 		return;
 	}
 
-	UGameplayStatics::PlaySound2D(this, Sound);
+	if (auto World = GetWorld(); World)
+	{
+		World->GetTimerManager().ClearTimer(HoverHandle);
+	}
+}
+
+void UTRButton::BindEvents()
+{
+	if (HoverMaxScale > 1)
+	{
+		OnHovered.AddUniqueDynamic(this, &ThisClass::DoHover);
+	}
+}
+
+void UTRButton::DoHover()
+{
+	auto World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	HoverStartTime = World->GetTimeSeconds() - FMath::Max(0.0f, HoverDelayTime);
+
+	World->GetTimerManager().SetTimer(HoverHandle, this, &ThisClass::TickHover, HoverUpdateTime, true, HoverDelayTime);
+}
+
+void UTRButton::TickHover()
+{
+	auto World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	const auto TimeSeconds = World->GetTimeSeconds();
+	const auto TimeElapsed = TimeSeconds - HoverStartTime;
+
+	if (TimeElapsed >= HoverScaleTime)
+	{
+		SetRenderScale({ 1.0f, 1.0f });
+		World->GetTimerManager().ClearTimer(HoverHandle);
+		return;
+	}
+
+	// flip scaling midway through
+
+	auto Alpha = TimeElapsed / (HoverScaleTime * 0.5);
+	if (Alpha > 1)
+	{
+		Alpha = 1 - FMath::Fractional(Alpha);
+	}
+
+	const auto Scale = FMath::InterpEaseInOut(1.0f, HoverMaxScale, Alpha, HoverEaseFactor);
+	SetRenderScale({ Scale, Scale });
 }
