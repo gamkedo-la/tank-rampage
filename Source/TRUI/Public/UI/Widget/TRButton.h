@@ -28,8 +28,9 @@ private:
 	UFUNCTION()
 	void DoHover();
 
-	UFUNCTION()
-	void TickHover();
+	void TickHover(float DeltaTime);
+
+	void UnregisterTimer();
 
 protected:
 	UPROPERTY(EditAnywhere, Category = "Hover")
@@ -47,7 +48,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Hover")
 	float HoverEaseFactor{ 2.0f };
 
-	FTimerHandle HoverHandle{};
+	FDelegateHandle HoverHandle{};
 
 	float HoverStartTime{ -1.0f };
 };

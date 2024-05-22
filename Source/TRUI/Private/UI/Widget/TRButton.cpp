@@ -6,6 +6,8 @@
 #include "Logging/LoggingUtils.h"
 #include "TRUILogging.h"
 
+#include "Subsystems/RealtimeTimerSubsystem.h"
+
 
 void UTRButton::PostInitProperties()
 {
@@ -25,15 +27,7 @@ void UTRButton::BeginDestroy()
 {
 	Super::BeginDestroy();
 
-	if (!HoverHandle.IsValid())
-	{
-		return;
-	}
-
-	if (auto World = GetWorld(); World)
-	{
-		World->GetTimerManager().ClearTimer(HoverHandle);
-	}
+	UnregisterTimer();
 }
 
 void UTRButton::BindEvents()
@@ -52,12 +46,15 @@ void UTRButton::DoHover()
 		return;
 	}
 
-	HoverStartTime = World->GetTimeSeconds() - FMath::Max(0.0f, HoverDelayTime);
+	HoverStartTime = World->GetRealTimeSeconds() - FMath::Max(0.0f, HoverDelayTime);
 
-	World->GetTimerManager().SetTimer(HoverHandle, this, &ThisClass::TickHover, HoverUpdateTime, true, HoverDelayTime);
+	if (auto TimerSystem = World->GetSubsystem<URealtimeTimerSubsystem>(); ensureMsgf(IsValid(TimerSystem), TEXT("URealtimeTimerSubsystem is NULL")))
+	{
+		TimerSystem->RealTimeTimerDelegate.AddUObject(this, &ThisClass::TickHover);
+	}
 }
 
-void UTRButton::TickHover()
+void UTRButton::TickHover(float DeltaTime)
 {
 	auto World = GetWorld();
 	if (!World)
@@ -65,13 +62,14 @@ void UTRButton::TickHover()
 		return;
 	}
 
-	const auto TimeSeconds = World->GetTimeSeconds();
+	const auto TimeSeconds = World->GetRealTimeSeconds();
 	const auto TimeElapsed = TimeSeconds - HoverStartTime;
 
 	if (TimeElapsed >= HoverScaleTime)
 	{
 		SetRenderScale({ 1.0f, 1.0f });
-		World->GetTimerManager().ClearTimer(HoverHandle);
+		UnregisterTimer();
+
 		return;
 	}
 
@@ -85,4 +83,23 @@ void UTRButton::TickHover()
 
 	const auto Scale = FMath::InterpEaseInOut(1.0f, HoverMaxScale, Alpha, HoverEaseFactor);
 	SetRenderScale({ Scale, Scale });
+}
+
+void UTRButton::UnregisterTimer()
+{
+	if (!HoverHandle.IsValid())
+	{
+		return;
+	}
+
+	auto World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	if (auto TimerSystem = World->GetSubsystem<URealtimeTimerSubsystem>(); IsValid(TimerSystem))
+	{
+		TimerSystem->RealTimeTimerDelegate.Remove(HoverHandle);
+	}
 }
