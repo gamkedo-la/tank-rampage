@@ -283,7 +283,7 @@ bool ATankAIController::MoveTowardPlayer(const FTankAIContext& AIContext)
 	const auto& AITank = AIContext.MyTank;
 	const auto& TargetLocation = AIContext.AISubsystem.LastPlayerSeenLocation;
 
-	const bool bShouldMove = FVector::DistSquared(AITank.GetActorLocation(), TargetLocation) > FMath::Square(MinMoveDistance);
+	const bool bShouldMove = !bHasLOS || FVector::DistSquared(AITank.GetActorLocation(), TargetLocation) > FMath::Square(MinMoveDistance);
 
 	if (!bShouldMove)
 	{
