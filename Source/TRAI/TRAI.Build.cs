@@ -38,7 +38,8 @@ public class TRAI : ModuleRules
 
 		var enginePrivateDependencyModuleNames = new string[] 
 		{
-		};
+           "AIModule",
+        };
 
 		PrivateDependencyModuleNames.AddRange(enginePrivateDependencyModuleNames);
 		PrivateDependencyModuleNames.AddRange(modulePrivateDependencyModuleNames);

@@ -7,7 +7,9 @@
 #include "Components/TankAimingComponent.h"
 #include "Components/HealthComponent.h"
 
-#include "Subsystems/TankAISharedStateSubsystem.h"
+#include "Subsystems/TankAISharedStateSubsystem.h"\
+
+#include "Navigation/CrowdFollowingComponent.h"
 
 #include "Kismet/GameplayStatics.h" 
 #include "TRAILogging.h"
@@ -22,7 +24,8 @@
 #include "Curves/CurveFloat.h"
 
 
-ATankAIController::ATankAIController()
+ATankAIController::ATankAIController(const FObjectInitializer& ObjectInitializer) :
+	Super(ObjectInitializer) //.SetDefaultSubobjectClass<UCrowdFollowingComponent>(TEXT("PathFollowingComponent")))
 {
 	PrimaryActorTick.bCanEverTick = true;
 }
@@ -290,7 +293,7 @@ bool ATankAIController::MoveTowardPlayer(const FTankAIContext& AIContext)
 		return false;
 	}
 
-	MoveToLocation(TargetLocation, MinMoveDistanceMeters * 100);
+	MoveToLocation(TargetLocation, MinMoveDistanceMeters * 100, true, true, true);
 
 	return true;
 }

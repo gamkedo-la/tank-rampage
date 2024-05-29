@@ -22,7 +22,7 @@ class TRAI_API ATankAIController : public ABaseAIController, public ITankOwner
 
 public:
 
-	ATankAIController();
+	ATankAIController(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	// Inherited via ITankOwner
 	ABaseTankPawn* GetControlledTank() const override;
