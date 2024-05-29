@@ -7,10 +7,10 @@
 #include "Components/TankAimingComponent.h"
 #include "Components/HealthComponent.h"
 
-#include "Subsystems/TankAISharedStateSubsystem.h"\
+#include "Subsystems/TankAISharedStateSubsystem.h"
 
-#include "Navigation/CrowdFollowingComponent.h"
-
+#include "NavigationSystem.h"
+#include "Navigation/PathFollowingComponent.h"
 #include "Kismet/GameplayStatics.h" 
 #include "TRAILogging.h"
 #include "Logging/LoggingUtils.h"
@@ -25,7 +25,7 @@
 
 
 ATankAIController::ATankAIController(const FObjectInitializer& ObjectInitializer) :
-	Super(ObjectInitializer) //.SetDefaultSubobjectClass<UCrowdFollowingComponent>(TEXT("PathFollowingComponent")))
+	Super(ObjectInitializer)
 {
 	PrimaryActorTick.bCanEverTick = true;
 }
@@ -99,6 +99,7 @@ void ATankAIController::ExecuteAI()
 	if (!IsPlayerInRange(AIContext))
 	{
 		ResetState();
+		Wander(AIContext);
 		return;
 	}
 
@@ -114,6 +115,10 @@ void ATankAIController::ExecuteAI()
 		{
 			UE_VLOG_LOCATION(this, LogTRAI, VeryVerbose, AIContext.AISubsystem.LastPlayerSeenLocation, 25.0f, FColor::Yellow, TEXT("Last Known Player Loc"));
 			MoveTowardPlayer(AIContext);
+		}
+		else
+		{
+			Wander(AIContext);
 		}
 
 		return;
@@ -186,6 +191,52 @@ bool ATankAIController::PassesDirectPerceptionReactionTimeDelay()
 	}
 
 	return NowSeconds - FirstInRangeTime >= ReactionTime;
+}
+
+void ATankAIController::Wander(const FTankAIContext& AIContext)
+{
+	// Make sure a wander not in progress
+	if (!ShouldWander())
+	{
+		return;
+	}
+
+	FNavLocation NavLocation;
+
+	auto NavigationSystem = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+	if (!ensureMsgf(NavigationSystem, TEXT("NavigationSystem unavailable!")))
+	{
+		return;
+	}
+
+	const auto& StartLocation = AIContext.MyTank.GetActorLocation();
+
+	if (!NavigationSystem->GetRandomReachablePointInRadius(
+		StartLocation,
+		WanderRadius, NavLocation))
+	{
+		UE_VLOG_UELOG(this, LogTRAI, Log, TEXT("%s-%s: Wander - Unable to find a navigable point from %s in radius=%fm"),
+			*GetName(), *AIContext.MyTank.GetName(),
+			*StartLocation.ToCompactString(), WanderRadius / 100);
+		return;
+	}
+
+	auto World = GetWorld();
+	// already validated in ShouldWander
+	check(World);
+
+	LastWanderTime = World->GetTimeSeconds();
+
+	const auto& TargetLocation = NavLocation.Location;
+
+	UE_VLOG_UELOG(this, LogTRAI, Log, TEXT("%s-%s: Wander - Wander from %s to %s (Dist=%.1fm / Max=%.1fm"),
+		*GetName(), *AIContext.MyTank.GetName(),
+		*StartLocation.ToCompactString(), *TargetLocation.ToCompactString(),
+		FVector::Distance(StartLocation, TargetLocation) / 100,
+		WanderRadius / 100
+	);
+
+	SeekTowardLocation(TargetLocation);
 }
 
 ABaseTankPawn* ATankAIController::GetControlledTank() const
@@ -281,21 +332,46 @@ TOptional<ATankAIController::FTankAIContext> ATankAIController::GetAIContext() c
 
 bool ATankAIController::MoveTowardPlayer(const FTankAIContext& AIContext)
 {
-	const auto MinMoveDistance = MinMoveDistanceMeters * 100;
-
 	const auto& AITank = AIContext.MyTank;
 	const auto& TargetLocation = AIContext.AISubsystem.LastPlayerSeenLocation;
 
-	const bool bShouldMove = !bHasLOS || FVector::DistSquared(AITank.GetActorLocation(), TargetLocation) > FMath::Square(MinMoveDistance);
+	const bool bShouldMove = !bHasLOS || FVector::DistSquared(AITank.GetActorLocation(), TargetLocation) > FMath::Square(MinMoveDistanceMeters * 100);
 
 	if (!bShouldMove)
 	{
 		return false;
 	}
 
-	MoveToLocation(TargetLocation, MinMoveDistanceMeters * 100, true, true, true);
+	SeekTowardLocation(TargetLocation);
 
 	return true;
+}
+
+void ATankAIController::SeekTowardLocation(const FVector& Location)
+{
+	MoveToLocation(Location, MinMoveDistanceMeters * 100, true, true, true);
+}
+
+bool ATankAIController::ShouldWander() const
+{
+	auto PathComp = GetPathFollowingComponent();
+	if (!ensureMsgf(PathComp, TEXT("%s - PathFollowingComponent was NULL"), *GetName()))
+	{
+		return false;
+	}
+
+	auto World = GetWorld();
+	if (!ensure(World))
+	{
+		return false;
+	}
+
+	if (LastWanderTime >= 0 && World->GetTimeSeconds() - LastWanderTime <= WanderCooldownSeconds)
+	{
+		return false;
+	}
+
+	return !PathComp->HasValidPath() || PathComp->GetStatus() == EPathFollowingStatus::Idle;
 }
 
 bool ATankAIController::ShouldMoveTowardReportedPosition(const FTankAIContext& AIContext) const

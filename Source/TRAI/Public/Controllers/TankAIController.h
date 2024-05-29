@@ -78,6 +78,12 @@ private:
 
 	bool PassesDirectPerceptionReactionTimeDelay();
 
+	void Wander(const FTankAIContext& AIContext);
+
+	void SeekTowardLocation(const FVector& Location);
+
+	bool ShouldWander() const;
+
 private:
 	UPROPERTY(EditDefaultsOnly)
 	float MaxAggroDistanceMeters{ 100.0f };
@@ -113,6 +119,12 @@ private:
 	UPROPERTY(EditAnywhere)
 	float ReportedPositionMaxDelayTime{ 6.0f };
 
+	UPROPERTY(EditDefaultsOnly)
+	float WanderRadius{ 10000.0f };
+
+	UPROPERTY(EditDefaultsOnly)
+	float WanderCooldownSeconds{ 3.0f };
+
 	UPROPERTY(EditAnywhere)
 	UCurveFloat* TargetingErrorByDistanceMeters{};
 
@@ -122,6 +134,7 @@ private:
 	float FirstInRangeTime{ -1.0f };
 	float TargetingErrorLastTime{ -1.0f };
 	float ReportedPositionReactTime{ -1.0f };
+	float LastWanderTime{ -1.0f };
 
 	int32 ShotsFired{};
 	bool bHasLOS{};
