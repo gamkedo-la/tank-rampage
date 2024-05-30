@@ -20,6 +20,9 @@
 
 DEFINE_VLOG_EVENT(EventTankStuck, Display, "Stuck")
 
+DECLARE_CYCLE_STAT(TEXT("TankTrackComponent::Tick"), STAT_TankTrackComponent_Tick, STATGROUP_TRTank);
+DECLARE_CYCLE_STAT(TEXT("TankTrackComponent::Collision"), STAT_TankTrackComponent_Collision, STATGROUP_TRTank);
+
 namespace
 {
 	const FString TrackWheelSocketNamePrefix = "Wheel_";
@@ -76,6 +79,8 @@ void UTankTrackComponent::InitializeComponent()
 
 void UTankTrackComponent::NotifyRelevantTankCollision(const FHitResult& Hit, const FVector& NormalImpulse)
 {
+	SCOPE_CYCLE_COUNTER(STAT_TankTrackComponent_Collision);
+
 	if (HasSuspension())
 	{
 		return;
@@ -639,6 +644,8 @@ void UTankTrackComponent::ApplySidewaysForce(float DeltaTime)
 
 void UTankTrackComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
+	SCOPE_CYCLE_COUNTER(STAT_TankTrackComponent_Tick);
+
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	TR::DebugUtils::DrawCenterOfMass(Cast<UPrimitiveComponent>(GetOwner()->GetRootComponent()));

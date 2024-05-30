@@ -11,3 +11,6 @@
 #else
 	DECLARE_LOG_CATEGORY_EXTERN(LogTRTank, Display, All);
 #endif
+
+// Stat groups
+DECLARE_STATS_GROUP(TEXT("TRTank"), STATGROUP_TRTank, STATCAT_Advanced);

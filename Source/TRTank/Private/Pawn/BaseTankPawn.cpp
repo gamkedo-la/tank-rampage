@@ -38,6 +38,8 @@
 
 #include <limits>
 
+DECLARE_CYCLE_STAT(TEXT("BaseTankPawn::Aim"), STAT_BaseTankPawn_Aim, STATGROUP_TRTank);
+
 namespace
 {
 	FBox GetBounds(const UStaticMeshComponent& Comp, const FName* SocketName = nullptr);
@@ -282,6 +284,8 @@ float ABaseTankPawn::GetFireCooldownProgressPercentage() const
 
 void ABaseTankPawn::AimAt(const FAimingData& AimingData)
 {
+	SCOPE_CYCLE_COUNTER(STAT_BaseTankPawn_Aim);
+
 	auto ActiveWeapon = ItemInventoryComponent->GetActiveWeapon();
 	if (!ActiveWeapon)
 	{

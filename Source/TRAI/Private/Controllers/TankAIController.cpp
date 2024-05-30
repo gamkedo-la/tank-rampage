@@ -27,6 +27,7 @@
 
 #include "Curves/CurveFloat.h"
 
+DECLARE_CYCLE_STAT(TEXT("TankAIController::Tick"), STAT_TankAIController_Tick, STATGROUP_AI);
 
 ATankAIController::ATankAIController(const FObjectInitializer& ObjectInitializer) :
 #if TR_AI_PATH_CROWD
@@ -80,6 +81,8 @@ void ATankAIController::OnUnPossess()
 
 void ATankAIController::Tick(float DeltaTime)
 {
+	SCOPE_CYCLE_COUNTER(STAT_TankAIController_Tick);
+
 	Super::Tick(DeltaTime);
 
 	ExecuteAI();
