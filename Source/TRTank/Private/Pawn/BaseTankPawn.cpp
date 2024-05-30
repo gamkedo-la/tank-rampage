@@ -435,13 +435,13 @@ void ABaseTankPawn::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
 
 	Snapshot->AddArrow(FrontWorldLocation, FrontWorldLocation + ForwardVector * 100.0f, LogTRTank.GetCategoryName(), ELogVerbosity::Log, FColor::Red, TEXT("F"));
 
+	TankMovementComponent->DescribeSelfToVisLog(Snapshot);
 	HealthComponent->DescribeSelfToVisLog(Snapshot);
 	ItemInventoryComponent->DescribeSelfToVisLog(Snapshot);
 	TankAimingComponent->DescribeSelfToVisLog(Snapshot);
 	TankTreadLeft->DescribeSelfToVisLog(Snapshot);
 	TankTreadRight->DescribeSelfToVisLog(Snapshot);
 	FlippedOverCorrectionComponent->DescribeSelfToVisLog(Snapshot);
-	AbilitySystemComponent->DescribeSelfToVisLog(Snapshot);
 }
 
 #endif

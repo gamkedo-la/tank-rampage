@@ -18,6 +18,8 @@ class TRTANK_API UTankMovementComponent : public UNavMovementComponent
 	
 public:
 
+	UTankMovementComponent();
+
 	struct FInitParams
 	{
 		UTankTrackComponent* LeftTrack{};
@@ -34,16 +36,50 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void TurnRight(float Throw);
 
+	virtual float GetMaxSpeed() const override;
+
+	FVector GetComponentVelocity() const;
+
+#if ENABLE_VISUAL_LOG
+
+	void DescribeSelfToVisLog(FVisualLogEntry* Snapshot) const;
+
+#endif
+
 protected:
 	virtual void RequestDirectMove(const FVector& MoveVelocity, bool bForceMaxSpeed) override;
+	virtual void RequestPathMove(const FVector& MoveInput) override;
 
 private:
 	bool IsMovementAllowed() const;
 
+	void MoveTo(const FVector& MoveDirectionStrength);
+
 private:
+
+	UPROPERTY(EditDefaultsOnly, Category = "Movement")
+	float MaxSpeed{ 2000.0f };
+
 	UPROPERTY(Transient)
 	TObjectPtr<UTankTrackComponent> LeftTrack{};
 
 	UPROPERTY(Transient)
 	TObjectPtr<UTankTrackComponent> RightTrack{};
+
+#if ENABLE_VISUAL_LOG
+	FVector LastMovementVector{ EForceInit::ForceInitToZero };
+#endif
 };
+
+#pragma region Inline Definitions
+
+FORCEINLINE float UTankMovementComponent::GetMaxSpeed() const
+{
+	return MaxSpeed;
+}
+
+FORCEINLINE FVector UTankMovementComponent::GetComponentVelocity() const
+{
+	return UpdatedComponent ? UpdatedComponent->GetComponentVelocity() : Velocity;
+}
+#pragma endregion Inline Definitions

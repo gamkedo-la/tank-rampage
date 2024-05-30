@@ -84,6 +84,8 @@ private:
 
 	bool ShouldWander() const;
 
+	bool DeltaTimeExceedsThreshold(float Interval, float LastTime) const;
+
 private:
 	UPROPERTY(EditDefaultsOnly)
 	float MaxAggroDistanceMeters{ 100.0f };
@@ -126,6 +128,9 @@ private:
 	float WanderCooldownSeconds{ 3.0f };
 
 	UPROPERTY(EditAnywhere)
+	float MoveRequestCooldownTimeSeconds{ 2.0f };
+
+	UPROPERTY(EditAnywhere)
 	UCurveFloat* TargetingErrorByDistanceMeters{};
 
 	UPROPERTY(EditAnywhere)
@@ -135,6 +140,8 @@ private:
 	float TargetingErrorLastTime{ -1.0f };
 	float ReportedPositionReactTime{ -1.0f };
 	float LastWanderTime{ -1.0f };
+	float LastMoveTime{ -1.0f };
+
 
 	int32 ShotsFired{};
 	bool bHasLOS{};

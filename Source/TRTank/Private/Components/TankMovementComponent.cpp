@@ -9,7 +9,20 @@
 
 #include "Logging/LoggingUtils.h"
 #include "TRTankLogging.h"
+
+#include "TRConstants.h"
+
 #include "VisualLogger/VisualLogger.h"
+
+namespace
+{
+	constexpr double CmsToMph = 0.022369;
+}
+
+UTankMovementComponent::UTankMovementComponent()
+{
+	bUseAccelerationForPaths = TR_AI_PATH_ACCEL;
+}
 
 void UTankMovementComponent::Initialize(const FInitParams& InitParams)
 {
@@ -63,20 +76,40 @@ void UTankMovementComponent::TurnRight(float Throw)
 
 void UTankMovementComponent::RequestDirectMove(const FVector& MoveVelocity, bool bForceMaxSpeed)
 {
+	// Called by default PathMovementComponent
 	if (!IsMovementAllowed())
 	{
 		return;
 	}
 
-	const auto MoveDirection = MoveVelocity.GetSafeNormal();
-	const auto& ForwardVector = GetOwner()->GetActorForwardVector();
+#if ENABLE_VISUAL_LOG
+	LastMovementVector = MoveVelocity;
+#endif
 
-	const auto ForwardThrow = MoveDirection | ForwardVector;
+	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: RequestDirectMove: MoveVelocity=%s; bForceMaxSpeed=%s"),
+		*LoggingUtils::GetName(GetOwner()), *GetName(),
+		*MoveVelocity.ToCompactString(), LoggingUtils::GetBoolString(bForceMaxSpeed));
 
-	MoveForward(ForwardThrow);
+	MoveTo(MoveVelocity.GetSafeNormal());
+}
 
-	const auto RightThrow = (ForwardVector ^ MoveDirection).Z;
-	TurnRight(RightThrow);
+void UTankMovementComponent::RequestPathMove(const FVector& MoveInput)
+{
+	// Called by CrowdFollowingComponent
+	// MoveInput is a vector of length [0,1] where 1 is full strength and anything less is used for slower than max movement
+	if (!IsMovementAllowed())
+	{
+		return;
+	}
+
+#if ENABLE_VISUAL_LOG
+	LastMovementVector = MoveInput;
+#endif
+
+	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: RequestPathMove: MoveInput=%s"),
+		*LoggingUtils::GetName(GetOwner()), *GetName(), *MoveInput.ToCompactString());
+
+	MoveTo(MoveInput);
 }
 
 bool UTankMovementComponent::IsMovementAllowed() const
@@ -93,8 +126,42 @@ bool UTankMovementComponent::IsMovementAllowed() const
 	return true;
 }
 
+void UTankMovementComponent::MoveTo(const FVector& MoveDirectionStrength)
+{
+	const auto& ForwardVector = GetOwner()->GetActorForwardVector();
+
+	const auto ForwardThrow = MoveDirectionStrength | ForwardVector;
+	const auto RightThrow = (ForwardVector ^ MoveDirectionStrength).Z;
+
+	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: MoveTo: MoveDirectionStrength=%s; ForwardVector=%s; ForwardThrow=%.1f; RightThrow=%.1f"),
+		*LoggingUtils::GetName(GetOwner()), *GetName(),
+		*MoveDirectionStrength.ToCompactString(), *ForwardVector.ToCompactString(), ForwardThrow, RightThrow);
+
+	MoveForward(ForwardThrow);
+	TurnRight(RightThrow);
+}
+
 FString UTankMovementComponent::FInitParams::ToString() const
 {
 	return FString::Printf(TEXT("LeftTrack=%s; RightTrack=%s"),
 		*LoggingUtils::GetName(LeftTrack), *LoggingUtils::GetName(RightTrack));
 }
+
+
+#if ENABLE_VISUAL_LOG
+
+void UTankMovementComponent::DescribeSelfToVisLog(FVisualLogEntry* Snapshot) const
+{
+	FVisualLogStatusCategory Category;
+	Category.Category = TEXT("Tank Movement Component");
+
+	const auto RawSpeed = GetComponentVelocity().Size();
+
+	Category.Add(TEXT("Speed"), FString::Printf(TEXT("%.1f mph"), RawSpeed * CmsToMph));
+	Category.Add(TEXT("Speed Pct"), FString::Printf(TEXT("%.1f"), RawSpeed / GetMaxSpeed() * 100));
+	Category.Add(TEXT("AIMovementRequestSize"), FString::Printf(TEXT("%.2f"), LastMovementVector.Size()));
+
+	Snapshot->Status.Add(Category);
+}
+
+#endif

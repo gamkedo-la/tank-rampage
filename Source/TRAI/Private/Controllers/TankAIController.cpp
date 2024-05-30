@@ -11,7 +11,11 @@
 
 #include "NavigationSystem.h"
 #include "Navigation/PathFollowingComponent.h"
+#include "Navigation/CrowdFollowingComponent.h"
+
 #include "Kismet/GameplayStatics.h" 
+
+#include "TRConstants.h"
 #include "TRAILogging.h"
 #include "Logging/LoggingUtils.h"
 #include "VisualLogger/VisualLogger.h"
@@ -25,7 +29,11 @@
 
 
 ATankAIController::ATankAIController(const FObjectInitializer& ObjectInitializer) :
+#if TR_AI_PATH_CROWD
+	Super(ObjectInitializer.SetDefaultSubobjectClass<UCrowdFollowingComponent>(TEXT("PathFollowingComponent")))
+#else
 	Super(ObjectInitializer)
+#endif
 {
 	PrimaryActorTick.bCanEverTick = true;
 }
@@ -165,7 +173,7 @@ void ATankAIController::InitTargetErrorIfApplicable(const FTankAIContext& AICont
 
 void ATankAIController::ResetState()
 {
-	FirstInRangeTime = TargetingErrorLastTime = ReportedPositionReactTime = -1;
+	FirstInRangeTime = TargetingErrorLastTime = ReportedPositionReactTime = LastMoveTime = -1;
 	bHasLOS = bInInfaredRange = false;
 	ShotsFired = 0;
 }
@@ -349,6 +357,16 @@ bool ATankAIController::MoveTowardPlayer(const FTankAIContext& AIContext)
 
 void ATankAIController::SeekTowardLocation(const FVector& Location)
 {
+	if (!DeltaTimeExceedsThreshold(MoveRequestCooldownTimeSeconds, LastMoveTime))
+	{
+		return;
+	}
+
+	auto World = GetWorld();
+	check(World);
+
+	LastMoveTime = World->GetTimeSeconds();
+
 	MoveToLocation(Location, MinMoveDistanceMeters * 100, true, true, true);
 }
 
@@ -360,18 +378,23 @@ bool ATankAIController::ShouldWander() const
 		return false;
 	}
 
+	if (!DeltaTimeExceedsThreshold(WanderCooldownSeconds, LastWanderTime))
+	{
+		return false;
+	}
+
+	return !PathComp->HasValidPath() || PathComp->GetStatus() == EPathFollowingStatus::Idle;
+}
+
+bool ATankAIController::DeltaTimeExceedsThreshold(float Interval, float LastTime) const
+{
 	auto World = GetWorld();
 	if (!ensure(World))
 	{
 		return false;
 	}
 
-	if (LastWanderTime >= 0 && World->GetTimeSeconds() - LastWanderTime <= WanderCooldownSeconds)
-	{
-		return false;
-	}
-
-	return !PathComp->HasValidPath() || PathComp->GetStatus() == EPathFollowingStatus::Idle;
+	return LastTime < 0 || World->GetTimeSeconds() - LastTime > Interval;
 }
 
 bool ATankAIController::ShouldMoveTowardReportedPosition(const FTankAIContext& AIContext) const
