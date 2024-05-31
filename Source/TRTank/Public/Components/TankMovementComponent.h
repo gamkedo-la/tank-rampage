@@ -55,6 +55,10 @@ private:
 
 	void MoveTo(const FVector& MoveDirectionStrength);
 
+#if ENABLE_VISUAL_LOG
+	bool DidMoveThisFrame() const;
+#endif
+
 private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Movement")
@@ -68,6 +72,7 @@ private:
 
 #if ENABLE_VISUAL_LOG
 	FVector LastMovementVector{ EForceInit::ForceInitToZero };
+	float LastMovementTime{ -1.0f };
 #endif
 };
 

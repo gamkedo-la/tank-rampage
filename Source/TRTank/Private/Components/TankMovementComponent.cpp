@@ -84,6 +84,7 @@ void UTankMovementComponent::RequestDirectMove(const FVector& MoveVelocity, bool
 
 #if ENABLE_VISUAL_LOG
 	LastMovementVector = MoveVelocity;
+	LastMovementTime = GetWorld()->GetTimeSeconds();
 #endif
 
 	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: RequestDirectMove: MoveVelocity=%s; bForceMaxSpeed=%s"),
@@ -104,6 +105,7 @@ void UTankMovementComponent::RequestPathMove(const FVector& MoveInput)
 
 #if ENABLE_VISUAL_LOG
 	LastMovementVector = MoveInput;
+	LastMovementTime = GetWorld()->GetTimeSeconds();
 #endif
 
 	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: RequestPathMove: MoveInput=%s"),
@@ -150,6 +152,17 @@ FString UTankMovementComponent::FInitParams::ToString() const
 
 #if ENABLE_VISUAL_LOG
 
+bool UTankMovementComponent::DidMoveThisFrame() const
+{
+	auto World = GetWorld();
+	if (!World)
+	{
+		return false;
+	}
+
+	return FMath::IsNearlyEqual(World->GetTimeSeconds(), LastMovementTime, 0.1f);
+}
+
 void UTankMovementComponent::DescribeSelfToVisLog(FVisualLogEntry* Snapshot) const
 {
 	FVisualLogStatusCategory Category;
@@ -159,7 +172,7 @@ void UTankMovementComponent::DescribeSelfToVisLog(FVisualLogEntry* Snapshot) con
 
 	Category.Add(TEXT("Speed"), FString::Printf(TEXT("%.1f mph"), RawSpeed * CmsToMph));
 	Category.Add(TEXT("Speed Pct"), FString::Printf(TEXT("%.1f"), RawSpeed / GetMaxSpeed() * 100));
-	Category.Add(TEXT("AIMovementRequestSize"), FString::Printf(TEXT("%.2f"), LastMovementVector.Size()));
+	Category.Add(TEXT("AIMovementRequestSize"), DidMoveThisFrame() ? FString::Printf(TEXT("%.2f"), LastMovementVector.Size()) : TEXT("N/A"));
 
 	Snapshot->Status.Add(Category);
 }
