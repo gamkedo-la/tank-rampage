@@ -18,6 +18,21 @@ UHitSfxComponent::UHitSfxComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
+bool UHitSfxComponent::ShouldPlaySfx_Implementation() const
+{
+	if (MaxPlayCount > 0 && PlayCount >= MaxPlayCount)
+	{
+		UE_VLOG_UELOG(GetOwner(), LogTRCore, Log,
+			TEXT("%s-%s: ShouldPlaySfx - Not playing sfx=%s as PlayCount=%d >= MaxPlayCount=%d"),
+			*LoggingUtils::GetName(GetOwner()), *GetName(), *LoggingUtils::GetName(HitSfx),
+			PlayCount, MaxPlayCount);
+
+		return false;
+	}
+
+	return true;
+}
+
 void UHitSfxComponent::RegisterCollisions()
 {
 	if (BlueprintRegisterCollisions())
@@ -57,6 +72,14 @@ void UHitSfxComponent::RegisterCollisions()
 void UHitSfxComponent::OnNotifyRelevantCollision(UPrimitiveComponent* HitComponent, const FHitResult& Hit, const FVector& NormalImpulse)
 {
 	check(HitSfx);
+
+	if (!ShouldPlaySfx())
+	{
+		UE_VLOG_UELOG(GetOwner(), LogTRCore, Log,
+			TEXT("%s-%s: OnNotifyRelevantCollision - Not playing sfx=%s as ShouldPlaySfx() returned false"),
+			*LoggingUtils::GetName(GetOwner()), *GetName(), *LoggingUtils::GetName(HitSfx));
+		return;
+	}
 
 	auto World = GetWorld();
 	if (!World)
@@ -128,6 +151,18 @@ void UHitSfxComponent::OnNotifyRelevantCollision(UPrimitiveComponent* HitCompone
 	SpawnedAudioComponent->bReverb = true;
 
 	LastPlayTimeSeconds = TimeSeconds;
+
+	OnPlaySfx();
+}
+
+void UHitSfxComponent::OnPlaySfx_Implementation()
+{
+	++PlayCount;
+
+	UE_VLOG_UELOG(GetOwner(), LogTRCore, Log,
+		TEXT("%s-%s: OnPlaySfx - PlayCount=%d"),
+		*LoggingUtils::GetName(GetOwner()), *GetName(), *LoggingUtils::GetName(HitSfx),
+		PlayCount)
 }
 
 float UHitSfxComponent::GetAudioVolume(const FVector& NormalImpulse) const
