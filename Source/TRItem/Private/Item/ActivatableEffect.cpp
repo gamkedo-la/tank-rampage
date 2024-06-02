@@ -3,6 +3,8 @@
 
 #include "Item/ActivatableEffect.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(ActivatableEffect)
+
 UActivatableEffect::UActivatableEffect()
 {
 	ItemType = EItemType::ActivatableEffect;

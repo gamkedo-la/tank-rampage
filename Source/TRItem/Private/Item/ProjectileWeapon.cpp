@@ -13,6 +13,8 @@
 
 #include <optional>
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(ProjectileWeapon)
+
 namespace
 {
 	constexpr float HomingTargetsUpdateFrequency = 3.0f;

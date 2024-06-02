@@ -25,6 +25,8 @@
 
 #include <limits>
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(RampageGameMode)
+
 ARampageGameMode::ARampageGameMode()
 {
 	XPSpawnerComponent = CreateDefaultSubobject<UXPSpawnerComponent>(TEXT("XP Spawner"));

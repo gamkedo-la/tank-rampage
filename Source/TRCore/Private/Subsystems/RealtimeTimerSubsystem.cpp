@@ -6,6 +6,8 @@
 #include "Logging/LoggingUtils.h"
 #include "TRCoreLogging.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(RealtimeTimerSubsystem)
+
 void URealtimeTimerSubsystem::Tick(float DeltaTime)
 {
 	UE_LOG(LogTRCore, VeryVerbose, TEXT("%s: Tick=%fs"), *GetName(), DeltaTime);

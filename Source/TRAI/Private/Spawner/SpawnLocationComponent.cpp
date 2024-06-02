@@ -5,6 +5,8 @@
 
 #include "Components/BillboardComponent.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(SpawnLocationComponent)
+
 // Sets default values for this component's properties
 USpawnLocationComponent::USpawnLocationComponent()
 {

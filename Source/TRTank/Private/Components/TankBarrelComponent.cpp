@@ -7,6 +7,8 @@
 #include "TRTankLogging.h"
 #include "VisualLogger/VisualLogger.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(TankBarrelComponent)
+
 using namespace TR;
 
 namespace

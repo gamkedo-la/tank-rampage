@@ -12,6 +12,8 @@
 #include "Logging/LoggingUtils.h"
 #include "VisualLogger/VisualLogger.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(SpringWheel)
+
 ASpringWheel::ASpringWheel()
 {
 	PrimaryActorTick.bCanEverTick = true;

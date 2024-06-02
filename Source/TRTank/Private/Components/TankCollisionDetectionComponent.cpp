@@ -3,6 +3,7 @@
 
 #include "Components/TankCollisionDetectionComponent.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(TankCollisionDetectionComponent)
 
 void UTankCollisionDetectionComponent::RegisterCollisions()
 {

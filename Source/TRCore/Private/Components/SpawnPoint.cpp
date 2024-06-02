@@ -9,6 +9,8 @@
 
 #include "Kismet/GameplayStatics.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(SpawnPoint)
+
 USpawnPoint::USpawnPoint()
 {
 	PrimaryComponentTick.bCanEverTick = false;

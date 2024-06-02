@@ -18,6 +18,8 @@
 
 #include "GameFramework/MovementComponent.h" 
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(TankTrackComponent)
+
 DEFINE_VLOG_EVENT(EventTankStuck, Display, "Stuck")
 
 DECLARE_CYCLE_STAT(TEXT("TankTrackComponent::Tick"), STAT_TankTrackComponent_Tick, STATGROUP_TRTank);

@@ -6,6 +6,8 @@
 #include "Item/Item.h"
 #include "Logging/LoggingUtils.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(ItemConfigData)
+
 FString FItemConfigData::ToString() const
 {
     return LoggingUtils::GetName(Class);

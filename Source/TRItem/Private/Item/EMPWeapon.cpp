@@ -13,8 +13,9 @@
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
 
-
 #include <limits>
+
+#include UE_INLINE_GENERATED_CPP_BY_NAME(EMPWeapon)
 
 bool UEMPWeapon::DoActivation(USceneComponent& ActivationReferenceComponent, const FName& ActivationSocketName)
 {

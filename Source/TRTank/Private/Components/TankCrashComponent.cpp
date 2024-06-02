@@ -14,6 +14,8 @@
 
 #include "Components/AudioComponent.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(TankCrashComponent)
+
 void UTankCrashComponent::RegisterCollisions()
 {
 	if (!ensureMsgf(TankCrashSfx, TEXT("%s: Has no configured TankCrashSfx"), *GetName()))

@@ -38,6 +38,9 @@
 
 #include <limits>
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(BaseTankPawn)
+
+
 DECLARE_CYCLE_STAT(TEXT("BaseTankPawn::Aim"), STAT_BaseTankPawn_Aim, STATGROUP_TRTank);
 
 namespace

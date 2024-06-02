@@ -17,6 +17,8 @@
 #include <array>
 #include <numeric>
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(LevelUnlocksComponent)
+
 namespace
 {
 	constexpr int32 MaxOptions = 64;

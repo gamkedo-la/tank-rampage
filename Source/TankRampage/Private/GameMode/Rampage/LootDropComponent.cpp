@@ -24,6 +24,8 @@
 #include <cstdio>
 #include <optional>
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(LootDropComponent)
+
 namespace
 {
 	FRealCurve* FindCurveForLevel(UCurveTable* CurveTable, int32 Level);

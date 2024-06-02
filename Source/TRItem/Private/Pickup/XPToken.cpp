@@ -12,6 +12,8 @@
 #include "Components/SphereComponent.h" 
 #include "Components/StaticMeshComponent.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(XPToken)
+
 AXPToken::AXPToken()
 {
 	PrimaryActorTick.bCanEverTick = false;

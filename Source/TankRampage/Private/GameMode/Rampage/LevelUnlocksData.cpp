@@ -7,6 +7,8 @@
 #include "TankRampageLogging.h"
 #include "Utils/TRDataTableUtils.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(LevelUnlocksData)
+
 namespace
 {
     constexpr int32 FirstLevelUnlockCount = 1;

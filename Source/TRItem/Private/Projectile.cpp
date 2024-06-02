@@ -27,6 +27,8 @@
 
 #include "PhysicalMaterials/PhysicalMaterial.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(Projectile)
+
 namespace
 {
 	constexpr ECollisionChannel HomingLOSTraceChannel = TR::CollisionChannel::MissileHomingTargetTraceType;

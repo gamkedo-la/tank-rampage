@@ -7,6 +7,7 @@
 #include "TRCoreLogging.h"
 #include "VisualLogger/VisualLogger.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(DamageAdjustmentOwner)
 
 #if ENABLE_VISUAL_LOG
 #define SHOULD_LOG_DAMAGE(CategoryName, Verbosity) ((FVisualLogger::IsRecording() || UE_LOG_ACTIVE(CategoryName, Verbosity)) && !DamageAdjustmentDelegateOrderSet.IsEmpty())

@@ -14,6 +14,8 @@
 
 #include "Components/AudioComponent.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(TankEngineSoundsComponent)
+
 UTankEngineSoundsComponent::UTankEngineSoundsComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;

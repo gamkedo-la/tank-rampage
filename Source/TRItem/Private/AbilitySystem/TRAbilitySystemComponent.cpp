@@ -7,6 +7,8 @@
 #include "TRItemLogging.h"
 #include "VisualLogger/VisualLogger.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(TRAbilitySystemComponent)
+
 void UTRAbilitySystemComponent::InitAbilityActorInfo(AActor* InOwnerActor, AActor* InAvatarActor)
 {
 	UE_VLOG_UELOG(GetOwner(), LogTRItem, Log, TEXT("%s-%s: InitAbilityActorInfo - InOwnerActor=%s; InAvatarActor=%s"),

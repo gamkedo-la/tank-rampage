@@ -27,6 +27,8 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/PlayerCameraManager.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(TankPlayerController)
+
 ATankPlayerController::ATankPlayerController()
 {
 	PrimaryActorTick.bCanEverTick = true;

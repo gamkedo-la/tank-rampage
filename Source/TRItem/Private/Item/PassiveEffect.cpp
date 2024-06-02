@@ -7,6 +7,8 @@
 #include "TRItemLogging.h"
 #include "VisualLogger/VisualLogger.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(PassiveEffect)
+
 UPassiveEffect::UPassiveEffect()
 {
 	ItemType = EItemType::PassiveEffect;

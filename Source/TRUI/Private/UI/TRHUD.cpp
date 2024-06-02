@@ -6,6 +6,8 @@
 #include "Logging/LoggingUtils.h"
 #include "TRUILogging.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(TRHUD)
+
 void ATRHUD::ShowHUD()
 {
 	Super::ShowHUD();

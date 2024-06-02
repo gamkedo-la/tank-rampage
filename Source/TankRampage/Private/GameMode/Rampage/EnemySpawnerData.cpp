@@ -2,6 +2,8 @@
 
 #include "Utils/TRDataTableUtils.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(EnemySpawnerData)
+
 TArray<FEnemySpawnerData> EnemySpawnerDataParser::ReadAll(UDataTable* EnemySpawnerDataTable)
 {
 	if (!TR::DataTableUtils::ValidateDataTableRowType<FEnemySpawnerData>(EnemySpawnerDataTable))

@@ -27,6 +27,8 @@
 
 #include "Curves/CurveFloat.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(TankAIController)
+
 DECLARE_CYCLE_STAT(TEXT("TankAIController::Tick"), STAT_TankAIController_Tick, STATGROUP_AI);
 
 ATankAIController::ATankAIController(const FObjectInitializer& ObjectInitializer) :

@@ -6,6 +6,8 @@
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Misc/ConfigCacheIni.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(TRBlueprintFunctionLibrary)
+
 bool UTRBlueprintFunctionLibrary::IsRunningInEditor(const UObject* WorldContextObject)
 {
 	if(!WorldContextObject)

@@ -12,6 +12,8 @@
 #include "GameFramework/GameModeBase.h"
 #include "Kismet/GameplayStatics.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(RampageGameState)
+
 void ARampageGameState::ApplyLevelUnlock(APawn* Pawn, const FLevelUnlock& Unlock)
 {
 	auto GameMode = UGameplayStatics::GetGameMode(this);

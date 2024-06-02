@@ -11,6 +11,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/AudioComponent.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(ShieldItem)
 
 UShieldItem::UShieldItem()
 {

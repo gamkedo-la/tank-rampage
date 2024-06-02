@@ -12,6 +12,8 @@
 #include "Logging/LoggingUtils.h"
 #include "VisualLogger/VisualLogger.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(MiniNukeProjectile)
+
 void AMiniNukeProjectile::ApplyPostHitEffects(const FHitResult& HitInfo, const FProjectileDamageParams& DamageParams)
 {
 	ApplyPostProcessEffects();

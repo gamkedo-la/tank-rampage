@@ -8,6 +8,8 @@
 
 #include "VisualLogger/VisualLogger.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(BaseCollisionRelevanceComponent)
+
 namespace
 {
 	bool MatchesByName(const TArray<FString>& Array, const FString& InputName);

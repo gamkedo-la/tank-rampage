@@ -14,6 +14,8 @@
 #include "Item/ActivatableEffect.h"
 #include "Item/PassiveEffect.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(ItemInventory)
+
 UItemInventory::UItemInventory()
 {
 	PrimaryComponentTick.bCanEverTick = false;

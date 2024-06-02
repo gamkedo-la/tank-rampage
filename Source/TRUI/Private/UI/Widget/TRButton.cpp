@@ -8,6 +8,7 @@
 
 #include "Subsystems/RealtimeTimerSubsystem.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(TRButton)
 
 void UTRButton::PostInitProperties()
 {

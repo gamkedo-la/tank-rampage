@@ -9,6 +9,8 @@
 #include "TRItemLogging.h"
 #include "VisualLogger/VisualLogger.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(ArmorItem)
+
 void UArmorItem::NativeInitialize(const FItemConfigData& ItemConfigData)
 {
 	auto DamageAdjustmentOwner = IDamageAdjustmentOwner::GetFromActor(GetOwner());

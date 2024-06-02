@@ -16,6 +16,8 @@
 
 #include "Kismet/GameplayStatics.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(TRGameInstance)
+
 void UTRGameInstance::Init()
 {
 	UE_LOG(LogTankRampage, Display, TEXT("%s: Init"), *GetName());

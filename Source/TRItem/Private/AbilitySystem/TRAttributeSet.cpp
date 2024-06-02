@@ -8,6 +8,8 @@
 
 #include "Net/UnrealNetwork.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(TRAttributeSet)
+
 UTRAttributeSet::UTRAttributeSet()
 {
 	// constructor is too early for setter, but we can use the initter here

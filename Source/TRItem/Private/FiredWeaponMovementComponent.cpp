@@ -7,6 +7,7 @@
 #include "VisualLogger/VisualLogger.h"
 #include "Logging/LoggingUtils.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(FiredWeaponMovementComponent)
 
 void UFiredWeaponMovementComponent::HandleImpact(const FHitResult& Hit, float TimeSlice, const FVector& MoveDelta)
 {

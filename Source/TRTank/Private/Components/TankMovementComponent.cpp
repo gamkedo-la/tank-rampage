@@ -14,6 +14,8 @@
 
 #include "VisualLogger/VisualLogger.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(TankMovementComponent)
+
 namespace
 {
 	constexpr double CmsToMph = 0.022369;

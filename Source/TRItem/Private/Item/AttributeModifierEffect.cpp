@@ -11,6 +11,8 @@
 #include "TRItemLogging.h"
 #include "VisualLogger/VisualLogger.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(AttributeModifierEffect)
+
 bool UAttributeModifierEffect::DoActivation(USceneComponent& ActivationReferenceComponent, const FName& ActivationSocketName)
 {
 	const FGameplayTagContainer BuffTagsContainer = FGameplayTagContainer::CreateFromArray(BuffTags);

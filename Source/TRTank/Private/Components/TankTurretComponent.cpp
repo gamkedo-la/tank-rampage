@@ -7,6 +7,8 @@
 #include "TRTankLogging.h"
 #include "VisualLogger/VisualLogger.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(TankTurretComponent)
+
 namespace
 {
 	constexpr float YawChangeEpsilon = 1e-3;

@@ -9,6 +9,8 @@
 #include "Logging/LoggingUtils.h"
 #include "VisualLogger/VisualLogger.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(FlippedOverCorrectionComponent)
+
 DEFINE_VLOG_EVENT(EventActorFlippedOver, Display, "Flipped Over")
 
 UFlippedOverCorrectionComponent::UFlippedOverCorrectionComponent()

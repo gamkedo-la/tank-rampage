@@ -16,6 +16,8 @@
 
 #include "Kismet/GameplayStatics.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(TankAimingComponent)
+
 namespace
 {
 	double ClampDeltaYaw(double Yaw);

@@ -3,4 +3,4 @@
 
 #include "Interfaces/ArmedActor.h"
 
-// Add default functionality here for any IArmedActor functions that are not pure virtual.
+#include UE_INLINE_GENERATED_CPP_BY_NAME(ArmedActor)

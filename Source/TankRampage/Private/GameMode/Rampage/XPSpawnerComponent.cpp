@@ -13,11 +13,12 @@
 
 #include "Utils/CollisionUtils.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(XPSpawnerComponent)
+
 UXPSpawnerComponent::UXPSpawnerComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 }
-
 
 void UXPSpawnerComponent::BeginPlay()
 {
