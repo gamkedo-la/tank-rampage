@@ -25,7 +25,7 @@ protected:
 	virtual void OnNotifyRelevantCollision(UPrimitiveComponent* HitComponent, const FHitResult& Hit, const FVector& NormalImpulse) override final;
 
 	UFUNCTION(BlueprintNativeEvent)
-	bool ShouldPlaySfx() const;
+	bool ShouldPlaySfx(UPrimitiveComponent* HitComponent, const FHitResult& Hit, const FVector& NormalImpulse) const;
 
 	UFUNCTION(BlueprintNativeEvent)
 	void OnPlaySfx();

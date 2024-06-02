@@ -18,7 +18,7 @@ UHitSfxComponent::UHitSfxComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
-bool UHitSfxComponent::ShouldPlaySfx_Implementation() const
+bool UHitSfxComponent::ShouldPlaySfx_Implementation(UPrimitiveComponent* HitComponent, const FHitResult& Hit, const FVector& NormalImpulse) const
 {
 	if (MaxPlayCount > 0 && PlayCount >= MaxPlayCount)
 	{
@@ -73,7 +73,7 @@ void UHitSfxComponent::OnNotifyRelevantCollision(UPrimitiveComponent* HitCompone
 {
 	check(HitSfx);
 
-	if (!ShouldPlaySfx())
+	if (!ShouldPlaySfx(HitComponent, Hit, NormalImpulse))
 	{
 		UE_VLOG_UELOG(GetOwner(), LogTRCore, Log,
 			TEXT("%s-%s: OnNotifyRelevantCollision - Not playing sfx=%s as ShouldPlaySfx() returned false"),
