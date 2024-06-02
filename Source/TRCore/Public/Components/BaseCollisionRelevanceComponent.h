@@ -8,7 +8,7 @@
 
 
 UCLASS(Abstract, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class UBaseCollisionRelevanceComponent : public UActorComponent
+class TRCORE_API UBaseCollisionRelevanceComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
@@ -23,7 +23,10 @@ protected:
 	virtual void OnNotifyRelevantCollision(UPrimitiveComponent* HitComponent, const FHitResult& Hit, const FVector& NormalImpulse)
 		PURE_VIRTUAL(UBaseCollisionRelevanceComponent::OnRelevantCollision, ;);
 
+	UFUNCTION(BlueprintCallable)
 	void RegisterOwner();
+
+	UFUNCTION(BlueprintCallable)
 	void RegisterComponent(UPrimitiveComponent* Component);
 
 private:

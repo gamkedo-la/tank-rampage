@@ -4,7 +4,7 @@
 #include "Components/BaseCollisionRelevanceComponent.h"
 
 #include "Logging/LoggingUtils.h"
-#include "TRTankLogging.h"
+#include "TRCoreLogging.h"
 
 #include "VisualLogger/VisualLogger.h"
 
@@ -15,7 +15,6 @@ namespace
 	bool MatchesByName(const TArray<FString>& Array, const FString& InputName);
 }
 
-// Sets default values for this component's properties
 UBaseCollisionRelevanceComponent::UBaseCollisionRelevanceComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
@@ -34,7 +33,7 @@ void UBaseCollisionRelevanceComponent::OnActorHit(AActor* SelfActor, AActor* Oth
 {
 	const bool bIsRelevant = IsRelevantCollision(Hit);
 
-	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: OnActorHit - bIsRelevant=%s; OtherActor=%s; NormalImpulse=%s; Hit=%s"),
+	UE_VLOG_UELOG(GetOwner(), LogTRCore, VeryVerbose, TEXT("%s-%s: OnActorHit - bIsRelevant=%s; OtherActor=%s; NormalImpulse=%s; Hit=%s"),
 		*LoggingUtils::GetName(GetOwner()), *GetName(), LoggingUtils::GetBoolString(bIsRelevant),
 		*LoggingUtils::GetName(OtherActor), *NormalImpulse.ToCompactString(), *Hit.ToString());
 
@@ -48,7 +47,7 @@ void UBaseCollisionRelevanceComponent::OnComponentHit(UPrimitiveComponent* HitCo
 {
 	const bool bIsRelevant = IsRelevantCollision(Hit);
 
-	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose, TEXT("%s-%s: OnComponentHit - bIsRelevant=%s; HitComponent=%s; OtherActor=%s; OtherComponent=%s; NormalImpulse=%s; Hit=%s"),
+	UE_VLOG_UELOG(GetOwner(), LogTRCore, VeryVerbose, TEXT("%s-%s: OnComponentHit - bIsRelevant=%s; HitComponent=%s; OtherActor=%s; OtherComponent=%s; NormalImpulse=%s; Hit=%s"),
 		*LoggingUtils::GetName(GetOwner()), *GetName(), LoggingUtils::GetBoolString(bIsRelevant),
 		*LoggingUtils::GetName(HitComponent), *LoggingUtils::GetName(OtherActor), *LoggingUtils::GetName(OtherComponent),
 		*NormalImpulse.ToCompactString(), *Hit.ToString());
