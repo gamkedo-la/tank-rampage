@@ -266,21 +266,28 @@ bool AEnemySpawner::IsSpawnPointObstructed(UClass* SpawnClass, const FTransform&
 		QueryParams.AddIgnoredActor(Spawned);
 	}
 
+	// Consider any dynamic movable object except for Destructibe as its bounds encompass all the small pieces and it's state is more transient
+	// Don't use ECC_WorldDynamic as this is used as the default for a lot of overlap components
+	FCollisionObjectQueryParams ObjectParams;
+	ObjectParams.AddObjectTypesToQuery(ECollisionChannel::ECC_Pawn);
+	ObjectParams.AddObjectTypesToQuery(ECollisionChannel::ECC_PhysicsBody);
+
 	const FCollisionShape CollisionShape = FCollisionShape::MakeBox(BoundsExtent);
 
-#if UE_EDITOR
+
+#if WITH_EDITOR
 	// Write out extra debug information to logs
 	TArray<FOverlapResult> Overlaps;
 	const bool bAnyOverlaps = World->OverlapMultiByObjectType(Overlaps, SpawnTransform.GetLocation(), SpawnTransform.GetRotation(),
-		ECollisionChannel::ECC_Pawn, CollisionShape, QueryParams);
+		ObjectParams, CollisionShape, QueryParams);
 	if (!bAnyOverlaps)
 	{
-		UE_VLOG_UELOG(this, LogTRAI, Verbose, TEXT("%s: IsSpawnPointObstructed - Spawn point with SpawnClass=%s;Bounds=%s;Transform=%s did not have any pawn obstructions"),
+		UE_VLOG_UELOG(this, LogTRAI, Verbose, TEXT("%s: IsSpawnPointObstructed - Spawn point with SpawnClass=%s;Bounds=%s;Transform=%s did not have any obstructions"),
 			*GetName(), *LoggingUtils::GetName(SpawnClass), *BoundsExtent.ToCompactString(), *SpawnTransform.ToHumanReadableString());
 		return false;
 	}
 
-	UE_VLOG_UELOG(this, LogTRAI, Log, TEXT("%s: IsSpawnPointObstructed - Spawn point with SpawnClass=%s;Bounds=%s;Transform=%s overlapped with %d existing pawns"),
+	UE_VLOG_UELOG(this, LogTRAI, Log, TEXT("%s: IsSpawnPointObstructed - Spawn point with SpawnClass=%s;Bounds=%s;Transform=%s overlapped with %d existing actors"),
 		*GetName(), *LoggingUtils::GetName(SpawnClass), *BoundsExtent.ToCompactString(), *SpawnTransform.ToHumanReadableString(), Overlaps.Num());
 
 	bool bLogIndividualOverlaps = UE_LOG_ACTIVE(LogTRAI, Verbose);
@@ -315,9 +322,9 @@ bool AEnemySpawner::IsSpawnPointObstructed(UClass* SpawnClass, const FTransform&
 
 	return true;
 
-#else // not UE_EDITOR - Disable enhanced logging
+#else // not WITH_EDITOR - Disable enhanced logging
 	return World->OverlapAnyTestByObjectType(SpawnTransform.GetLocation(), SpawnTransform.GetRotation(),
-		ECollisionChannel::ECC_Pawn, CollisionShape, QueryParams);
+		ObjectParams, CollisionShape, QueryParams);
 #endif
 }
 

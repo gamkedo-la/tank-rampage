@@ -11,7 +11,7 @@
 class USoundBase;
 
 /**
- * 
+ * An activatable effect that gives a temporary buff to the player. E.g. Turbo Boost.
  */
 UCLASS(Abstract)
 class TRITEM_API UAttributeModifierEffect : public UActivatableEffect

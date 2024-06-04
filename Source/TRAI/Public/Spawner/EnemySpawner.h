@@ -23,6 +23,7 @@ public:
 	AEnemySpawner();
 
 	int32 Spawn(int32 DesiredCount, const AActor* LookAtActor = nullptr, TArray<APawn*>* OutSpawned = nullptr);
+
 	int32 GetMaxSpawnCount() const;
 	bool CanSpawnAnyFor(const APawn& PlayerPawn, float* OutScore = nullptr) const;
 
@@ -48,6 +49,11 @@ protected:
 	void Initialize(UPrimitiveComponent* InOverlapComponent);
 
 private:
+
+#if WITH_EDITOR
+	UFUNCTION(CallInEditor, Category = "Spawn")
+	void SpawnAnEnemy();
+#endif 
 
 	UClass* SelectSpawnClass() const;
 
@@ -142,5 +148,12 @@ inline bool AEnemySpawner::IsCoolingDown() const
 {
 	return LastSpawnTime >= 0 && GetTimeSinceLastSpawn() <= CooldownTime;
 }
+
+#if WITH_EDITOR
+inline void AEnemySpawner::SpawnAnEnemy()
+{
+	Spawn(1);
+}
+#endif 
 
 #pragma endregion Inline Definitions
