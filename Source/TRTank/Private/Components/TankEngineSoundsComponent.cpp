@@ -44,7 +44,7 @@ void UTankEngineSoundsComponent::TickComponent(float DeltaTime, ELevelTick TickT
 
 	if (!AudioParametersOptional)
 	{
-		UE_VLOG_UELOG(this, LogTRTank, Log,
+		UE_VLOG_UELOG(GetOwner(), LogTRTank, Log,
 			TEXT("%s-%s: TickComponent - Cannot compute audio parameters"),
 			*GetName(), *LoggingUtils::GetName(GetOwner()));
 
@@ -131,7 +131,7 @@ UAudioComponent* UTankEngineSoundsComponent::CreateEngineAudioComponent() const
 		return nullptr;
 	}
 
-	UE_VLOG_UELOG(this, LogTRTank, Log,
+	UE_VLOG_UELOG(GetOwner(), LogTRTank, Log,
 		TEXT("%s-%s: CreateEngineAudioComponent - Using EngineSfx=%s with AudioComponent=%s"),
 		*GetName(), *LoggingUtils::GetName(GetOwner()), *EngineSfx->GetName(), *SpawnedAudioComponent->GetName());
 
@@ -142,21 +142,21 @@ UAudioComponent* UTankEngineSoundsComponent::CreateEngineAudioComponent() const
 
 	if (IdleVolumeParameterName.IsNone())
 	{
-		UE_VLOG_UELOG(this, LogTRTank, Warning,
+		UE_VLOG_UELOG(GetOwner(), LogTRTank, Warning,
 			TEXT("%s-%s: CreateEngineAudioComponent - IdleVolumeParameterName is NONE for EngineSfx=%s"),
 			*GetName(), *LoggingUtils::GetName(GetOwner()), *EngineSfx->GetName());
 	}
 
 	if (MovementVolumeParameterName.IsNone())
 	{
-		UE_VLOG_UELOG(this, LogTRTank, Warning,
+		UE_VLOG_UELOG(GetOwner(), LogTRTank, Warning,
 			TEXT("%s-%s: CreateEngineAudioComponent - MovementVolumeParameterName is NONE for EngineSfx=%s"),
 			*GetName(), *LoggingUtils::GetName(GetOwner()), *EngineSfx->GetName());
 	}
 
 	if (MovementPitchOffsetParameterName.IsNone())
 	{
-		UE_VLOG_UELOG(this, LogTRTank, Warning,
+		UE_VLOG_UELOG(GetOwner(), LogTRTank, Warning,
 			TEXT("%s-%s: CreateEngineAudioComponent - MovementPitchOffsetParameterName is NONE for EngineSfx=%s"),
 			*GetName(), *LoggingUtils::GetName(GetOwner()), *EngineSfx->GetName());
 	}
@@ -227,7 +227,7 @@ void UTankEngineSoundsComponent::UpdateAudioComponent()
 {
 	check(EngineAudioComponent);
 
-	UE_VLOG_UELOG(this, LogTRTank, VeryVerbose,
+	UE_VLOG_UELOG(GetOwner(), LogTRTank, VeryVerbose,
 		TEXT("%s-%s: UpdateAudioComponent - UpdateAudioComponent=%s; IdleVolume=%.2f; MovementVolume=%.2f; MovementPitchShift=%.2f"),
 		*GetName(), *LoggingUtils::GetName(GetOwner()),
 		*EngineAudioComponent->GetName(), CurrentEngineAudioValues.IdleVolume, CurrentEngineAudioValues.MovementVolume, CurrentEngineAudioValues.MovementPitchShift
