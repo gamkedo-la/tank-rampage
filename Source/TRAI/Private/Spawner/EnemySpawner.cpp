@@ -274,8 +274,6 @@ bool AEnemySpawner::IsSpawnPointObstructed(UClass* SpawnClass, const FTransform&
 
 	const FCollisionShape CollisionShape = FCollisionShape::MakeBox(BoundsExtent);
 
-#define ENEMY_SPAWNER_COLLISION_PARAMS SpawnTransform.GetLocation(), SpawnTransform.GetRotation(), ObjectParams, CollisionShape, QueryParams
-
 #if !UE_BUILD_SHIPPING
 	#if ENABLE_VISUAL_LOG
 		const bool bVisualLoggerRecording = FVisualLogger::IsRecording();
@@ -286,12 +284,12 @@ bool AEnemySpawner::IsSpawnPointObstructed(UClass* SpawnClass, const FTransform&
 	// Take fast path if no logging is enabled
 	if (!bVisualLoggerRecording && !UE_LOG_ACTIVE(LogTRAI, Log))
 	{
-		return World->OverlapAnyTestByObjectType(ENEMY_SPAWNER_COLLISION_PARAMS);
+		return World->OverlapAnyTestByObjectType(SpawnTransform.GetLocation(), SpawnTransform.GetRotation(), ObjectParams, CollisionShape, QueryParams);
 	}
 
 	// Write out extra debug information to logs
 	TArray<FOverlapResult> Overlaps;
-	const bool bAnyOverlaps = World->OverlapMultiByObjectType(Overlaps, ENEMY_SPAWNER_COLLISION_PARAMS);
+	const bool bAnyOverlaps = World->OverlapMultiByObjectType(Overlaps, SpawnTransform.GetLocation(), SpawnTransform.GetRotation(), ObjectParams, CollisionShape, QueryParams);
 	if (!bAnyOverlaps)
 	{
 		UE_VLOG_UELOG(this, LogTRAI, Verbose, TEXT("%s: IsSpawnPointObstructed - Spawn point with SpawnClass=%s;Bounds=%s;Transform=%s did not have any obstructions"),
@@ -331,7 +329,7 @@ bool AEnemySpawner::IsSpawnPointObstructed(UClass* SpawnClass, const FTransform&
 	return true;
 
 #else // Shipping build - Disable any enhanced logging
-	return World->OverlapAnyTestByObjectType(ENEMY_SPAWNER_COLLISION_PARAMS);
+	return World->OverlapAnyTestByObjectType(SpawnTransform.GetLocation(), SpawnTransform.GetRotation(), ObjectParams, CollisionShape, QueryParams);
 #endif
 }
 
