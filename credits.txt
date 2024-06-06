@@ -1,11 +1,13 @@
 Justin Montgomery: Project lead, core gameplay (tank movement, ability upgrade system and related authoring, weapons, camera, health/armor, collision handling, controls, EMP, turbo), enemy AI, level design and decoration layout (including roads, fences, trees, props), adaptive enemy spawning, explosions (all variations, including EMP and nuclear blast), destroyable environment pieces, tuning and balance, scene lighting, pickups, physics values, in-game UI,  grass wind effect, menus, main asset integration (audio, models, textures), optimization and performance settings, title background, bug fixes
 
-Chris "BOLT" Bolte: Audio lead (music for city/country/menu, ambience background loops, sound effects for firing, miss, missiles, damage, building destruction, rocks breaking, engines, EMP, shield, button sounds, pickups notifications, nuke, homing sound, turbo, volume balancing)
+Chris "BOLT" Bolte: Audio lead (music for city/country/menu, ambience background loops, sound effects for firing, miss, missiles, damage, building destruction, rocks and fences breaking, engines, EMP, shield, button sounds, pickups notifications, nuke, homing sound, turbo, hay bale bounce, volume balancing)
+
 Patrick Moffett: Reticle UI, aiming mode, tank missile and related collision, rocket trail effect, tank tread animation, dust particles, nuke model
 
 Gwyn Henry: Opening story, 7 rock models, linux build testing
 
 Cassidy Noble: Assorted city decoration models and textures (buildings, houses, trees, planes)
+
 Rodrigo Bonzerr Lopez: Barn, fence, baarrel, hay block, plane, hay particles, additional buildings, country test song (draft, not in final)
 
 Christer "McFunkypants" Kaitila: Metal decorations, grass, tank engine sound, ground textures, wood/concrete materials, additional rocks, scorch decal
