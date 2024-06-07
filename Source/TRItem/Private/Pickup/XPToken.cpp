@@ -6,6 +6,8 @@
 #include "XPSubsystem.h"
 
 #include "Logging/LoggingUtils.h"
+#include "Utils/CollisionUtils.h"
+
 #include "TRItemLogging.h"
 #include "VisualLogger/VisualLogger.h"
 
@@ -23,8 +25,7 @@ AXPToken::AXPToken()
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	Mesh->SetupAttachment(RootComponent);
 
-	CollisionVolume->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	CollisionVolume->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	CollisionVolume->SetCollisionProfileName(TR::CollisionProfile::DynamicOverlapOnlyTank);
 	CollisionVolume->SetGenerateOverlapEvents(true);
 
 	Mesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);

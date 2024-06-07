@@ -41,12 +41,7 @@ AProjectile::AProjectile()
 	RootComponent = ProjectileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ProjectileMesh"));
 
 	ProjectileMesh->SetMobility(EComponentMobility::Movable);
-	ProjectileMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
-	ProjectileMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
-	// Pawns like the tank need to overlap so they are not launched unrealistically in response to the collision
-	ProjectileMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
-	ProjectileMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Vehicle, ECollisionResponse::ECR_Overlap);
-	ProjectileMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	ProjectileMesh->SetCollisionProfileName(TR::CollisionProfile::Projectile);
 	
 	ProjectileMovementComponent = CreateDefaultSubobject<UFiredWeaponMovementComponent>(TEXT("ProjectileMovement"));
 	ProjectileMovementComponent->bAutoRegister = true;

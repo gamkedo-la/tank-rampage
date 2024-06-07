@@ -34,6 +34,8 @@
 #include "AbilitySystem/TRAbilitySystemComponent.h" 
 #include "AbilitySystem/TRAttributeSet.h"
 
+#include "Utils/CollisionUtils.h"
+
 #include "TRTags.h"
 
 #include <limits>
@@ -55,32 +57,31 @@ ABaseTankPawn::ABaseTankPawn()
 
 	RootComponent = TankBody = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TankBody"));
 	TankBody->SetSimulatePhysics(true);
-	TankBody->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	TankBody->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
+	TankBody->SetCollisionProfileName(TR::CollisionProfile::Tank);
 
 	TankTurret = CreateDefaultSubobject<UTankTurretComponent>(TEXT("TankTurret"));
 	TankTurret->SetupAttachment(TankBody, TankSockets::TurretAttach);
-	TankTurret->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
+	TankTurret->SetCollisionProfileName(TR::CollisionProfile::Tank);
 
 	TankBarrel = CreateDefaultSubobject<UTankBarrelComponent>(TEXT("TankBarrel"));
 	TankBarrel->SetupAttachment(TankTurret, TankSockets::GunAttach);
-	TankBarrel->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
+	TankBarrel->SetCollisionProfileName(TR::CollisionProfile::Tank);
 
 	TankTreadRight = CreateDefaultSubobject<UTankTrackComponent>(TEXT("TankTreadRight"));
 	TankTreadRight->SetupAttachment(TankBody, TankSockets::TreadRightAttach);
-	TankTreadRight->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
+	TankTreadRight->SetCollisionProfileName(TR::CollisionProfile::Tank);
 
 	TankTreadLeft = CreateDefaultSubobject<UTankTrackComponent>(TEXT("TankTreadLeft"));
 	TankTreadLeft->SetupAttachment(TankBody, TankSockets::TreadLeftAttach);
-	TankTreadLeft->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
+	TankTreadLeft->SetCollisionProfileName(TR::CollisionProfile::Tank);
 
 	TankTreadSideRight = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TankTreadSideRight"));
 	TankTreadSideRight->SetupAttachment(TankBody, TankSockets::SideRightAttach);
-	TankTreadSideRight->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
+	TankTreadSideRight->SetCollisionProfileName(TR::CollisionProfile::NoCollision);
 
 	TankTreadSideLeft = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TankTreadSideLeft"));
 	TankTreadSideLeft->SetupAttachment(TankBody, TankSockets::SideLeftAttach);
-	TankTreadSideLeft->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
+	TankTreadSideLeft->SetCollisionProfileName(TR::CollisionProfile::NoCollision);
 
 	CameraSpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraSpringArm"));
 	CameraSpringArm->SetupAttachment(TankBody);
