@@ -33,10 +33,10 @@ public:
 	virtual void RestartLevel() override;
 
 	UFUNCTION(BlueprintCallable)
-	virtual void PauseGame(UUserWidget* FocusWidget = nullptr);
+	void PauseGame(UUserWidget* FocusWidget = nullptr);
 
 	UFUNCTION(BlueprintCallable)
-	virtual void ResumeGame();
+	void ResumeGame();
 
 	UFUNCTION(BlueprintPure)
 	bool IsGamePaused() const;
@@ -48,6 +48,15 @@ protected:
 	void Spectate();
 
 	virtual void OnPossess(APawn* Pawn) override;
+
+	virtual void OnPauseGame(UUserWidget* FocusWidget) {}
+	virtual void OnResumeGame() {}
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void BlueprintPauseGame(UUserWidget* FocusWidget);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void BlueprintResumeGame();
 
 private:
 	void InitDebugDraw();

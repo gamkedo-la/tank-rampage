@@ -62,14 +62,15 @@ void ABasePlayerController::SetInputModeUI(UUserWidget* FocusWidget)
 {
 	// TODO: Detect gamepad input and set to FInputGameModeOnly for that case
 
-	FInputModeUIOnly InputModeData;
+	// Set to game and ui so that we can process input actions in the UI
+	FInputModeGameAndUI InputModeData;
+	InputModeData.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	SetInputMode(InputModeData);
 
 	if (FocusWidget)
 	{
 		InputModeData.SetWidgetToFocus(FocusWidget->TakeWidget());
 	}
-	InputModeData.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-	SetInputMode(InputModeData);
 
 	SetShowMouseCursor(true);
 }
@@ -92,6 +93,9 @@ void ABasePlayerController::PauseGame(UUserWidget* FocusWidget)
 	SetInputModeUI(FocusWidget);
 
 	SetPaused(true);
+
+	OnPauseGame(FocusWidget);
+	BlueprintPauseGame(FocusWidget);
 }
 
 void ABasePlayerController::ResumeGame()
@@ -99,6 +103,9 @@ void ABasePlayerController::ResumeGame()
 	SetPaused(false);
 
 	SetInputModeGame();
+
+	OnResumeGame();
+	BlueprintResumeGame();
 }
 
 bool ABasePlayerController::IsGamePaused() const
