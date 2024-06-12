@@ -66,4 +66,8 @@ struct FProjectileHomingParams
 
 	UPROPERTY(Transient)
 	TSet<AActor*> Targets{};
+
+	/* Other projectile's targets */
+	UPROPERTY(Transient)
+	TSet<AActor*> UsedTargets{};
 };

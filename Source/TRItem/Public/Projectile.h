@@ -48,6 +48,7 @@ public:
 
 	void AddAvailableHomingTarget(AActor* Actor);
 	void RemoveAvailableHomingTarget(AActor* Actor);
+	void TargetDestroyed(AActor* Actor);
 
 	AActor* GetCurrentHomingTargetActor() const;
 
@@ -106,6 +107,8 @@ private:
 	USoundBase* GetFiringSound() const;
 	USoundBase* GetHitSound(AActor* HitActor, UPrimitiveComponent* HitComponent, const FHitResult& Hit) const;
 	bool IsPlayer(AActor* Actor) const;
+
+	float NearbyTargetPenaltyScore(const AActor& Target) const;
 
 protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -193,6 +196,9 @@ private:
 
 	// Angle bisector : sin (x / 2)
 	float ViabilityTraceBendFactor{};
+
+	UPROPERTY(Category = "Homing", EditDefaultsOnly)
+	float AdjacentTargetPenaltyMultiplier{ 1000.0f };
 
 	FProjectileDamageParams ProjectileDamageParams{};
 

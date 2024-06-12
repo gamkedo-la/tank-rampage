@@ -27,6 +27,8 @@
 
 #include "PhysicalMaterials/PhysicalMaterial.h"
 
+#include "Interfaces/Percentage.h"
+
 #include UE_INLINE_GENERATED_CPP_BY_NAME(Projectile)
 
 namespace
@@ -513,6 +515,8 @@ void AProjectile::RefreshHomingTarget()
 					Score = FMath::Square(Score);
 				}
 
+				Score += NearbyTargetPenaltyScore(*PotentialTarget);
+
 				if (Score < BestTarget.second)
 				{
 					BestTarget = { PotentialTarget, Score };
@@ -542,6 +546,74 @@ void AProjectile::RefreshHomingTarget()
 	}
 
 	UE_VLOG_UELOG(this, LogTRItem, Log, TEXT("%s: RefreshHomingTarget: Selected %s out of %d viable"), *GetName(), *LoggingUtils::GetName(NewHomingTarget), ViableCount);
+}
+
+
+float AProjectile::NearbyTargetPenaltyScore(const AActor& Target) const
+{
+	const auto& UsedTargets = ProjectileHomingParams.UsedTargets;
+
+	if (UsedTargets.IsEmpty())
+	{
+		UE_VLOG_UELOG(this, LogTRItem, Verbose, TEXT("%s: Target=%s - Nearby Target Penalty Score = 0.0 -> No other targets"),
+			*GetName());
+
+		return 0.0f;
+	}
+
+	const FRadialDamageParams DamageCalculator(
+		ProjectileDamageParams.MaxDamageAmount,
+		ProjectileDamageParams.MinDamageAmount,
+		ProjectileDamageParams.DamageInnerRadius,
+		ProjectileDamageParams.DamageOuterRadius,
+		ProjectileDamageParams.DamageFalloff
+	);
+
+	// Get health component indirectly
+	const float CurrentHealth = [&]()
+	{
+		auto HealthComponent = Cast<IPercentage>(Target.FindComponentByTag<UActorComponent>(TR::Tags::HealthComponent));
+		if (!HealthComponent)
+		{
+			return 0.0f;
+		}
+
+		return HealthComponent->GetCurrentValue();
+	}();
+
+	double Penalty{};
+
+	for (auto OtherTarget : UsedTargets)
+	{
+		if (!IsValid(OtherTarget))
+		{
+			continue;
+		}
+
+		const auto SplashDamageToTarget = DamageCalculator.GetDamageScale(OtherTarget->GetDistanceTo(&Target));
+
+		if (FMath::IsNearlyZero(SplashDamageToTarget) || SplashDamageToTarget < CurrentHealth)
+		{
+			continue;
+		}
+
+		const auto TargetPenalty = SplashDamageToTarget / FMath::Max(CurrentHealth, 1.0f) * AdjacentTargetPenaltyMultiplier;
+
+		UE_VLOG_LOCATION(this, LogTRItem, VeryVerbose,
+			OtherTarget->GetActorLocation() + FVector(0, 0, 200.0f), 25.0f, FColor::Purple, TEXT("Penalty=%.1f"), TargetPenalty);
+
+		UE_VLOG_UELOG(this, LogTRItem, Verbose, TEXT("%s: OtherTarget=%s -> Target=%s: SplashDamageToTarget=%.1f; TargetPenalty=%.1f"),
+			*GetName(), *LoggingUtils::GetName(OtherTarget), *Target.GetName(),
+			SplashDamageToTarget, TargetPenalty);
+		
+		Penalty += TargetPenalty;
+	}
+
+	UE_VLOG_UELOG(this, LogTRItem, Verbose, TEXT("%s: Target=%s - Nearby Target Penalty Score= %.1f; CurrentHealth=%.1f"),
+		*GetName(), *Target.GetName(),
+		Penalty, CurrentHealth);
+
+	return static_cast<decltype(NearbyTargetPenaltyScore(Target))>(Penalty);
 }
 
 bool AProjectile::HasLineOfSightToTarget(const FVector& StartLocation, const AActor& Target, float TargetDistance) const
@@ -638,6 +710,7 @@ void AProjectile::AddAvailableHomingTarget(AActor* Actor)
 	}
 
 	ProjectileHomingParams.Targets.Add(Actor);
+	ProjectileHomingParams.UsedTargets.Remove(Actor);
 }
 
 void AProjectile::RemoveAvailableHomingTarget(AActor* Actor)
@@ -648,6 +721,18 @@ void AProjectile::RemoveAvailableHomingTarget(AActor* Actor)
 	}
 
 	ProjectileHomingParams.Targets.Remove(Actor);
+	ProjectileHomingParams.UsedTargets.Add(Actor);
+}
+
+void AProjectile::TargetDestroyed(AActor* Actor)
+{
+	if (!ProjectileMovementComponent->bIsHomingProjectile)
+	{
+		return;
+	}
+
+	ProjectileHomingParams.Targets.Remove(Actor);
+	ProjectileHomingParams.UsedTargets.Remove(Actor);
 }
 
 AActor* AProjectile::GetCurrentHomingTargetActor() const

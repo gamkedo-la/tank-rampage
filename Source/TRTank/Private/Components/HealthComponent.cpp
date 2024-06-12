@@ -19,6 +19,7 @@
 UHealthComponent::UHealthComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+	ComponentTags.Add(TR::Tags::HealthComponent);
 }
 
 void UHealthComponent::BeginPlay()

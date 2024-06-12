@@ -18,6 +18,9 @@
 namespace
 {
 	constexpr float HomingTargetsUpdateFrequency = 3.0f;
+
+	template<typename K>
+	TSet<AActor*> GetActorSet(const TMap<K, AActor*>& Map);
 }
 
 bool UProjectileWeapon::DoActivation(USceneComponent& ActivationReferenceComponent, const FName& ActivationSocketName)
@@ -103,7 +106,8 @@ void UProjectileWeapon::LaunchProjectile(USceneComponent& ActivationReferenceCom
 			.MaxSpeedMultiplier = MaxSpeedMultiplier,
 			.HomingAcceleration = HomingAcceleration,
 			.HomingTargetRefreshInterval = HomingTargetRefreshInterval,
-			.Targets = AvailableHomingTargets
+			.Targets = AvailableHomingTargets,
+			.UsedTargets = GetActorSet(ProjectileTargetMap)
 		};
 	}
 
@@ -192,7 +196,7 @@ void UProjectileWeapon::OnProjectileDestroyed(AActor* Actor)
 
 	for (auto [Projectile, _] : ProjectileTargetMap)
 	{
-		if (Projectile)
+		if (IsValid(Projectile))
 		{
 			Projectile->AddAvailableHomingTarget(DestroyedProjectileHomingTarget);
 		}
@@ -223,7 +227,7 @@ void UProjectileWeapon::OnHomingTargetSelected(AProjectile* InProjectile, AActor
 
 	for (auto [Projectile, _] : ProjectileTargetMap)
 	{
-		if (!Projectile || Projectile == InProjectile)
+		if (!IsValid(Projectile) || Projectile == InProjectile)
 		{
 			continue;
 		}
@@ -291,6 +295,14 @@ void UProjectileWeapon::OnDestroyActor(AActor* Actor)
 
 	if (bRemoved)
 	{
+		for (auto [Projectile, _] : ProjectileTargetMap)
+		{
+			if (IsValid(Projectile))
+			{
+				Projectile->TargetDestroyed(Actor);
+			}
+		}
+
 		UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s: OnDestroyActor - Removed dead actor %s - %d target%s available"),
 			*GetName(), *LoggingUtils::GetName(Actor), AvailableHomingTargets.Num(), LoggingUtils::Pluralize(AvailableHomingTargets.Num()));
 	}
@@ -358,4 +370,22 @@ void UProjectileWeapon::UnregisterActorLifecycleEvents()
 
 	World->RemoveOnActorSpawnedHandler(OnSpawnedHandle);
 	World->RemoveOnActorDestroyededHandler(OnDestroyedHandle);
+}
+
+namespace
+{
+	template<typename K>
+	TSet<AActor*> GetActorSet(const TMap<K,AActor*>& Map)
+	{
+		TSet<AActor*> Values;
+		for (const auto& [_, Value] : Map)
+		{
+			if (Value)
+			{
+				Values.Add(Value);
+			}
+		}
+
+		return Values;
+	}
 }
