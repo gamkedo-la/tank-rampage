@@ -556,18 +556,10 @@ float AProjectile::NearbyTargetPenaltyScore(const AActor& Target) const
 	if (UsedTargets.IsEmpty())
 	{
 		UE_VLOG_UELOG(this, LogTRItem, Verbose, TEXT("%s: Target=%s - Nearby Target Penalty Score = 0.0 -> No other targets"),
-			*GetName());
+			*GetName(), *Target.GetName());
 
 		return 0.0f;
 	}
-
-	const FRadialDamageParams DamageCalculator(
-		ProjectileDamageParams.MaxDamageAmount,
-		ProjectileDamageParams.MinDamageAmount,
-		ProjectileDamageParams.DamageInnerRadius,
-		ProjectileDamageParams.DamageOuterRadius,
-		ProjectileDamageParams.DamageFalloff
-	);
 
 	// Get health component indirectly
 	const float CurrentHealth = [&]()
@@ -581,6 +573,15 @@ float AProjectile::NearbyTargetPenaltyScore(const AActor& Target) const
 		return HealthComponent->GetCurrentValue();
 	}();
 
+	const FRadialDamageParams DamageCalculator(
+		ProjectileDamageParams.MaxDamageAmount,
+		ProjectileDamageParams.MinDamageAmount,
+		ProjectileDamageParams.DamageInnerRadius,
+		ProjectileDamageParams.DamageOuterRadius,
+		ProjectileDamageParams.DamageFalloff
+	);
+
+	const auto OuterRadiusSq = FMath::Square(ProjectileDamageParams.DamageOuterRadius);
 	double Penalty{};
 
 	for (auto OtherTarget : UsedTargets)
@@ -590,10 +591,30 @@ float AProjectile::NearbyTargetPenaltyScore(const AActor& Target) const
 			continue;
 		}
 
-		const auto SplashDamageToTarget = DamageCalculator.GetDamageScale(OtherTarget->GetDistanceTo(&Target));
+		const auto TargetDistSq = OtherTarget->GetSquaredDistanceTo(&Target);
+
+		if (TargetDistSq > OuterRadiusSq)
+		{
+			UE_VLOG_UELOG(this, LogTRItem, VeryVerbose, TEXT("%s: OtherTarget=%s -> Target=%s: TargetPenalty=0.0 -> Outside blast radius of %.1fm; Distance=%.1fm"),
+				*GetName(), *LoggingUtils::GetName(OtherTarget), *Target.GetName(),
+				ProjectileDamageParams.DamageOuterRadius / 100, FMath::Sqrt(TargetDistSq) / 100);
+
+			continue;
+		}
+
+		const auto TargetDist = FMath::Sqrt(TargetDistSq);
+
+		// Copied from AActor::InternalTakeRadialDamage
+		// When inside the blast radius, calculate the damage scale and then lerp between min and max damage
+		const auto DamageScale = DamageCalculator.GetDamageScale(TargetDist);
+		const auto SplashDamageToTarget = FMath::Lerp(DamageCalculator.MinimumDamage, DamageCalculator.BaseDamage, FMath::Max(0.f, DamageScale));
 
 		if (FMath::IsNearlyZero(SplashDamageToTarget) || SplashDamageToTarget < CurrentHealth)
 		{
+			UE_VLOG_UELOG(this, LogTRItem, VeryVerbose, TEXT("%s: OtherTarget=%s -> Target=%s: DamageScale=%.3f; SplashDamageToTarget=%.1f; TargetPenalty=0.0 -> No Kill; Distance=%.1fm"),
+				*GetName(), *LoggingUtils::GetName(OtherTarget), *Target.GetName(),
+				DamageScale, SplashDamageToTarget, TargetDist / 100);
+
 			continue;
 		}
 
@@ -602,14 +623,14 @@ float AProjectile::NearbyTargetPenaltyScore(const AActor& Target) const
 		UE_VLOG_LOCATION(this, LogTRItem, VeryVerbose,
 			OtherTarget->GetActorLocation() + FVector(0, 0, 200.0f), 25.0f, FColor::Purple, TEXT("Penalty=%.1f"), TargetPenalty);
 
-		UE_VLOG_UELOG(this, LogTRItem, Verbose, TEXT("%s: OtherTarget=%s -> Target=%s: SplashDamageToTarget=%.1f; TargetPenalty=%.1f"),
+		UE_VLOG_UELOG(this, LogTRItem, Verbose, TEXT("%s: OtherTarget=%s -> Target=%s: DamageScale=%.3f; SplashDamageToTarget=%.1f; TargetPenalty=%.1f; Distance=%.1fm"),
 			*GetName(), *LoggingUtils::GetName(OtherTarget), *Target.GetName(),
-			SplashDamageToTarget, TargetPenalty);
+			DamageScale, SplashDamageToTarget, TargetPenalty, TargetDist / 100);
 		
 		Penalty += TargetPenalty;
 	}
 
-	UE_VLOG_UELOG(this, LogTRItem, Verbose, TEXT("%s: Target=%s - Nearby Target Penalty Score= %.1f; CurrentHealth=%.1f"),
+	UE_VLOG_UELOG(this, LogTRItem, Verbose, TEXT("%s: Target=%s - Nearby Target Penalty Score=%.1f; CurrentHealth=%.1f"),
 		*GetName(), *Target.GetName(),
 		Penalty, CurrentHealth);
 

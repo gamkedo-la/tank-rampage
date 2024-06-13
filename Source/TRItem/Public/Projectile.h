@@ -198,7 +198,7 @@ private:
 	float ViabilityTraceBendFactor{};
 
 	UPROPERTY(Category = "Homing", EditDefaultsOnly)
-	float AdjacentTargetPenaltyMultiplier{ 1000.0f };
+	float AdjacentTargetPenaltyMultiplier{ 10000.0f };
 
 	FProjectileDamageParams ProjectileDamageParams{};
 
