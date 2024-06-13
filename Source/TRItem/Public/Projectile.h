@@ -100,7 +100,7 @@ private:
 
 	void MarkForDestroy();
 
-	bool HasLineOfSightToTarget(const FVector& StartLocation, const AActor& Target, float TargetDistance) const;
+	bool HasLineOfSightToTarget(const FVector& StartLocation, const AActor& Target, float TargetDistance, float& OutObstacleDistance) const;
 
 	bool IsHoming() const;
 
@@ -193,6 +193,15 @@ private:
 
 	UPROPERTY(Category = "Homing", EditDefaultsOnly)
 	float ViabilityTraceBendAngleDegrees{ 20.0f };
+
+	UPROPERTY(Category = "Homing", EditDefaultsOnly)
+	float TraceOcclusionMinExp{ 1.1f };
+
+	UPROPERTY(Category = "Homing", EditDefaultsOnly)
+	float TraceOcclusionMaxExp{ 2.0f };
+
+	UPROPERTY(Category = "Homing", EditDefaultsOnly, meta = (ClampMin = "1.0"))
+	float TraceOcclusionEaseFactor{ 1.5f };
 
 	// Angle bisector : sin (x / 2)
 	float ViabilityTraceBendFactor{};

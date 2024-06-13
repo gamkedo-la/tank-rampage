@@ -509,10 +509,19 @@ void AProjectile::RefreshHomingTarget()
 
 			if (Score < BestTarget.second)
 			{
+				float HitDist;
 				// Make sure truly viable by line of sight tests
-				if (!HasLineOfSightToTarget(CurrentLocation, *PotentialTarget, Dist))
+				if (!HasLineOfSightToTarget(CurrentLocation, *PotentialTarget, Dist, HitDist))
 				{
-					Score = FMath::Square(Score);
+					// increase the penalty for close distances
+					// Use EaseOut so that the distance ratio is non-linear and increases as we approach the target
+					const auto OcclusionPenaltyExp = FMath::InterpEaseOut(TraceOcclusionMaxExp, TraceOcclusionMinExp, FMath::Clamp(HitDist / Dist, 0.0f, 1.0f), TraceOcclusionEaseFactor);
+					const auto ScoreWithPenalty = FMath::Pow(Score, OcclusionPenaltyExp);
+
+					UE_VLOG_UELOG(this, LogTRItem, VeryVerbose, TEXT("%s: RefreshHomingTarget: Target=%s; No LOS - OcclusionPenaltyExp=%.3f; HitDist=%fm; Dist=%fm; Score=%.1f->%.1f"),
+						*GetName(), *LoggingUtils::GetName(PotentialTarget), OcclusionPenaltyExp, HitDist / 100, Dist / 100, Score, ScoreWithPenalty);
+
+					Score = ScoreWithPenalty;
 				}
 
 				Score += NearbyTargetPenaltyScore(*PotentialTarget);
@@ -637,7 +646,7 @@ float AProjectile::NearbyTargetPenaltyScore(const AActor& Target) const
 	return static_cast<decltype(NearbyTargetPenaltyScore(Target))>(Penalty);
 }
 
-bool AProjectile::HasLineOfSightToTarget(const FVector& StartLocation, const AActor& Target, float TargetDistance) const
+bool AProjectile::HasLineOfSightToTarget(const FVector& StartLocation, const AActor& Target, float TargetDistance, float& OutObstacleDistance) const
 {
 	auto World = GetWorld();
 	if (!World)
@@ -664,7 +673,9 @@ bool AProjectile::HasLineOfSightToTarget(const FVector& StartLocation, const AAc
 
 	const auto StartLocationZOffset = StartLocation + FVector::ZAxisVector * TraceZOffset;
 
-	bool bLOS = !World->LineTraceTestByChannel(StartLocationZOffset, TargetLocation, HomingLOSTraceChannel, Params);
+	FHitResult HitResult;
+
+	bool bLOS = !World->LineTraceSingleByChannel(HitResult, StartLocationZOffset, TargetLocation, HomingLOSTraceChannel, Params);
 
 	UE_VLOG_ARROW(this, LogTRItem, Verbose, StartLocationZOffset, TargetLocation, bLOS ? FColor::Green : FColor::Red, TEXT("MissileTrace(D): %s"), *Target.GetName());
 
@@ -678,7 +689,7 @@ bool AProjectile::HasLineOfSightToTarget(const FVector& StartLocation, const AAc
 	const auto LateralOffsetDistance = ViabilityTraceBendFactor * TargetDistance;
 	const auto RightLateralOffset = MyOwner->GetActorRightVector() * LateralOffsetDistance;
 
-	bLOS = !World->LineTraceTestByChannel(StartLocationZOffset, TargetLocation + RightLateralOffset, HomingLOSTraceChannel, Params);
+	bLOS = !World->LineTraceSingleByChannel(HitResult, StartLocationZOffset, TargetLocation + RightLateralOffset, HomingLOSTraceChannel, Params);
 	UE_VLOG_ARROW(this, LogTRItem, Verbose, StartLocationZOffset, TargetLocation + RightLateralOffset, bLOS ? FColor::Green : FColor::Red, TEXT("MissileTargetTrace(R): %s"), *Target.GetName());
 
 	if (bLOS)
@@ -686,13 +697,16 @@ bool AProjectile::HasLineOfSightToTarget(const FVector& StartLocation, const AAc
 		return true;
 	}
 	
-	bLOS = !World->LineTraceTestByChannel(StartLocationZOffset, TargetLocation - RightLateralOffset, HomingLOSTraceChannel, Params);
+	bLOS = !World->LineTraceSingleByChannel(HitResult, StartLocationZOffset, TargetLocation - RightLateralOffset, HomingLOSTraceChannel, Params);
 	UE_VLOG_ARROW(this, LogTRItem, Verbose, StartLocationZOffset, TargetLocation - RightLateralOffset, bLOS ? FColor::Green : FColor::Red, TEXT("MissileTargetTrace(L): %s"), *Target.GetName());
 
 	if (bLOS)
 	{
 		return true;
 	}
+
+	// populate distance to the hit
+	OutObstacleDistance = HitResult.Distance;
 
 	return false;
 }
