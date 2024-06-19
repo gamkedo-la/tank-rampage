@@ -44,7 +44,11 @@ AProjectile::AProjectile()
 
 	ProjectileMesh->SetMobility(EComponentMobility::Movable);
 	ProjectileMesh->SetCollisionProfileName(TR::CollisionProfile::Projectile);
-	
+	ProjectileMesh->SetGenerateOverlapEvents(true);
+	// Hit events are on static mesh actors
+	// TODO: May want to have the projectile object type just overlap everything by default but does not work correctly with physics actors
+	ProjectileMesh->SetNotifyRigidBodyCollision(true);
+
 	ProjectileMovementComponent = CreateDefaultSubobject<UFiredWeaponMovementComponent>(TEXT("ProjectileMovement"));
 	ProjectileMovementComponent->bAutoRegister = true;
 	ProjectileMovementComponent->bAutoActivate = false;
@@ -291,20 +295,29 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, U
 		*GetName(), *LoggingUtils::GetName(OtherComponent), *LoggingUtils::GetName(OtherActor),
 		*Hit.ImpactPoint.ToCompactString(), *Hit.Location.ToCompactString());
 
-	OnCollision(HitComponent, OtherActor, OtherComponent, Hit);
+	OnCollision(OtherActor, OtherComponent, Hit);
 }
-
 void AProjectile::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	UE_VLOG_UELOG(this, LogTRItem, VeryVerbose, TEXT("%s: OnOverlapBegin - %s on %s: bFromSweep=%s;ImpactPoint=%s; Location=%s"),
+	UE_VLOG_UELOG(this, LogTRItem, VeryVerbose, TEXT("%s: OnOverlapBegin - %s on %s: bFromSweep=%s;OtherBodyIndex=%d;ImpactPoint=%s; Location=%s"),
 		*GetName(), *LoggingUtils::GetName(OtherComponent), *LoggingUtils::GetName(OtherActor),
-		LoggingUtils::GetBoolString(bFromSweep), *SweepResult.ImpactPoint.ToCompactString(), *SweepResult.Location.ToCompactString());
+		LoggingUtils::GetBoolString(bFromSweep), OtherBodyIndex, *SweepResult.ImpactPoint.ToCompactString(), *SweepResult.Location.ToCompactString());
 
-	OnCollision(OverlappedComponent, OtherActor, OtherComponent, SweepResult);
+	if (bFromSweep)
+	{
+		OnCollision(OtherActor, OtherComponent, SweepResult);
+	}
+	// ignore non-sweeps since don't have precise location - no SweepResult hit result
 }
 
-void AProjectile::OnCollision(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, const FHitResult& Hit)
+void AProjectile::OnCollision(AActor* OtherActor, UPrimitiveComponent* OtherComponent, const FHitResult& Hit)
 {
+	if (bMarkedForDestroy)
+	{
+		UE_VLOG_UELOG(this, LogTRItem, Verbose, TEXT("%s: Hit %s on %s - Ignored as marked for destroy"), *GetName(), *LoggingUtils::GetName(OtherComponent), *LoggingUtils::GetName(OtherActor));
+		return;
+	}
+
 	bool bDestroy = true;
 
 	if (OtherActor)
@@ -338,6 +351,7 @@ void AProjectile::OnCollision(UPrimitiveComponent* HitComponent, AActor* OtherAc
 void AProjectile::MarkForDestroy()
 {
 	// Allow frame to complete
+	bMarkedForDestroy = true;
 
 	GetWorldTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
