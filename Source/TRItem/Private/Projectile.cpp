@@ -287,11 +287,19 @@ UAudioComponent* AProjectile::PlaySfxAtActorLocation(USoundBase* Sound) const
 
 void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
 {
+	UE_VLOG_UELOG(this, LogTRItem, VeryVerbose, TEXT("%s: OnHit - %s on %s: ImpactPoint=%s; Location=%s"),
+		*GetName(), *LoggingUtils::GetName(OtherComponent), *LoggingUtils::GetName(OtherActor),
+		*Hit.ImpactPoint.ToCompactString(), *Hit.Location.ToCompactString());
+
 	OnCollision(HitComponent, OtherActor, OtherComponent, Hit);
 }
 
 void AProjectile::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	UE_VLOG_UELOG(this, LogTRItem, VeryVerbose, TEXT("%s: OnOverlapBegin - %s on %s: bFromSweep=%s;ImpactPoint=%s; Location=%s"),
+		*GetName(), *LoggingUtils::GetName(OtherComponent), *LoggingUtils::GetName(OtherActor),
+		LoggingUtils::GetBoolString(bFromSweep), *SweepResult.ImpactPoint.ToCompactString(), *SweepResult.Location.ToCompactString());
+
 	OnCollision(OverlappedComponent, OtherActor, OtherComponent, SweepResult);
 }
 
@@ -413,16 +421,17 @@ bool AProjectile::ApplyDamageTo(AActor* OtherActor, const FHitResult& Hit, APawn
 			IgnoreActors.Add(InstigatingPawn);
 		}
 
-		UGameplayStatics::ApplyRadialDamageWithFalloff(
+		[[maybe_unused]]
+		const bool bAnyDamageCaused = UGameplayStatics::ApplyRadialDamageWithFalloff(
 			this, ProjectileDamageParams.MaxDamageAmount, ProjectileDamageParams.MinDamageAmount,
 			Hit.ImpactPoint, ProjectileDamageParams.DamageInnerRadius, ProjectileDamageParams.DamageOuterRadius,
 			ProjectileDamageParams.DamageFalloff, nullptr, IgnoreActors, this, InstigatorController, TR::CollisionChannel::ExplosionDamageTraceType);
 
-		UE_VLOG_LOCATION(this, LogTRItem, Log, Hit.ImpactPoint, ProjectileDamageParams.DamageInnerRadius, FColor::Red, TEXT(""),
-			*GetName(), *LoggingUtils::GetName(InstigatingPawn), *LoggingUtils::GetName(OtherActor));
+		UE_VLOG_LOCATION(this, LogTRItem, Log, Hit.ImpactPoint, ProjectileDamageParams.DamageInnerRadius, FColor::Red, TEXT(""));
 
-		UE_VLOG_LOCATION(this, LogTRItem, Log, Hit.ImpactPoint, ProjectileDamageParams.DamageOuterRadius, FColor::Orange, TEXT("%s (%s -> %s): (%f,%f)"),
-			*GetName(), *LoggingUtils::GetName(InstigatingPawn), *LoggingUtils::GetName(OtherActor), ProjectileDamageParams.MinDamageAmount, ProjectileDamageParams.MaxDamageAmount);
+		UE_VLOG_LOCATION(this, LogTRItem, Log, Hit.ImpactPoint, ProjectileDamageParams.DamageOuterRadius, FColor::Orange, TEXT("%s (%s -> %s): %s - (%f,%f)"),
+			*GetName(), *LoggingUtils::GetName(InstigatingPawn), *LoggingUtils::GetName(OtherActor), 
+			LoggingUtils::GetBoolString(bAnyDamageCaused), ProjectileDamageParams.MinDamageAmount, ProjectileDamageParams.MaxDamageAmount);
 	}
 	else
 	{
