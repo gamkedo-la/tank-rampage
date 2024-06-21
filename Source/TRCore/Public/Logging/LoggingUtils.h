@@ -7,18 +7,11 @@
 #include <concepts>
 #include <type_traits>
 
+#include "Utils/StringUtils.h"
+
 namespace LoggingUtils
 {
-	template<typename T>
-	concept UEnumConcept = std::is_enum_v<T> &&
-	requires(T Value)
-	{
-		{
-			UEnum::GetDisplayValueAsText(Value).ToString()
-		} -> std::convertible_to<FString>;
-	};
-
-	template<UEnumConcept T>
+	template<TR::StringUtils::UEnumConcept T>
 	FString GetName(T Value);
 
 	/*
@@ -36,7 +29,7 @@ namespace LoggingUtils
 
 namespace LoggingUtils
 {
-	template<UEnumConcept T>
+	template<TR::StringUtils::UEnumConcept T>
 	inline FString GetName(T Value)
 	{
 		return UEnum::GetDisplayValueAsText(Value).ToString();
@@ -44,7 +37,7 @@ namespace LoggingUtils
 
 	inline FString GetName(const UObject* Object)
 	{
-		return Object ? Object->GetName() : FString{ "NULL" };
+		return (TR::StringUtils::ObjectName<UObject>{})(Object);
 	}
 
 	inline auto GetBoolString(bool bResult)

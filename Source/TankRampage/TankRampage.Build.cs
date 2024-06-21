@@ -15,6 +15,9 @@ public class TankRampage : ModuleRules
             "Engine",
             "InputCore",
             "MoviePlayer", // Loading Screen
+            "GameplayAbilities", // GAS
+			"GameplayTags", // GAS
+			"GameplayTasks", // GAS
         });
 
 		PrivateDependencyModuleNames.AddRange(new string[] 

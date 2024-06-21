@@ -111,7 +111,7 @@ void UProjectileWeapon::LaunchProjectile(USceneComponent& ActivationReferenceCom
 		};
 	}
 
-	SpawnedProjectile->Initialize(ActivationReferenceComponent, ActivationSocketName, ProjectileDamageParams, OptHomingParams);
+	SpawnedProjectile->Initialize(this, ActivationReferenceComponent, ActivationSocketName, ProjectileDamageParams, OptHomingParams);
 	SpawnedProjectile->FinishSpawning(SpawnTransform);
 
 	SpawnedProjectile->Launch(ProjectileLaunchSpeed);

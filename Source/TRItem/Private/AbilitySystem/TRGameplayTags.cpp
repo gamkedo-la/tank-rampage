@@ -9,7 +9,6 @@
 
 namespace
 {
-	FGameplayTag* GetTagByName(const FName& TagName);
 	UAbilitySystemComponent* GetAbilitySystemComponent(AActor* Actor);
 }
 
@@ -52,22 +51,23 @@ float TR::GameplayTags::GetAttributeMultiplierFromTag(AActor* Actor, const FName
 	return AttributeMultiplierTagCountToValueFloat(TagCount);
 }
 
-namespace
+
+FGameplayTag* TR::GameplayTags::GetTagByName(const FName& TagName)
 {
-	FGameplayTag* GetTagByName(const FName& TagName)
+	// Cache the FName -> FGameplayTag mappings
+	thread_local TMap<FName, FGameplayTag> TagMap;
+
+	FGameplayTag* Tag = TagMap.Find(TagName);
+	if (!Tag)
 	{
-		// Cache the FName -> FGameplayTag mappings
-		thread_local TMap<FName, FGameplayTag> TagMap;
-
-		FGameplayTag* Tag = TagMap.Find(TagName);
-		if (!Tag)
-		{
-			Tag = &TagMap.Add(TagName, FGameplayTag::RequestGameplayTag(TagName));
-		}
-
-		return Tag;
+		Tag = &TagMap.Add(TagName, FGameplayTag::RequestGameplayTag(TagName));
 	}
 
+	return Tag;
+}
+
+namespace
+{
 	UAbilitySystemComponent* GetAbilitySystemComponent(AActor* Actor)
 	{
 		if (!IsValid(Actor))

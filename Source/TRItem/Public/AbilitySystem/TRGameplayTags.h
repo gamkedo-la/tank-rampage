@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 
+struct FGameplayTag;
+
 namespace TR::GameplayTags
 {
 	inline const FName MovementBlocked(TEXT("Debuff.Movement.Block"));
@@ -11,6 +13,7 @@ namespace TR::GameplayTags
 
 	TRITEM_API bool HasExactTag(AActor* Actor, const FName& TagName);
 	TRITEM_API int32 GetExactTagCount(AActor* Actor, const FName& TagName);
+	TRITEM_API FGameplayTag* GetTagByName(const FName& TagName);
 
 	/*
 	* Gets the attribute multiplier corresponding to the given <c>TagName</c>. If no tags are applied, then <c>1</c> is returned.

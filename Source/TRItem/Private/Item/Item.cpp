@@ -107,6 +107,8 @@ bool UItem::Activate(USceneComponent* ActivationReferenceComponent, const FName&
 
 	UE_VLOG_UELOG(GetOuter(), LogTRItem, Log, TEXT("%s-%s: DoActivation"), *LoggingUtils::GetName(GetOuter()), *GetName());
 
+	OnItemActivated.Broadcast(this);
+
 	if (!DoActivation(*ActivationReferenceComponent, ActivationSocketName))
 	{
 		return false;

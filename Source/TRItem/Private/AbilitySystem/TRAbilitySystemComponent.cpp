@@ -34,6 +34,16 @@ void UTRAbilitySystemComponent::EffectApplied(UAbilitySystemComponent* AbilitySy
 	OnEffectAssetTagsAdded.Broadcast(GameplayTagContainer);
 }
 
+void UTRAbilitySystemComponent::OnTagUpdated(const FGameplayTag& Tag, bool bTagExists)
+{
+	UE_VLOG_UELOG(GetOwner(), LogTRItem, Log, TEXT("%s-%s: OnTagUpdated - Tag=%s; bTagExists=%s"),
+		*LoggingUtils::GetName(GetOwner()), *GetName(), *Tag.ToString(), LoggingUtils::GetBoolString(bTagExists));
+
+	Super::OnTagUpdated(Tag, bTagExists);
+
+	OnGameplayTagChanged.Broadcast(this, Tag, bTagExists);
+}
+
 #pragma region Visual Logger
 
 #if ENABLE_VISUAL_LOG

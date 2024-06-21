@@ -8,6 +8,7 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEffectAssetTagsAdded, const FGameplayTagContainer&, AssetTagsContainer);
 
+DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnGameplayTagChanged, UTRAbilitySystemComponent* /*ABS*/, const FGameplayTag& /* Tag*/, bool /* bAdded*/);
 /**
  * 
  */
@@ -21,13 +22,19 @@ public:
 	UPROPERTY(Category = "Notification", Transient, BlueprintAssignable)
 	FOnEffectAssetTagsAdded OnEffectAssetTagsAdded{};
 
+	FOnGameplayTagChanged OnGameplayTagChanged;
+
 
 	virtual void InitAbilityActorInfo(AActor* InOwnerActor, AActor* InAvatarActor) override;
+
 #if ENABLE_VISUAL_LOG
 
 	void DescribeSelfToVisLog(FVisualLogEntry* Snapshot) const;
 
 #endif
+
+protected:
+	virtual void OnTagUpdated(const FGameplayTag& Tag, bool bTagExists) override;
 
 private:
 	void EffectApplied(UAbilitySystemComponent* AbilitySystemComponent, const FGameplayEffectSpec& GameplayEffectSpec, FActiveGameplayEffectHandle ActiveGameplayEffectHandle);

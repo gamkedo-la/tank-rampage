@@ -78,9 +78,10 @@ void AProjectile::Launch(float Speed)
 	PlayFiringEffects();
 }
 
-void AProjectile::Initialize(USceneComponent& IncidentComponent, const FName& IncidentSocketName, const FProjectileDamageParams& InProjectileDamageParams,
+void AProjectile::Initialize(UWeapon* Weapon, USceneComponent& IncidentComponent, const FName& IncidentSocketName, const FProjectileDamageParams& InProjectileDamageParams,
 	const std::optional<FProjectileHomingParams>& InOptHomingParams)
 {
+	FiredFrom = Weapon;
 	AttachComponent = &IncidentComponent;
 	AttachSocketName = IncidentSocketName;
 	ProjectileDamageParams = InProjectileDamageParams;
@@ -350,9 +351,9 @@ void AProjectile::OnCollision(AActor* OtherActor, UPrimitiveComponent* OtherComp
 
 void AProjectile::MarkForDestroy()
 {
-	// Allow frame to complete
 	bMarkedForDestroy = true;
 
+	// Allow frame to complete before destroying the object
 	GetWorldTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
 		Destroy();

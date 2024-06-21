@@ -8,6 +8,7 @@
 
 class USoundBase;
 class UAudioComponent;
+struct FGameplayTagContainer;
 
 UENUM(BlueprintType)
 enum class EItemType : uint8
@@ -17,6 +18,9 @@ enum class EItemType : uint8
 	PassiveEffect UMETA(DisplayName = "Passive Effect"),
 	Max UMETA(DisplayName = "MAX"),
 };
+
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnItemActivated, UItem* /* Item*/);
+DECLARE_MULTICAST_DELEGATE_FourParams(FOnItemGameplayTagsChanged, UItem* /* Item*/, const TArray<APawn*>& /* AffectedPawns*/, const FGameplayTagContainer& /* Tags*/, bool /*bAdded*/);
 
 /**
  * Base class for both weapons and passive effects in the game.  
@@ -67,6 +71,9 @@ public:
 	EItemType GetItemType() const;
 
 	FString ToString() const;
+
+	FOnItemActivated OnItemActivated{};
+	FOnItemGameplayTagsChanged OnItemGameplayTagsChanged{};
 
 protected:
 	virtual bool DoActivation(USceneComponent& ActivationReferenceComponent, const FName& ActivationSocketName) PURE_VIRTUAL(UItem::DoActivation, return false;);

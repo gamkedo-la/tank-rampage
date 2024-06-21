@@ -20,6 +20,7 @@ class UNiagaraComponent;
 class USoundBase;
 class UAudioComponent;
 class UPhysicalMaterial;
+class UWeapon;
 
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnHomingTargetSelected, AProjectile* /* Projectile*/, AActor* /*Target*/);
 
@@ -34,7 +35,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual void Launch(float Speed);
 
-	virtual void Initialize(USceneComponent& IncidentComponent, const FName& IncidentSocketName, const FProjectileDamageParams& InProjectileDamageParams,
+	virtual void Initialize(UWeapon* Weapon, USceneComponent& IncidentComponent, const FName& IncidentSocketName, const FProjectileDamageParams& InProjectileDamageParams,
 		const std::optional<FProjectileHomingParams>& InOptHomingParams = std::nullopt);
 
 	UFUNCTION(BlueprintPure)
@@ -51,6 +52,9 @@ public:
 	void TargetDestroyed(AActor* Actor);
 
 	AActor* GetCurrentHomingTargetActor() const;
+
+	UFUNCTION(BlueprintPure)
+	UWeapon* GetFiredFrom() const;
 
 protected:
 	virtual void PostInitializeComponents() override;
@@ -230,6 +234,9 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UAudioComponent> FiringAudioComponent{};
 
+	UPROPERTY(Transient)
+	TObjectPtr<UWeapon> FiredFrom{};
+
 	FTimerHandle HomingTargetTimerHandle{};
 
 	UPROPERTY(Category = "Damage", EditDefaultsOnly)
@@ -243,6 +250,11 @@ private:
 inline bool AProjectile::CanDamageInstigator() const
 {
 	return bCanDamageInstigator;
+}
+
+inline UWeapon* AProjectile::GetFiredFrom() const
+{
+	return FiredFrom;
 }
 
 #pragma endregion Inline Definitions

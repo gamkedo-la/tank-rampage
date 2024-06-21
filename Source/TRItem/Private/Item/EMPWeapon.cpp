@@ -44,6 +44,8 @@ bool UEMPWeapon::DoActivation(USceneComponent& ActivationReferenceComponent, con
 		ApplyEffectToEnemy(Enemy, EffectEndGameTime, DebuffTagsContainer);
 	}
 
+	OnItemGameplayTagsChanged.Broadcast(this, AffectedEnemies, DebuffTagsContainer, true);
+
 	if (!TagExpirationHandle.IsValid())
 	{
 		ScheduleStunRemoval(EffectDuration);
@@ -111,6 +113,9 @@ void UEMPWeapon::CheckRemoveStunTag()
 	const float CurrentTimeSeconds = World->GetTimeSeconds();
 
 	const FGameplayTagContainer DebuffTagsContainer = FGameplayTagContainer::CreateFromArray(DebuffTags);
+	TArray<APawn*> RemovedActors;
+
+	const bool bNotify = OnItemGameplayTagsChanged.IsBound();
 
 	for (auto MapIt = AffectedActors.CreateIterator(); MapIt; ++MapIt)
 	{
@@ -131,6 +136,15 @@ void UEMPWeapon::CheckRemoveStunTag()
 				*DebuffTagsContainer.ToString(), *LoggingUtils::GetName(ASC->GetOwner()));
 
 			ASC->RemoveLooseGameplayTags(DebuffTagsContainer);
+
+			if (bNotify)
+			{
+				if (const auto Pawn = Cast<APawn>(ASC->GetOwner()); Pawn)
+				{
+					RemovedActors.Add(Pawn);
+				}
+			}
+
 			// stop the Vfx
 			if (Entry.Vfx)
 			{
@@ -139,6 +153,11 @@ void UEMPWeapon::CheckRemoveStunTag()
 
 			MapIt.RemoveCurrent();
 		}
+	} // for
+
+	if (bNotify)
+	{
+		OnItemGameplayTagsChanged.Broadcast(this, RemovedActors, DebuffTagsContainer, false);
 	}
 
 	// if there are still some not expired, schedule for nearest expiration
