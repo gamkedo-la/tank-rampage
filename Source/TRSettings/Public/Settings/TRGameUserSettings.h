@@ -43,6 +43,13 @@ public:
 	UFUNCTION(BlueprintPure, Category = "GameUserSettings")
 	float GetMusicVolume() const;
 
+	UFUNCTION(BlueprintCallable, Category = "GameUserSettings")
+	void SetAmbienceVolume(float Value);
+
+	UFUNCTION(BlueprintPure, Category = "GameUserSettings")
+	float GetAmbienceVolume() const;
+
+
 	virtual void SaveSettings() override;
 
 	virtual void LoadSettings(bool bForceReload = false) override;
@@ -63,6 +70,9 @@ private:
 
 	UPROPERTY(Config)
 	float MusicVolume{ 1.0f };
+
+	UPROPERTY(Config)
+	float AmbienceVolume{ 1.0f };
 
 	bool bRequiresConfigCleanup{};
 };
@@ -107,6 +117,16 @@ FORCEINLINE void UTRGameUserSettings::SetMusicVolume(float Value)
 FORCEINLINE float UTRGameUserSettings::GetMusicVolume() const
 {
 	return MusicVolume;
+}
+
+FORCEINLINE void UTRGameUserSettings::SetAmbienceVolume(float Value)
+{
+	AmbienceVolume = Value;
+}
+
+FORCEINLINE float UTRGameUserSettings::GetAmbienceVolume() const
+{
+	return AmbienceVolume;
 }
 
 #pragma endregion Inline Definitions
