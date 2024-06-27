@@ -11,7 +11,7 @@
 
 namespace
 {
-	constexpr const TCHAR* TRGameUserSettingsSectionName = TEXT("/Script/TRSettings.TRGameUserSettings");
+	 constexpr const TCHAR* TRGameUserSettingsSectionName = TEXT("/Script/TRSettings.TRGameUserSettings");
 	 constexpr const TCHAR* OldMainVolumeKeyName = TEXT("MasterVolume");
 }
 
@@ -46,7 +46,7 @@ void UTRGameUserSettings::LoadSettings(bool bForceReload)
 	check(GConfig);
 
 	// Port over any renamed settings that still exist in the ini file
-	// Note that property redirectors DO NOT work in this case and we have to do it manually
+	// Note that property redirectors DO NOT work in this case, and we have to do it manually
 	if (GConfig->DoesSectionExist(TRGameUserSettingsSectionName, *GGameUserSettingsIni))
 	{
 		float OldMainVolumeValue;
