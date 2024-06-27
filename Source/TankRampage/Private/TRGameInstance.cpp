@@ -61,7 +61,7 @@ void UTRGameInstance::InitSoundVolumes()
 
 	if (MasterSoundClass)
 	{
-		ApplyMixToSoundClass(MasterSoundClass, Settings->GetMasterVolume());
+		ApplyMixToSoundClass(MasterSoundClass, Settings->GetMainVolume());
 	}
 	else
 	{
