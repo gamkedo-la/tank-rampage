@@ -30,6 +30,11 @@ public class TankRampage : ModuleRules
             "TRUI",
             "TRGameplayMechanics",
             "TRSettings",
+                
+            // Controller detection support in TRGameInstance.cpp
+            "Slate",
+            "SlateCore",
+            "ApplicationCore",
         });
 
         CppStandard = CppStandardVersion.Cpp20;

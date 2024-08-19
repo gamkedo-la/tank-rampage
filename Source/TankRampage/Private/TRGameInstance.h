@@ -4,6 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
+
+#include "InputCharacteristics.h"
+
 #include "TRGameInstance.generated.h"
 
 class USoundMix;
@@ -20,6 +23,9 @@ class UTRGameInstance : public UGameInstance
 public:
 	virtual void Init() override;
 
+	UFUNCTION(BlueprintPure, Category = "Controls")
+	bool IsGamepadAvailable() const;
+
 private:
 	void InitLoadingScreen();
 
@@ -34,6 +40,10 @@ private:
 	void EndLoadingScreen(UWorld* InLoadedWorld);
 
 	void DoLoadingScreen();
+
+	void InitGamepadAvailable();
+	void HandleControllerConnectionChange(EInputDeviceConnectionState InputDeviceConnectionState, FPlatformUserId UserId, FInputDeviceId ControllerId);
+	void HandleControllerPairingChanged(FInputDeviceId ControllerId, FPlatformUserId NewUserId, FPlatformUserId OldUserId);
 
 #if WITH_EDITOR
 	virtual FGameInstancePIEResult StartPlayInEditorGameInstance(ULocalPlayer* LocalPlayer, const FGameInstancePIEParameters& Params) override;
@@ -52,3 +62,13 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Sound")
 	TObjectPtr<USoundClass> MusicSoundClass{};
 };
+
+
+#pragma region Inline Definitions
+
+FORCEINLINE bool UTRGameInstance::IsGamepadAvailable() const
+{
+	return TR::FInputCharacteristics::IsGamepadAvailable();
+}
+
+#pragma endregion Inline Definitions
