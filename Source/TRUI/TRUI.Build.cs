@@ -39,7 +39,10 @@ public class TRUI : ModuleRules
 		var enginePrivateDependencyModuleNames = new string[] 
 		{
 			"UMG",
-		};
+			"Slate",
+			"SlateCore",
+            "InputCore",
+        };
 
 		PrivateDependencyModuleNames.AddRange(enginePrivateDependencyModuleNames);
 		PrivateDependencyModuleNames.AddRange(modulePrivateDependencyModuleNames);

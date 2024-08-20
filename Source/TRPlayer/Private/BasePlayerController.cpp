@@ -60,8 +60,6 @@ void ABasePlayerController::GrabDebugSnapshot(FVisualLogEntry* Snapshot) const
 
 void ABasePlayerController::SetInputModeUI(UUserWidget* FocusWidget)
 {
-	// TODO: Detect gamepad input and set to FInputGameModeOnly for that case
-
 	// Set to game and ui so that we can process input actions in the UI
 	FInputModeGameAndUI InputModeData;
 	InputModeData.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);

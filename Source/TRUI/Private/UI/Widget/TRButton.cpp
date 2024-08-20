@@ -6,9 +6,16 @@
 #include "Logging/LoggingUtils.h"
 #include "TRUILogging.h"
 
+#include "Widgets/Input/SButton.h"
+
 #include "Subsystems/RealtimeTimerSubsystem.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(TRButton)
+
+namespace
+{
+	FPointerEvent CreateMouseClick(const FKey& Key);
+}
 
 void UTRButton::PostInitProperties()
 {
@@ -39,6 +46,30 @@ void UTRButton::BindEvents()
 	}
 }
 
+void UTRButton::Hover()
+{
+	if (MyButton.IsValid())
+	{
+		MyButton->OnMouseEnter(MyButton->GetCachedGeometry(), {});
+	}
+	else
+	{
+		SlateHandleHovered();
+	}
+}
+
+void UTRButton::ExitHover()
+{
+	if (MyButton.IsValid())
+	{
+		MyButton->OnMouseLeave({});
+	}
+	else
+	{
+		SlateHandleUnhovered();
+	}
+}
+
 void UTRButton::DoHover()
 {
 	auto World = GetWorld();
@@ -53,6 +84,20 @@ void UTRButton::DoHover()
 	{
 		TimerSystem->RealTimeTimerDelegate.AddUObject(this, &ThisClass::TickHover);
 	}
+}
+
+void UTRButton::Click()
+{
+	if (MyButton.IsValid())
+	{
+		MyButton->OnMouseButtonDown(MyButton->GetCachedGeometry(), 
+			CreateMouseClick(EKeys::LeftMouseButton));
+		MyButton->OnMouseButtonUp(MyButton->GetCachedGeometry(),
+			CreateMouseClick(EKeys::LeftMouseButton));
+	}
+
+	// OnClick handlers not called by the mouse events - probably because the events need to be delayed
+	SlateHandleClicked();
 }
 
 void UTRButton::TickHover(float DeltaTime)
@@ -102,5 +147,13 @@ void UTRButton::UnregisterTimer()
 	if (auto TimerSystem = World->GetSubsystem<URealtimeTimerSubsystem>(); IsValid(TimerSystem))
 	{
 		TimerSystem->RealTimeTimerDelegate.Remove(HoverHandle);
+	}
+}
+
+namespace
+{
+	inline FPointerEvent CreateMouseClick(const FKey& Key)
+	{
+		return { 0, { 0.f,0.f }, { 0.f,0.f }, {}, Key, 0, {} };
 	}
 }

@@ -16,6 +16,15 @@ class TRUI_API UTRButton : public UButton
 {
 	GENERATED_BODY()
 
+public:
+	UFUNCTION(BlueprintCallable, Category = "Gamepad | Button")
+	void Hover();
+
+	UFUNCTION(BlueprintCallable, Category = "Gamepad | Button")
+	void ExitHover();
+
+	UFUNCTION(BlueprintCallable, Category = "Gamepad | Button")
+	void Click();
 
 protected:
 	virtual void PostInitProperties() override;
