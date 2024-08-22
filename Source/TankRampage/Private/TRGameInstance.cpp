@@ -67,6 +67,15 @@ void UTRGameInstance::InitSoundVolumes()
 		UE_LOG(LogTankRampage, Error, TEXT("%s: No MusicSoundClass set!"), *GetName());
 	}
 
+	if (AmbienceSoundClass)
+	{
+		ApplyMixToSoundClass(AmbienceSoundClass, Settings->GetAmbienceVolume());
+	}
+	else
+	{
+		UE_LOG(LogTankRampage, Error, TEXT("%s: No AmbienceSoundClass set!"), *GetName());
+	}
+
 	if (MasterSoundClass)
 	{
 		ApplyMixToSoundClass(MasterSoundClass, Settings->GetMainVolume());

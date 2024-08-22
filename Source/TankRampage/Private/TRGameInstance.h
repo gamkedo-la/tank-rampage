@@ -61,6 +61,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Sound")
 	TObjectPtr<USoundClass> MusicSoundClass{};
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
+	TObjectPtr<USoundClass> AmbienceSoundClass{};
 };
 
 
